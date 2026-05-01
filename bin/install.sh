@@ -129,6 +129,24 @@ for variant in normal shiny; do
 done
 ok "$dl_count sprites téléchargés et convertis (lignées de base)"
 
+# ── 4b. Optional: extract animated frames (requires Python + Pillow) ────────
+title "4b/5 Animations (optionnel)"
+
+if command -v python3 >/dev/null && python3 -c "from PIL import Image" 2>/dev/null; then
+  info "Python + Pillow détectés — extraction des frames animés..."
+  python3 "$ROOT/lib/extract_animations.py" --target-dir "$TARGET_DIR" --frames 5 || warn "Animation pipeline failed — fallback statique conservé"
+  ok "Animations extraites (cache ~500 KB)"
+  # Auto-enable if successful
+  jq '.enable_animations = true' "$TARGET_DIR/data.json" > "$TARGET_DIR/data.json.tmp" \
+    && mv "$TARGET_DIR/data.json.tmp" "$TARGET_DIR/data.json"
+  ok "enable_animations = true dans data.json"
+else
+  warn "Python3 ou Pillow absent — animations désactivées (fallback statique)"
+  info "  Pour activer plus tard : pip install Pillow && python3 $ROOT/lib/extract_animations.py"
+  jq '.enable_animations = false' "$TARGET_DIR/data.json" > "$TARGET_DIR/data.json.tmp" \
+    && mv "$TARGET_DIR/data.json.tmp" "$TARGET_DIR/data.json"
+fi
+
 # ── 5. Patch settings.json ──────────────────────────────────────────────────
 title "5/5 Configuration de la statusLine"
 

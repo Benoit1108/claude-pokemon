@@ -31,6 +31,34 @@ fmt_int() {
   }'
 }
 
+# Box drawing helpers — top/bottom borders with section title inline.
+# Width default 64 chars. Title is centered between dashes.
+pokemon_box_top() {
+  local title="${1:-}" width="${2:-64}"
+  local title_visible_len=0
+  if [ -n "$title" ]; then
+    title_visible_len=$(printf '%s' "$title" | sed -E "s/$(printf '\033')\\[[0-9;]*[a-zA-Z]//g" | LC_ALL=C.UTF-8 wc -m | tr -d ' \n')
+    title_visible_len=$((title_visible_len + 2))  # spaces around title
+  fi
+  local dash_count=$((width - title_visible_len - 2))
+  [ "$dash_count" -lt 4 ] && dash_count=4
+  local dashes
+  dashes=$(printf '─%.0s' $(seq 1 "$dash_count"))
+  if [ -n "$title" ]; then
+    printf '%s╭─ %s%s%s %s╮%s\n' "$DIM" "$BOLD" "$title" "$RESET" "$dashes" "$RESET"
+  else
+    printf '%s╭%s╮%s\n' "$DIM" "$dashes──" "$RESET"
+  fi
+}
+
+pokemon_box_bottom() {
+  local width="${1:-64}"
+  local dash_count=$((width - 2))
+  local dashes
+  dashes=$(printf '─%.0s' $(seq 1 "$dash_count"))
+  printf '%s╰%s╯%s\n' "$DIM" "$dashes" "$RESET"
+}
+
 # ── Subcommand: --shiny toggle ───────────────────────────────────────────────
 toggle_shiny() {
   mkdir -p "$POKEMON_DIR"; touch "$POKEMON_LOCK"
@@ -683,11 +711,14 @@ view_main() {
   [ "$color" = "rainbow" ] && color_code=$(pokemon_ansi_color "gold")
   [ "$is_shiny" = "true" ] && color_code="$GOLD"
 
+  # Top border + COMPAGNON title
+  printf '\n'
+  pokemon_box_top "$(pokemon_t main.companion)" 64
+
   # Sprite (32x16 standard)
   local sprite_variant="normal"
   [ "$is_shiny" = "true" ] && sprite_variant="shiny"
   local sprite_path="$POKEMON_DIR/sprites/$sprite_variant/$showdown_id.txt"
-  printf '\n'
   if [ -f "$sprite_path" ]; then
     while IFS= read -r line; do printf '  %s\n' "$line"; done < "$sprite_path"
     printf '\n'
@@ -876,6 +907,10 @@ view_main() {
     printf ' %s(%d/%d)%s\n\n' "$DIM" "$badges_count" "12" "$RESET"
   fi
 
+  # End of "compagnon card" section
+  pokemon_box_bottom 64
+  printf '\n'
+
   # Recent events (last 3) — encounter events lookup name via wild_pool.id
   local events_count lang_evt
   events_count=$(jq -r '.recent_events | length' "$POKEMON_STATE" 2>/dev/null || echo 0)
@@ -923,7 +958,7 @@ view_main() {
   local history_count
   history_count=$(jq -r '.evolution_history | length' "$POKEMON_STATE")
   if [ "$history_count" -gt 0 ]; then
-    printf "  %s$(pokemon_t main.history)%s\\n\\n" "$BOLD" "$RESET"
+    pokemon_box_top "$(pokemon_t main.history)" 64
     jq -r '.evolution_history[] | "\(.level)|\(.name)|\(.evolved_at)|\(.is_shiny // false)"' "$POKEMON_STATE" | \
     while IFS='|' read -r lvl ename eat eshiny; do
       eemoji=$(pokemon_evo_field "$lineage" "$lvl" "emoji")
@@ -935,8 +970,14 @@ view_main() {
     printf '\n'
   fi
 
+  # End of history section
+  if [ "$history_count" -gt 0 ]; then
+    pokemon_box_bottom 64
+    printf '\n'
+  fi
+
   # Full chain — highlight only the chosen Eevee form when at Lv.30+
-  printf "  %s$(pokemon_t main.full_chain) — %s%s\\n\\n" "$BOLD" "$lineage_label" "$RESET"
+  pokemon_box_top "$(pokemon_t main.full_chain) — $lineage_label" 64
   local eevee_form_id=""
   if [ "$lineage" = "eevee" ]; then
     eevee_form_id=$(jq -r '.eevee_form // empty' "$POKEMON_STATE")
@@ -961,11 +1002,12 @@ view_main() {
       "$marker" "$style" "$imin" "$RESET" "$iemoji" "$style" "$iname" "$RESET" \
       "$DIM" "$(fmt_int "$ithresh")" "$RESET"
   done
+  pokemon_box_bottom 64
   printf '\n'
 
   # Footer hints
-  printf "  %s$(pokemon_t_pad common.subcommands 22)%s : team, pc, pokedex, stats, badges, reset, --shiny\\n" "$DIM" "$RESET"
-  printf "  %s$(pokemon_t_pad common.example 22)%s : %sbash ~/.claude/creature-status.sh team%s\\n\\n" \
+  printf "  %s$(pokemon_t_pad common.subcommands 22)%s : team, pc, pokedex, stats, badges, switch, hatch, deposit, withdraw, give, take, trade, reset, --shiny\\n" "$DIM" "$RESET"
+  printf "  %s$(pokemon_t_pad common.example 22)%s : %sbash ~/.claude/pokemon-status.sh team%s\\n\\n" \
     "$DIM" "$RESET" "$DIM" "$RESET"
 }
 

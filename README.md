@@ -46,7 +46,8 @@ Then **restart Claude Code** and type `/pokemon`.
 | `flock` | yes | concurrent state.json write protection |
 | `curl` | yes | sprite download |
 | `awk` | yes | float arithmetic |
-| `gifsicle` | optional | sprite animations (currently disabled by default) |
+| `gifsicle` | optional | (replaced by Python+PIL pipeline) |
+| `python3` + `Pillow` | optional | sprite animations (5 frames idle bobbing per Pokémon) |
 
 **Linux (Debian/Ubuntu)** :
 ```bash
