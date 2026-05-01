@@ -1,0 +1,11 @@
+node_modules/
+*.log
+.DS_Store
+
+# User-specific testing artifacts
+*.bak-*
+.lock
+state.json
+sprites/
+sprites-mini/
+sprites-mini-anim/

@@ -1,0 +1,203 @@
+{
+  "_meta": {
+    "language": "en",
+    "name": "English"
+  },
+  "common": {
+    "since": "since",
+    "level": "Lv.",
+    "lvmax": "Lv.MAX ✦",
+    "subcommands": "Subcommands",
+    "example": "Example",
+    "tip": "Tip",
+    "slot": "Slot",
+    "active_marker": "✦ ACTIVE"
+  },
+  "main": {
+    "companion": "BUDDY",
+    "shiny_badge": "★ SHINY",
+    "final_chain": "Buddy reached final form — chain complete.",
+    "progress_towards": "towards",
+    "progress_max_form": "towards Lv.MAX (stable form)",
+    "xp_total": "Total XP",
+    "stage_progress": "Stage progress",
+    "remaining": "Remaining",
+    "moves": "Moves",
+    "badges": "Badges",
+    "tokens": "tokens",
+    "recent_events": "Recent events",
+    "history": "HISTORY",
+    "full_chain": "FULL CHAIN",
+    "berry_found": "+%s XP",
+    "wild_encountered": "Wild %s spotted!",
+    "types": "Type",
+    "friendship": "Friendship",
+    "pokedex_entry": "Pokédex",
+    "current": "Current",
+    "held_item": "Holding",
+    "status_injured": "🩹 Injured"
+  },
+  "stats": {
+    "title": "LIFETIME STATS",
+    "total_tokens": "Total tokens",
+    "total_evolutions": "Total evolutions",
+    "total_shinies": "Shinies obtained",
+    "max_level": "Highest level reached",
+    "total_compagnons": "Buddies raised",
+    "lineages_completed": "Lineages completed",
+    "first_shiny": "First shiny",
+    "multipliers_title": "MULTIPLIERS (last tick)",
+    "context": "Context",
+    "type_match": "Type matchup (lineage)",
+    "daily_bonus": "Daily bonus",
+    "status": "Status",
+    "combined": "Combined",
+    "tired_warning": "🥱 Buddy is TIRED — context >=90%% for %d ticks. Run /clear to reset.",
+    "shiny_charm": "✦ Shiny Charm active — shiny chance ×1.25 (1/100 → 1/80)"
+  },
+  "pokedex": {
+    "title_lineages": "POKÉDEX — Raised lineages",
+    "title_wild": "POKÉDEX — Wild encounters",
+    "shinies": "shinies",
+    "shiny_seen": "★ shiny",
+    "no_wild": "None yet — 0.1%% chance per tick.",
+    "wild_seen_at": "seen on"
+  },
+  "badges": {
+    "title": "BADGES",
+    "hatch": [
+      "Birth",
+      "First hatching"
+    ],
+    "first_evolution": [
+      "First step",
+      "First evolution (Lv.16+)"
+    ],
+    "first_shiny": [
+      "Shooting star",
+      "First shiny obtained"
+    ],
+    "champion": [
+      "Champion",
+      "Reach Lv.100"
+    ],
+    "centurion": [
+      "Centurion",
+      "100M tokens lifetime"
+    ],
+    "constellation": [
+      "Constellation",
+      "5 shinies collection"
+    ],
+    "master_pokedex": [
+      "Pokédex Master",
+      "5 lineages encountered"
+    ],
+    "master_fire": [
+      "Fire Master",
+      "Lv.100 on Fire Lineage"
+    ],
+    "master_water": [
+      "Water Master",
+      "Lv.100 on Water Lineage"
+    ],
+    "master_grass": [
+      "Grass Master",
+      "Lv.100 on Grass Lineage"
+    ],
+    "master_electric": [
+      "Electric Master",
+      "Lv.100 on Electric Lineage"
+    ],
+    "master_eevee": [
+      "Eevee Master",
+      "Lv.100 on Eevee Lineage"
+    ]
+  },
+  "team": {
+    "title": "TEAM",
+    "empty": "Empty team. Reach Lv.100 or use /pokemon switch / withdraw to add a buddy.",
+    "pc_overflow": "+ %d buddy(s) in PC storage — bash %s pc"
+  },
+  "pc": {
+    "title": "PC STORAGE",
+    "empty": "Empty PC. Reach Lv.100 or use /pokemon deposit to store a buddy."
+  },
+  "inventory": {
+    "title": "INVENTORY",
+    "empty": "No items — 30%% chance to drop on rare encounter.",
+    "eevee_form": "Eevee evolved into %s"
+  },
+  "reset": {
+    "no_active": "No active buddy to archive.",
+    "archived": "Buddy archived in team.",
+    "egg_awaits": "A new egg awaits — relaunch Claude Code to start."
+  },
+  "switch": {
+    "title": "SWITCH BUDDY",
+    "active": "ACTIVE",
+    "no_team": "Empty team. Hatch a new egg via /pokemon hatch.",
+    "no_active": "No active buddy (empty egg).",
+    "usage": "Usage: /pokemon switch <slot>",
+    "out_of_range": "Invalid slot (0-%d available).",
+    "swapped": "%s ↔ %s swapped."
+  },
+  "hatch": {
+    "title": "HATCH A NEW EGG",
+    "current_archived": "%s archived in team.",
+    "egg_starting": "New egg hatching (lineage %s).",
+    "team_full_pc": "Team full — previous buddy moved to PC.",
+    "no_lineage_match": "Unknown lineage '%s'. Available: %s",
+    "usage": "Usage: /pokemon hatch [<lineage>]   (random if not specified)"
+  },
+  "deposit": {
+    "title": "DEPOSIT TO PC",
+    "usage": "Usage: /pokemon deposit <team_slot>",
+    "success": "%s deposited in PC.",
+    "no_team": "Empty team."
+  },
+  "withdraw": {
+    "title": "WITHDRAW FROM PC",
+    "usage": "Usage: /pokemon withdraw <pc_slot>",
+    "success": "%s withdrawn from PC to team.",
+    "no_pc": "Empty PC.",
+    "team_full": "Team full — release a slot before withdrawing."
+  },
+  "release": {
+    "title": "RELEASE",
+    "usage": "Usage: /pokemon release <team|pc> <slot>",
+    "confirm_required": "Irreversible. Re-run with --confirm to validate.",
+    "released": "%s has been released. Farewell buddy."
+  },
+  "battle": {
+    "won": "Won battle vs wild %s! +%s XP",
+    "lost": "Lost battle vs wild %s. Buddy is injured.",
+    "type_advantage": "(type advantage)",
+    "title": "BATTLE"
+  },
+  "trade": {
+    "title": "TRADE",
+    "received": "Received %s%s via trade! Added to %s.",
+    "shiny_received": "✨ Shiny received! ✨",
+    "cooldown": "Trade already done today. Next available in %sh.",
+    "usage": "Usage: /pokemon trade [<trainer>]"
+  },
+  "held": {
+    "title": "HELD ITEM",
+    "current": "Holding",
+    "none": "Not holding anything.",
+    "given": "%s equipped.",
+    "taken": "Item removed.",
+    "usage_give": "Usage: /pokemon give <item>",
+    "no_inventory": "No items in inventory.",
+    "not_holdable": "This item can't be held.",
+    "berry_used": "%s berry consumed — status removed."
+  },
+  "season": {
+    "halloween_active": "🎃 Halloween — Ghost Pokémon boosted (×1.5 XP)",
+    "christmas_active": "🎄 Christmas — Ice Pokémon boosted (×1.5 XP)"
+  },
+  "shiny": {
+    "hunter_active": "✨ Shiny Hunter mode — chance ×5, XP gain paused"
+  }
+}

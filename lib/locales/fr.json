@@ -1,0 +1,203 @@
+{
+  "_meta": {
+    "language": "fr",
+    "name": "Français"
+  },
+  "common": {
+    "since": "depuis",
+    "level": "Lv.",
+    "lvmax": "Lv.MAX ✦",
+    "subcommands": "Sous-commandes",
+    "example": "Exemple",
+    "tip": "Astuce",
+    "slot": "Slot",
+    "active_marker": "✦ ACTIF"
+  },
+  "main": {
+    "companion": "COMPAGNON",
+    "shiny_badge": "★ SHINY",
+    "final_chain": "Compagnon au stade ultime — la chaîne est complète.",
+    "progress_towards": "vers",
+    "progress_max_form": "vers Lv.MAX (forme stable)",
+    "xp_total": "XP totale",
+    "stage_progress": "Palier actuel",
+    "remaining": "Restant",
+    "moves": "Capacités",
+    "badges": "Badges",
+    "tokens": "tokens",
+    "recent_events": "Derniers événements",
+    "history": "HISTORIQUE",
+    "full_chain": "CHAÎNE COMPLÈTE",
+    "berry_found": "+%s XP",
+    "wild_encountered": "%s sauvage croisé !",
+    "types": "Type",
+    "friendship": "Amitié",
+    "pokedex_entry": "Pokédex",
+    "current": "Actuel",
+    "held_item": "Tient",
+    "status_injured": "🩹 Blessé"
+  },
+  "stats": {
+    "title": "STATISTIQUES DE VIE",
+    "total_tokens": "Tokens cumulés",
+    "total_evolutions": "Évolutions totales",
+    "total_shinies": "Shinies obtenus",
+    "max_level": "Niveau max atteint",
+    "total_compagnons": "Compagnons élevés",
+    "lineages_completed": "Lignées complétées",
+    "first_shiny": "Premier shiny",
+    "multipliers_title": "MULTIPLICATEURS (dernier tick)",
+    "context": "Contexte",
+    "type_match": "Type matchup (lignée)",
+    "daily_bonus": "Bonus quotidien",
+    "status": "Statut",
+    "combined": "Combiné",
+    "tired_warning": "🥱 Compagnon FATIGUÉ — context >=90%% pendant %d ticks. Faire /clear pour reset.",
+    "shiny_charm": "✦ Shiny Charm actif — chance shiny ×1.25 (1/100 → 1/80)"
+  },
+  "pokedex": {
+    "title_lineages": "POKÉDEX — Lignées élevées",
+    "title_wild": "POKÉDEX — Sauvages croisés",
+    "shinies": "shinies",
+    "shiny_seen": "★ shiny",
+    "no_wild": "Aucun encore — 0.1%% de chance par tick.",
+    "wild_seen_at": "vu le"
+  },
+  "badges": {
+    "title": "BADGES",
+    "hatch": [
+      "Naissance",
+      "Première éclosion"
+    ],
+    "first_evolution": [
+      "Premier pas",
+      "Première évolution (Lv.16+)"
+    ],
+    "first_shiny": [
+      "Étoile filante",
+      "Premier shiny obtenu"
+    ],
+    "champion": [
+      "Champion",
+      "Atteindre Lv.100"
+    ],
+    "centurion": [
+      "Centurion",
+      "100M tokens cumulés (toute vie)"
+    ],
+    "constellation": [
+      "Constellation",
+      "5 shinies en collection"
+    ],
+    "master_pokedex": [
+      "Maître Pokédex",
+      "5 lignées rencontrées"
+    ],
+    "master_fire": [
+      "Maître Feu",
+      "Lv.100 sur Lignée Feu"
+    ],
+    "master_water": [
+      "Maître Eau",
+      "Lv.100 sur Lignée Eau"
+    ],
+    "master_grass": [
+      "Maître Plante",
+      "Lv.100 sur Lignée Plante"
+    ],
+    "master_electric": [
+      "Maître Électrik",
+      "Lv.100 sur Lignée Électrik"
+    ],
+    "master_eevee": [
+      "Maître Eevee",
+      "Lv.100 sur Lignée Eevee"
+    ]
+  },
+  "team": {
+    "title": "ÉQUIPE",
+    "empty": "Équipe vide. Atteins Lv.100 ou utilise /pokemon switch / withdraw pour ajouter un compagnon.",
+    "pc_overflow": "+ %d compagnon(s) en PC storage — bash %s pc"
+  },
+  "pc": {
+    "title": "PC STORAGE",
+    "empty": "PC vide. Atteins Lv.100 ou utilise /pokemon deposit pour ranger un compagnon."
+  },
+  "inventory": {
+    "title": "INVENTAIRE",
+    "empty": "Aucun item — drop possible (30%%) lors d un encounter rare.",
+    "eevee_form": "Évoli a évolué en %s"
+  },
+  "reset": {
+    "no_active": "Aucun compagnon actif à archiver.",
+    "archived": "Le compagnon a été archivé dans l équipe.",
+    "egg_awaits": "Un nouvel œuf t attend — relance Claude Code pour démarrer."
+  },
+  "switch": {
+    "title": "CHANGER DE COMPAGNON",
+    "active": "ACTIF",
+    "no_team": "Équipe vide. Hatch un nouvel œuf via /pokemon hatch.",
+    "no_active": "Pas de compagnon actif (œuf vide).",
+    "usage": "Usage : /pokemon switch <slot>",
+    "out_of_range": "Slot invalide (0-%d disponibles).",
+    "swapped": "%s ↔ %s échangés."
+  },
+  "hatch": {
+    "title": "FAIRE ÉCLORE UN NOUVEL ŒUF",
+    "current_archived": "%s archivé dans l'équipe.",
+    "egg_starting": "Nouvel œuf en cours d'éclosion (lignée %s).",
+    "team_full_pc": "Équipe pleine — l'ancien compagnon part dans le PC.",
+    "no_lineage_match": "Lignée '%s' inconnue. Disponibles : %s",
+    "usage": "Usage : /pokemon hatch [<lineage>]   (random si non spécifié)"
+  },
+  "deposit": {
+    "title": "DÉPÔT EN PC",
+    "usage": "Usage : /pokemon deposit <slot_équipe>",
+    "success": "%s déposé dans le PC.",
+    "no_team": "Équipe vide."
+  },
+  "withdraw": {
+    "title": "RETRAIT DU PC",
+    "usage": "Usage : /pokemon withdraw <slot_pc>",
+    "success": "%s retiré du PC vers l'équipe.",
+    "no_pc": "PC vide.",
+    "team_full": "Équipe pleine — libère un slot avant le retrait."
+  },
+  "release": {
+    "title": "RELÂCHER",
+    "usage": "Usage : /pokemon release <team|pc> <slot>",
+    "confirm_required": "Action irréversible. Re-lance avec --confirm pour valider.",
+    "released": "%s a été relâché. Adieu compagnon."
+  },
+  "battle": {
+    "won": "Combat gagné contre %s sauvage ! +%s XP",
+    "lost": "Combat perdu contre %s sauvage. Compagnon blessé.",
+    "type_advantage": "(avantage de type)",
+    "title": "COMBAT"
+  },
+  "trade": {
+    "title": "ÉCHANGE",
+    "received": "Reçu %s%s par échange ! Ajouté à %s.",
+    "shiny_received": "✨ Shiny reçu ! ✨",
+    "cooldown": "Échange déjà fait aujourd'hui. Prochain disponible dans %sh.",
+    "usage": "Usage : /pokemon trade [<dresseur>]"
+  },
+  "held": {
+    "title": "OBJET TENU",
+    "current": "Tient",
+    "none": "Aucun objet tenu.",
+    "given": "%s équipé.",
+    "taken": "Objet retiré.",
+    "usage_give": "Usage : /pokemon give <item>",
+    "no_inventory": "Aucun item dans l'inventaire.",
+    "not_holdable": "Cet item ne se tient pas.",
+    "berry_used": "Baie %s consommée — statut retiré."
+  },
+  "season": {
+    "halloween_active": "🎃 Halloween — Pokémon Spectre boostés (×1.5 XP)",
+    "christmas_active": "🎄 Noël — Pokémon Glace boostés (×1.5 XP)"
+  },
+  "shiny": {
+    "hunter_active": "✨ Mode Shiny Hunter — chance ×5, gain XP suspendu"
+  }
+}

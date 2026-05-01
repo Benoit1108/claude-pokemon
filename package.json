@@ -1,0 +1,44 @@
+{
+  "name": "claude-pokemon",
+  "version": "1.0.0-beta.1",
+  "description": "A persistent Pokémon companion for Claude Code's statusLine. Hatch eggs, evolve, switch teams, catch wild Pokémon — all while you code.",
+  "keywords": [
+    "claude-code",
+    "claude",
+    "statusline",
+    "pokemon",
+    "companion",
+    "gamification",
+    "cli"
+  ],
+  "author": "Benoit Bruneau",
+  "license": "MIT",
+  "homepage": "https://github.com/bbruneau/claude-pokemon#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bbruneau/claude-pokemon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bbruneau/claude-pokemon/issues"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "os": [
+    "linux",
+    "darwin"
+  ],
+  "bin": {
+    "claude-pokemon": "./bin/claude-pokemon"
+  },
+  "scripts": {
+    "test": "echo \"Tests via shell scripts\" && bash bin/test.sh"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "skills/",
+    "README.md",
+    "LICENSE"
+  ]
+}

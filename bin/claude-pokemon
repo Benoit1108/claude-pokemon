@@ -1,0 +1,66 @@
+#!/usr/bin/env node
+/**
+ * claude-pokemon — CLI entry point.
+ * Delegates to bin/install.sh, bin/uninstall.sh, etc.
+ */
+const { spawnSync } = require('node:child_process');
+const path = require('node:path');
+const fs = require('node:fs');
+
+const ROOT = path.join(__dirname, '..');
+const cmd = process.argv[2] || 'install';
+
+const valid = ['install', 'update', 'uninstall', 'status', 'export', 'import', 'help'];
+
+if (cmd === 'help' || cmd === '--help' || cmd === '-h') {
+  console.log(`
+claude-pokemon — Pokémon companion for Claude Code
+
+Usage:
+  npx claude-pokemon <command>
+
+Commands:
+  install      Set up companion in ~/.claude/pokemon/ (creates dirs, downloads
+               sprites, patches settings.json, installs /pokemon skill).
+  update       Re-fetch sprites + migrate data.json schema if needed (preserves
+               state.json — your buddy lives on).
+  uninstall    Remove ~/.claude/pokemon/, the skill, and the statusLine entry
+               from settings.json. Backups created.
+  status       Diagnostic: prereqs OK? files in place? state coherent?
+  export <f>   Save state.json to a file (backup).
+  import <f>   Load state.json from a file (restore).
+  help         This message.
+
+Once installed, in Claude Code:
+  /pokemon              Vue principale du compagnon
+  /pokemon team         Équipe (max 6)
+  /pokemon pokedex      Pokédex Gen 1 (151)
+  /pokemon switch <n>   Changer de compagnon actif
+  /pokemon hatch        Faire éclore un nouvel œuf
+  /pokemon trade        Échange (1/jour)
+  /pokemon stats        Statistiques de vie
+  ...
+
+Project: https://github.com/bbruneau/claude-pokemon
+`);
+  process.exit(0);
+}
+
+if (!valid.includes(cmd)) {
+  console.error(`Unknown command: ${cmd}`);
+  console.error(`Run 'npx claude-pokemon help' for usage.`);
+  process.exit(1);
+}
+
+const script = path.join(ROOT, 'bin', `${cmd}.sh`);
+if (!fs.existsSync(script)) {
+  console.error(`Script not found: ${script}`);
+  process.exit(1);
+}
+
+const args = process.argv.slice(3);
+const result = spawnSync('bash', [script, ...args], {
+  stdio: 'inherit',
+  env: { ...process.env, CLAUDE_POKEMON_ROOT: ROOT }
+});
+process.exit(result.status || 0);
