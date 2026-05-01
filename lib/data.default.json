@@ -2079,7 +2079,7 @@
     "night_default": "umbreon"
   },
   "item_drop_chance_on_encounter": 0.3,
-  "enable_animations": true,
+  "enable_animations": false,
   "language": "fr",
   "battle_chance_on_encounter": 0.3,
   "battle_xp_min": 500,

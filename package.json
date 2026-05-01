@@ -13,13 +13,13 @@
   ],
   "author": "Benoit Bruneau",
   "license": "MIT",
-  "homepage": "https://github.com/bbruneau/claude-pokemon#readme",
+  "homepage": "https://github.com/Benoit1108/claude-pokemon#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bbruneau/claude-pokemon.git"
+    "url": "git+https://github.com/Benoit1108/claude-pokemon.git"
   },
   "bugs": {
-    "url": "https://github.com/bbruneau/claude-pokemon/issues"
+    "url": "https://github.com/Benoit1108/claude-pokemon/issues"
   },
   "engines": {
     "node": ">=14"
