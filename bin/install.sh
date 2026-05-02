@@ -185,5 +185,5 @@ ${B}Personnalisation :${R}
   Édite ${D}~/.claude/pokemon/data.json${R} pour changer langue, lignées, seuils XP.
   Switch FR ↔ EN : ${D}jq '.language = "en"' ~/.claude/pokemon/data.json | sponge ~/.claude/pokemon/data.json${R}
 
-${B}Documentation complète :${R} https://github.com/bbruneau/claude-pokemon
+${B}Documentation complète :${R} https://github.com/Benoit1108/claude-pokemon
 EOF

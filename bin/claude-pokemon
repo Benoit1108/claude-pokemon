@@ -41,7 +41,7 @@ Once installed, in Claude Code:
   /pokemon stats        Statistiques de vie
   ...
 
-Project: https://github.com/bbruneau/claude-pokemon
+Project: https://github.com/Benoit1108/claude-pokemon
 `);
   process.exit(0);
 }
