@@ -10,3 +10,7 @@ sprites/
 sprites-mini/
 sprites-mini-anim/
 .npmrc
+
+# Demo recording intermediates (the final GIF lives in assets/)
+.demo/demo.cast
+.demo/demo-raw.gif

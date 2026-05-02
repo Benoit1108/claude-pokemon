@@ -2,9 +2,9 @@
 
 A persistent **Pokémon companion** for [Claude Code](https://claude.com/claude-code)'s `statusLine`. Hatch eggs, evolve, switch teams, catch wild Pokémon — all while you code.
 
-```
-[sprite]   ★ 🦎 Salamèche  Lv.16  450K/1.2M  ▰▰▰▰▱▱▱▱▱▱  37%  │  [██░░░░░░░░] 23%  ×2.0  api  Opus 4.7  ◆high
-```
+<p align="center">
+  <img src="assets/demo.gif" alt="claude-pokemon demo : statusline + /pokemon view" width="720">
+</p>
 
 ## Features
 
