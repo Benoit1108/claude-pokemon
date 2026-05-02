@@ -246,14 +246,14 @@ view_roster() {
   local field="$1" title="$2"
   printf '\n  %s%s%s%s\n\n' "$BOLD" "$GOLD" "$title" "$RESET"
   local count
-  count=$(jq -r ".$field | length" "$POKEMON_STATE")
+  count=$(jq -r --arg f "$field" '.[$f] | length' "$POKEMON_STATE")
   if [ "$count" = "0" ] || [ -z "$count" ]; then
     printf "  %s$(pokemon_t team.empty)%s\\n\\n" "$DIM" "$RESET"
     return
   fi
   local i=0
-  jq -r ".$field[] |
-    \"\(.lineage)|\(.is_shiny)|\(.level)|\(.max_stage)|\(.created_at)|\(.completed_at)\"" "$POKEMON_STATE" | \
+  jq -r --arg f "$field" '.[$f][] |
+    "\(.lineage)|\(.is_shiny)|\(.level)|\(.max_stage)|\(.created_at)|\(.completed_at)"' "$POKEMON_STATE" | \
   while IFS='|' read -r lin shiny lvl name created completed; do
     star=""
     [ "$shiny" = "true" ] && star="${GOLD}★${RESET} "
@@ -497,7 +497,7 @@ view_release() {
 
   local field count
   [ "$area" = "team" ] && field="team" || field="pc_storage"
-  count=$(jq -r ".$field | length" "$POKEMON_STATE")
+  count=$(jq -r --arg f "$field" '.[$f] | length' "$POKEMON_STATE")
   if [ "$count" = "0" ]; then
     if [ "$area" = "team" ]; then
       printf "  %s$(pokemon_t team.empty)%s\n\n" "$DIM" "$RESET"
@@ -511,7 +511,7 @@ view_release() {
   fi
 
   local name
-  name=$(jq -r --argjson i "$slot" ".$field[\$i].max_stage // \"Œuf\"" "$POKEMON_STATE")
+  name=$(jq -r --arg f "$field" --argjson i "$slot" '.[$f][$i].max_stage // "Œuf"' "$POKEMON_STATE")
 
   if [ "$confirm_flag" != "--confirm" ]; then
     printf "  %s$(pokemon_t release.confirm_required)%s\n" "$DIM" "$RESET"
