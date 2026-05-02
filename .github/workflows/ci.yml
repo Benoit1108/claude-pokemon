@@ -11,7 +11,7 @@ jobs:
     name: Lint bash scripts (shellcheck)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run shellcheck on bash scripts
         run: |
           # Only fail on errors, not warnings (we have many style warnings)
@@ -24,7 +24,7 @@ jobs:
     name: Validate JSON files
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install jq
         run: sudo apt-get install -y jq
       - name: Validate data.default.json
@@ -50,7 +50,7 @@ jobs:
     name: Install dry-run (verify install.sh syntax + structure)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install dependencies
         run: sudo apt-get install -y jq chafa util-linux curl
       - name: Bash syntax check on install.sh
@@ -70,8 +70,8 @@ jobs:
     name: npm pack — verify packaging
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '20'
       - name: npm pack dry run
