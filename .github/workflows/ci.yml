@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-bash:
+    name: Lint bash scripts (shellcheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run shellcheck on bash scripts
+        run: |
+          sudo apt-get install -y shellcheck
+          # Only fail on errors, not warnings (we have many style warnings)
+          shellcheck -S error \
+            bin/install.sh bin/uninstall.sh bin/status.sh \
+            bin/update.sh bin/export.sh bin/import.sh \
+            lib/lib.sh lib/statusline.sh lib/pokemon-status.sh
+
+  validate-json:
+    name: Validate JSON files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install jq
+        run: sudo apt-get install -y jq
+      - name: Validate data.default.json
+        run: jq empty lib/data.default.json
+      - name: Validate locales
+        run: |
+          jq empty lib/locales/fr.json
+          jq empty lib/locales/en.json
+      - name: Verify locale parity (FR vs EN have same keys)
+        run: |
+          fr_keys=$(jq -r 'paths(scalars) | join(".")' lib/locales/fr.json | sort -u)
+          en_keys=$(jq -r 'paths(scalars) | join(".")' lib/locales/en.json | sort -u)
+          missing_in_en=$(comm -23 <(echo "$fr_keys") <(echo "$en_keys"))
+          missing_in_fr=$(comm -13 <(echo "$fr_keys") <(echo "$en_keys"))
+          if [ -n "$missing_in_en" ]; then
+            echo "::warning::Missing in en.json: $missing_in_en"
+          fi
+          if [ -n "$missing_in_fr" ]; then
+            echo "::warning::Missing in fr.json: $missing_in_fr"
+          fi
+
+  install-dry-run:
+    name: Install dry-run (verify install.sh syntax + structure)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get install -y jq chafa util-linux curl
+      - name: Bash syntax check on install.sh
+        run: bash -n bin/install.sh
+      - name: Verify lib files exist
+        run: |
+          test -f lib/lib.sh
+          test -f lib/data.default.json
+          test -f lib/locales/fr.json
+          test -f lib/locales/en.json
+          test -f lib/statusline.sh
+          test -f lib/pokemon-status.sh
+          test -f skills/pokemon/SKILL.md
+          echo "✓ All required files present"
+
+  npm-pack-check:
+    name: npm pack — verify packaging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: npm pack dry run
+        run: npm pack --dry-run
