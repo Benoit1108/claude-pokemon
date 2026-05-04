@@ -65,6 +65,16 @@ bash ~/.claude/pokemon-status.sh stats         # Stats
 bash bin/uninstall.sh --confirm                # Cleanup
 ```
 
+## Thèmes
+
+`data.json.theme` contrôle l'accent UI (titres, gauges ≥75%, badges, ★ shiny) :
+- `default` — gold (256-color 220)
+- `dark` — electric cyan (51)
+- `light` — sépia (94, lisible sur fond clair)
+- `retro` — GameBoy green (46), + palette stage/type collapsée monochrome
+
+`pokemon_theme_accent()` retourne le code ANSI du thème actif. `pokemon_ansi_color()` et `pokemon_type_color()` branchent en mode `retro` pour produire l'effet GB.
+
 ## Pièges connus
 
 - **Cursor positioning ANSI dans statusline** : Claude Code strippe le leading whitespace + ignore `\033[<col>G` sur lignes vides. Workaround : anchor char `\033[2;30m·\033[0m` en début de ligne pour forcer la préservation.

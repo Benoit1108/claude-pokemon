@@ -1,5 +1,6 @@
 {
   "language": "fr",
+  "theme": "default",
   "display_sprite_in_statusline": "left",
   "enable_animations": false,
   "enable_sound": false,

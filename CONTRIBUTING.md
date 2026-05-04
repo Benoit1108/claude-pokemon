@@ -71,8 +71,14 @@ Avant de coder, ouvre une issue pour discuter. Quelques règles :
 ### 🎨 Visuels
 
 - Couleurs ANSI : palette dans `lib/lib.sh` `pokemon_ansi_color()` et `pokemon_type_color()`
+- Thèmes : `pokemon_theme_accent()` lit `data.json.theme` (`default`/`dark`/`light`/`retro`). Le mode `retro` collapse aussi la palette stage+type vers du vert GameBoy monochrome — les autres thèmes ne changent que l'accent UI (titres, gauges ≥75%, badges earned-at, étoiles shiny).
 - Sprites : sourcing depuis Pokémon Showdown (gen5 = pixel art classique)
 - Animations : pipeline Python+PIL dans `lib/extract_animations.py`
+
+Pour ajouter un thème :
+1. Étends `pokemon_theme_accent()` avec un nouveau case (couleur 8-bit ANSI)
+2. Si tu veux un override des type/stage colors (genre tint monochrome), branche dans `pokemon_ansi_color()` et `pokemon_type_color()` avant le case canonique
+3. Documente dans `CLAUDE.md`
 
 ## Tests
 

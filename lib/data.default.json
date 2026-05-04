@@ -847,6 +847,7 @@
   "shiny_hunter_mode": false,
   "shiny_mode": "random",
   "starter_pick": "random",
+  "theme": "default",
   "thresholds": [
     0,
     300000,

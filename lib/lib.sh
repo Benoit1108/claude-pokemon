@@ -59,7 +59,42 @@ pokemon_t_pad() {
 }
 
 # ── ANSI palette ─────────────────────────────────────────────────────────────
+# Theme: read once from data.json, cached for the script lifetime. See
+# pokemon_theme_accent() for the per-theme accent color (replaces the
+# legacy hardcoded gold). Retro mode also tints stage + type colors to a
+# monochrome GameBoy green palette via the branches below.
+POKEMON_THEME=$(jq -r '.theme // "default"' "$POKEMON_DATA" 2>/dev/null || echo "default")
+
+# Accent color used for titles, badges earned-at, statusline highlights.
+# Themes:
+#   default → 220 (gold)             — current vibrant look
+#   dark    → 51  (electric cyan)    — deeper-saturation accent for dark terminals
+#   light   → 94  (sepia/brown)      — lower-luminance accent for light terminals
+#   retro   → 46  (GameBoy green)    — monochrome palette nostalgia
+pokemon_theme_accent() {
+  case "$POKEMON_THEME" in
+    retro) printf '\033[38;5;46m'  ;;
+    dark)  printf '\033[38;5;51m'  ;;
+    light) printf '\033[38;5;94m'  ;;
+    *)     printf '\033[38;5;220m' ;;
+  esac
+}
+
 pokemon_ansi_color() {
+  # Retro: collapse the hue palette to 4 shades of green (mimics the original
+  # GameBoy 4-tone DMG screen). Other themes keep canonical stage colors so
+  # Pokémon visual identity is preserved (Salamèche stays yellow, etc.).
+  if [ "$POKEMON_THEME" = "retro" ]; then
+    case "$1" in
+      dim)                                    printf '\033[38;5;22m' ;;
+      gold)                                   printf '\033[38;5;46m' ;;
+      yellow|green|cyan|white)                printf '\033[38;5;46m' ;;
+      red|magenta)                            printf '\033[38;5;34m' ;;
+      blue)                                   printf '\033[38;5;28m' ;;
+      *)                                      printf '' ;;
+    esac
+    return
+  fi
   case "$1" in
     dim)     printf '\033[2m' ;;
     white)   printf '\033[37m' ;;
@@ -69,12 +104,18 @@ pokemon_ansi_color() {
     blue)    printf '\033[34m' ;;
     magenta) printf '\033[35m' ;;
     cyan)    printf '\033[36m' ;;
-    gold)    printf '\033[38;5;220m' ;;
+    gold)    pokemon_theme_accent ;;
     *)       printf '' ;;
   esac
 }
 
 pokemon_type_color() {
+  # Retro: all types collapse to GameBoy green. Light/dark: keep canonical hues
+  # (type colors are part of Pokémon identity and known by all fans).
+  if [ "$POKEMON_THEME" = "retro" ]; then
+    printf '\033[38;5;46m'
+    return
+  fi
   case "$1" in
     Feu|Fire)          printf '\033[38;2;239;108;0m' ;;
     Eau|Water)         printf '\033[38;2;38;143;255m' ;;
@@ -1020,7 +1061,8 @@ pokemon_render_inline() {
   color=$(pokemon_evo_field "$lineage" "$level" "color")
 
   local RESET=$'\033[0m' BOLD=$'\033[1m' DIM=$'\033[2m'
-  local GOLD=$'\033[38;5;220m'
+  local GOLD
+  GOLD=$(pokemon_theme_accent)
 
   # Shiny override : nom doré + ★ devant.
   local shiny_prefix="" shiny_color=""
@@ -1079,7 +1121,7 @@ pokemon_render_inline() {
 
   local pct_color
   if [ "$progress_pct" -ge 75 ]; then
-    pct_color=$'\033[38;5;220m'
+    pct_color=$(pokemon_theme_accent)
   else
     pct_color=$'\033[36m'
   fi

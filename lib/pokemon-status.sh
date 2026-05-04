@@ -21,7 +21,7 @@ pokemon_init_state_if_missing
 RESET=$'\033[0m'
 BOLD=$'\033[1m'
 DIM=$'\033[2m'
-GOLD=$'\033[38;5;220m'
+GOLD=$(pokemon_theme_accent)
 
 fmt_int() {
   awk -v n="$1" 'BEGIN{

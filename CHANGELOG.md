@@ -5,6 +5,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+### Added
+
+- **Master badges Gen 2** : 3 nouveaux badges débloqués à Lv.100 sur les lignées Johto (`master_chikorita` 🍃, `master_cyndaquil` 🦔, `master_totodile` 🐊). Total badges 12 → 15.
+- **Wild_pool Gen 2** : 100 nouveaux Pokémon (#152-251) dans le Pokédex (Johto). Distribution : 92 common, 2 rare (Heracross, Tyranitar), 6 legendary (Raikou, Entei, Suicune, Lugia, Ho-Oh, Celebi). Pokédex passe à 251 entries. Propagation forcée via `update.sh` aux installs existants.
+- **Thèmes UI** : `data.json.theme` contrôle l'accent (titres, gauges, badges, étoiles shiny). 4 thèmes — `default` (gold), `dark` (electric cyan), `light` (sépia, fond clair), `retro` (GameBoy green + palette monochrome stages+types). Aucun changement de comportement par défaut.
+
 ## [1.0.0-beta.3] — 2026-05-04
 
 ### Changed
