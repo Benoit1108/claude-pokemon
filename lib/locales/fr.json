@@ -194,6 +194,29 @@
     "cooldown": "Échange déjà fait aujourd'hui. Prochain disponible dans %sh.",
     "usage": "Usage : /pokemon trade [<dresseur>]"
   },
+  "game": {
+    "title": "❓ DEVINE LE POKÉMON",
+    "no_active": "Pas de compagnon actif. Lance /pokemon hatch d'abord.",
+    "no_quiz": "Pas de quiz en cours. Lance /pokemon game pour démarrer.",
+    "in_progress": "Quiz en cours :",
+    "skipped": "Quiz annulé. Lance /pokemon game pour relancer.",
+    "cooldown": "Patience, prochain quiz dans %s min.",
+    "hint_type": "Type",
+    "hint_letters": "Lettres",
+    "hint_initial": "Initiale",
+    "hint_gen": "Génération",
+    "prompt_answer": "▶ Réponds : /pokemon game <nom>     ▶ Skip : /pokemon game skip",
+    "win": "🎉 Bingo ! C'était bien %s.",
+    "win_reward": "+%s XP, +%s amitié",
+    "wrong": "❌ Raté. Tu as répondu : %s.",
+    "reveal": "C'était %s.",
+    "help": {
+      "intro": "Devine un Pokémon aléatoire à partir de quelques indices.",
+      "start": "tire un nouveau quiz (ou rappelle les indices du quiz en cours)",
+      "submit": "soumet une réponse",
+      "skip": "annule le quiz en cours sans pénalité"
+    }
+  },
   "held": {
     "title": "OBJET TENU",
     "current": "Tient",

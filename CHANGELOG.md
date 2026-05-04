@@ -15,6 +15,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 - **Eevee evolution canonique** : à Lv.30 sans pierre tenue, le choix Mentali (Espeon) / Noctali (Umbreon) est désormais gated par `eevee_friendship_threshold` (default 50). Friendship ≥ seuil + jour (UTC 6-17) → Mentali, ≥ seuil + nuit → Noctali. En dessous du seuil, fallback aléatoire vers une forme élémentaire (Aquali/Voltali/Pyroli) puisque le système force l'évolution à Lv.30. La règle des pierres tenues reste prioritaire. Pour la plupart des users, friendship dépasse 50 bien avant Lv.30 → comportement inchangé en pratique.
 
+### Added (suite)
+
+- **Mini-jeu `/pokemon game`** : « Devine le Pokémon ». Tirage aléatoire dans le wild_pool 251 entries, indices type/lettres/initiale/génération. `/pokemon game` (start ou rappel hints), `/pokemon game <nom>` (submit), `/pokemon game skip` (annule sans pénalité), `/pokemon game help`. Bonne réponse = +500 XP + 2 amitié sur le compagnon actif. Cooldown 15 min entre quiz complétés (correct ou wrong, pas skip) pour éviter le grind. Comparaison de nom case-insensitive et accent-insensitive (iconv ASCII translit). Stats `games_won` et `games_played` dans `lifetime_stats`.
+
 ## [1.0.0-beta.3] — 2026-05-04
 
 ### Changed

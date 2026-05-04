@@ -194,6 +194,29 @@
     "cooldown": "Trade already done today. Next available in %sh.",
     "usage": "Usage: /pokemon trade [<trainer>]"
   },
+  "game": {
+    "title": "❓ GUESS THE POKÉMON",
+    "no_active": "No active buddy. Run /pokemon hatch first.",
+    "no_quiz": "No active quiz. Run /pokemon game to start.",
+    "in_progress": "Quiz in progress:",
+    "skipped": "Quiz cancelled. Run /pokemon game to start a new one.",
+    "cooldown": "Hold on, next quiz in %s min.",
+    "hint_type": "Type",
+    "hint_letters": "Letters",
+    "hint_initial": "Initial",
+    "hint_gen": "Generation",
+    "prompt_answer": "▶ Answer: /pokemon game <name>     ▶ Skip: /pokemon game skip",
+    "win": "🎉 Bingo! It was %s.",
+    "win_reward": "+%s XP, +%s friendship",
+    "wrong": "❌ Nope. You answered: %s.",
+    "reveal": "It was %s.",
+    "help": {
+      "intro": "Guess a random Pokémon from a few hints.",
+      "start": "draw a new quiz (or recall hints of current one)",
+      "submit": "submit an answer",
+      "skip": "cancel current quiz without penalty"
+    }
+  },
   "held": {
     "title": "HELD ITEM",
     "current": "Holding",

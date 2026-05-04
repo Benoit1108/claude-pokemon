@@ -1013,6 +1013,160 @@ view_main() {
     "$DIM" "$RESET" "$DIM" "$RESET"
 }
 
+# ── Subcommand: game (devine le Pokémon) ─────────────────────────────────
+# Stateless mini-game piloted via state.current_quiz :
+#   /pokemon game            → tirage si pas de quiz actif, sinon rappel hints
+#   /pokemon game <nom>      → soumission de réponse
+#   /pokemon game skip       → annule le quiz en cours sans pénalité
+#   /pokemon game help       → aide
+# Cooldown sur la dernière fin (correct OU wrong, pas skip) pour éviter le grind.
+
+# Normalize a name for comparison: lowercase, accent-stripped, no spaces.
+_game_norm() {
+  printf '%s' "$1" | iconv -t ASCII//TRANSLIT 2>/dev/null \
+    | tr '[:upper:]' '[:lower:]' \
+    | tr -d '[:space:].-' || printf '%s' "$1" | tr '[:upper:]' '[:lower:]'
+}
+
+_game_show_help() {
+  printf "  %s$(pokemon_t game.help.intro)%s\n\n" "$DIM" "$RESET"
+  printf "  %s/pokemon game%s         %s$(pokemon_t game.help.start)%s\n" "$BOLD" "$RESET" "$DIM" "$RESET"
+  printf "  %s/pokemon game <nom>%s   %s$(pokemon_t game.help.submit)%s\n" "$BOLD" "$RESET" "$DIM" "$RESET"
+  printf "  %s/pokemon game skip%s    %s$(pokemon_t game.help.skip)%s\n" "$BOLD" "$RESET" "$DIM" "$RESET"
+  printf "\n"
+}
+
+_game_render_hints() {
+  local idx="$1" lang="$2"
+  local name type dex first letters gen
+  name=$(jq -r --argjson i "$idx" --arg lang "name_$lang" '.wild_pool[$i][$lang]' "$POKEMON_DATA")
+  type=$(jq -r --argjson i "$idx" '.wild_pool[$i].type' "$POKEMON_DATA")
+  dex=$(jq -r --argjson i "$idx" '.wild_pool[$i].national_dex' "$POKEMON_DATA")
+  first=$(printf '%s' "$name" | head -c 4 | iconv -t ASCII//TRANSLIT 2>/dev/null | head -c 1)
+  letters=$(printf '%s' "$name" | LC_ALL=C.UTF-8 wc -m | tr -d ' \n')
+  gen=$([ "$dex" -le 151 ] && echo "1" || echo "2")
+  local tcolor
+  tcolor=$(pokemon_type_color "$type")
+
+  printf "  %s$(pokemon_t_pad game.hint_type 12)%s : %s%s%s\n"     "$DIM" "$RESET" "$tcolor" "$type" "$RESET"
+  printf "  %s$(pokemon_t_pad game.hint_letters 12)%s : %s\n"      "$DIM" "$RESET" "$letters"
+  printf "  %s$(pokemon_t_pad game.hint_initial 12)%s : %s%s.%s\n" "$DIM" "$RESET" "$BOLD" "$first" "$RESET"
+  printf "  %s$(pokemon_t_pad game.hint_gen 12)%s : %s\n\n"        "$DIM" "$RESET" "$gen"
+  printf "  %s$(pokemon_t game.prompt_answer)%s\n\n"               "$DIM" "$RESET"
+}
+
+view_game() {
+  local raw_answer="$*"
+  printf "\\n  %s%s$(pokemon_t game.title)%s\\n\\n" "$BOLD" "$GOLD" "$RESET"
+
+  case "$raw_answer" in
+    help|--help|-h) _game_show_help; return ;;
+  esac
+
+  mkdir -p "$POKEMON_DIR"; touch "$POKEMON_LOCK"
+  (
+    flock -x 200
+    local now state lineage lang
+    now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    state=$(cat "$POKEMON_STATE")
+    lineage=$(jq -r '.lineage // ""' <<<"$state")
+    lang=$(jq -r '.language // "fr"' "$POKEMON_DATA")
+
+    if [ -z "$lineage" ] || [ "$lineage" = "null" ]; then
+      printf "  %s$(pokemon_t game.no_active)%s\n\n" "$DIM" "$RESET"
+      return
+    fi
+
+    local current_quiz_id
+    current_quiz_id=$(jq -r '.current_quiz.id // ""' <<<"$state")
+
+    case "$raw_answer" in
+      skip)
+        if [ -z "$current_quiz_id" ]; then
+          printf "  %s$(pokemon_t game.no_quiz)%s\n\n" "$DIM" "$RESET"; return
+        fi
+        state=$(jq 'del(.current_quiz)' <<<"$state")
+        printf '%s\n' "$state" > "$POKEMON_STATE.tmp" && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
+        printf "  %s$(pokemon_t game.skipped)%s\n\n" "$DIM" "$RESET"
+        return
+        ;;
+      "")
+        # No arg: show current quiz hints, or start a new one
+        if [ -n "$current_quiz_id" ]; then
+          local idx
+          idx=$(jq -r --arg id "$current_quiz_id" '.wild_pool | to_entries | map(select(.value.id == $id))[0].key' "$POKEMON_DATA")
+          printf "  %s$(pokemon_t game.in_progress)%s\n\n" "$DIM" "$RESET"
+          _game_render_hints "$idx" "$lang"
+          return
+        fi
+        # Cooldown gate
+        local last cooldown_min now_epoch last_epoch min_passed
+        last=$(jq -r '.last_game_completed_at // ""' <<<"$state")
+        cooldown_min=$(jq -r '.game_cooldown_minutes // 15' "$POKEMON_DATA")
+        if [ -n "$last" ]; then
+          now_epoch=$(date -u +%s)
+          last_epoch=$(date -u -d "$last" +%s 2>/dev/null || echo 0)
+          min_passed=$(( (now_epoch - last_epoch) / 60 ))
+          if [ "$min_passed" -lt "$cooldown_min" ]; then
+            local remaining=$((cooldown_min - min_passed))
+            printf "  %s$(pokemon_t game.cooldown "$remaining")%s\n\n" "$DIM" "$RESET"
+            return
+          fi
+        fi
+        # New quiz
+        local pool_count idx new_id
+        pool_count=$(jq -r '.wild_pool | length' "$POKEMON_DATA")
+        idx=$((RANDOM % pool_count))
+        new_id=$(jq -r --argjson i "$idx" '.wild_pool[$i].id' "$POKEMON_DATA")
+        state=$(jq --arg id "$new_id" --arg at "$now" '.current_quiz = {id: $id, started_at: $at}' <<<"$state")
+        printf '%s\n' "$state" > "$POKEMON_STATE.tmp" && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
+        _game_render_hints "$idx" "$lang"
+        return
+        ;;
+      *)
+        # Submit answer
+        if [ -z "$current_quiz_id" ]; then
+          printf "  %s$(pokemon_t game.no_quiz)%s\n\n" "$DIM" "$RESET"; return
+        fi
+        local expected expected_norm answer_norm
+        expected=$(jq -r --arg id "$current_quiz_id" --arg lang "name_$lang" '.wild_pool[] | select(.id == $id) | .[$lang]' "$POKEMON_DATA")
+        expected_norm=$(_game_norm "$expected")
+        answer_norm=$(_game_norm "$raw_answer")
+
+        local xp_reward fr_reward total_xp new_friendship
+        xp_reward=$(jq -r '.game_xp_reward // 500' "$POKEMON_DATA")
+        fr_reward=$(jq -r '.game_friendship_reward // 2' "$POKEMON_DATA")
+
+        if [ "$answer_norm" = "$expected_norm" ]; then
+          # Correct
+          state=$(jq --arg now "$now" --argjson xp "$xp_reward" --argjson fr "$fr_reward" '
+            .total_xp += $xp
+            | .friendship = ((.friendship // 0) + $fr)
+            | .lifetime_stats.games_won = ((.lifetime_stats.games_won // 0) + 1)
+            | .lifetime_stats.games_played = ((.lifetime_stats.games_played // 0) + 1)
+            | .last_game_completed_at = $now
+            | del(.current_quiz)
+          ' <<<"$state")
+          printf '%s\n' "$state" > "$POKEMON_STATE.tmp" && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
+          printf "  %s$(pokemon_t game.win "$expected")%s\n" "$GOLD" "$RESET"
+          printf "  %s$(pokemon_t game.win_reward "$xp_reward" "$fr_reward")%s\n\n" "$DIM" "$RESET"
+        else
+          # Wrong
+          state=$(jq --arg now "$now" '
+            .lifetime_stats.games_played = ((.lifetime_stats.games_played // 0) + 1)
+            | .last_game_completed_at = $now
+            | del(.current_quiz)
+          ' <<<"$state")
+          printf '%s\n' "$state" > "$POKEMON_STATE.tmp" && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
+          printf "  %s$(pokemon_t game.wrong "$raw_answer")%s\n" "$DIM" "$RESET"
+          printf "  %s$(pokemon_t game.reveal "$expected")%s\n\n" "$DIM" "$RESET"
+        fi
+        return
+        ;;
+    esac
+  ) 200>"$POKEMON_LOCK"
+}
+
 # ── Dispatch ─────────────────────────────────────────────────────────────────
 case "${1:-}" in
   --shiny)            toggle_shiny ;;
@@ -1031,5 +1185,6 @@ case "${1:-}" in
   give)               view_give "${2:-}" ;;
   take)               view_take ;;
   trade)              view_trade "${2:-Anonymous}" ;;
+  game)               view_game "${@:2}" ;;
   *)                  view_main ;;
 esac
