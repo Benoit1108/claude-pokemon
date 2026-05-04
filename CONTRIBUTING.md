@@ -17,11 +17,33 @@ Le script vérifie les prérequis (`jq`, `chafa`, `flock`, `curl`, optionnelleme
 - **`lib/lib.sh`** : bibliothèque shell partagée (état, ticks, badges, mécaniques)
 - **`lib/statusline.sh`** : rendu statusline (appelé par Claude Code à chaque tick)
 - **`lib/pokemon-status.sh`** : sous-commandes `/pokemon` (vue détaillée + actions)
-- **`lib/data.default.json`** : config par défaut (lignées, seuils, items, locales)
+- **`lib/data.default.json`** : ⚠️ **fichier généré** — ne pas éditer directement. Source = `lib/data/**`.
+- **`lib/data/`** : sources de la config par défaut, splittées par domaine (config, lineages par gen, wild_pool par gen, items, berries, etc.)
+- **`lib/build-data.sh`** : concatène `lib/data/**` → `lib/data.default.json` (déterministe, clés triées)
 - **`lib/locales/{fr,en}.json`** : strings UI localisés
 - **`bin/`** : scripts d'install/update/etc. (orchestrés par `bin/claude-pokemon` Node)
 
 L'**état utilisateur** est dans `~/.claude/pokemon/state.json`. Il survit aux updates (les data + scripts sont remplacés, mais l'état est préservé).
+
+### Workflow data : ajouter du contenu
+
+```bash
+# 1. Édite la source qui te concerne :
+#    lib/data/lineages/gen3.json    → nouveau starter Hoenn
+#    lib/data/wild_pool/gen2.json   → wilds Johto
+#    lib/data/items.json            → nouvel item
+#    lib/data/config.json           → tweak shiny_chance, hatch_cost, etc.
+nvim lib/data/lineages/gen3.json
+
+# 2. Re-build le fichier déployé
+npm run build:data            # ou : bash lib/build-data.sh
+
+# 3. Commit les DEUX (sources + data.default.json généré)
+git add lib/data/ lib/data.default.json
+git commit -m "feat: add Gen 3 starters"
+```
+
+CI vérifie que `lib/data.default.json` est synchro avec `lib/data/**` (échec si tu oublies de re-builder).
 
 ## Types de contribution
 
@@ -55,8 +77,9 @@ Avant de coder, ouvre une issue pour discuter. Quelques règles :
 ## Tests
 
 CI GitHub Actions valide :
-- Syntaxe bash (shellcheck)
-- JSON valides + parité FR/EN
+- Syntaxe bash (shellcheck) — incluant `lib/build-data.sh`
+- JSON valides (`data.default.json`, sources `lib/data/**`, locales) + parité FR/EN
+- `lib/data.default.json` synchro avec `lib/data/**` (rebuild = aucun diff)
 - `npm pack` round-trip
 
 Tests manuels :

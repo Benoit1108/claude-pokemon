@@ -32,6 +32,7 @@
     "claude-pokemon": "./bin/claude-pokemon"
   },
   "scripts": {
+    "build:data": "bash lib/build-data.sh",
     "test": "echo 'No automated tests yet — verify install via: bash bin/install.sh && bash bin/status.sh'"
   },
   "files": [

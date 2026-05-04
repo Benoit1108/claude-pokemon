@@ -1,0 +1,494 @@
+{
+  "lineages": {
+    "fire": {
+      "label": "Lignée Feu",
+      "stages": [
+        {
+          "name": "Œuf",
+          "showdown_id": "egg",
+          "emoji": "🥚",
+          "color": "dim",
+          "min_level": 0,
+          "moves": []
+        },
+        {
+          "name": "Salamèche",
+          "showdown_id": "charmander",
+          "emoji": "🦎",
+          "color": "yellow",
+          "min_level": 1,
+          "moves": [
+            "Griffe",
+            "Grondement"
+          ],
+          "types": [
+            "Feu"
+          ],
+          "pokedex_fr": "Préfère les endroits chauds. Sa flamme s'éteint si elle est blessée.",
+          "pokedex_en": "Prefers hot places. The flame goes out if it gets hurt."
+        },
+        {
+          "name": "Reptincel",
+          "showdown_id": "charmeleon",
+          "emoji": "🔥",
+          "color": "red",
+          "min_level": 16,
+          "moves": [
+            "Flammèche",
+            "Brouillard"
+          ],
+          "types": [
+            "Feu"
+          ],
+          "pokedex_fr": "Quand il brandit sa queue, sa température augmente.",
+          "pokedex_en": "When it swings its tail, its temperature rises."
+        },
+        {
+          "name": "Dracaufeu",
+          "showdown_id": "charizard",
+          "emoji": "🐉",
+          "color": "red",
+          "min_level": 36,
+          "moves": [
+            "Lance-Flammes",
+            "Cru-Aile"
+          ],
+          "types": [
+            "Feu",
+            "Vol"
+          ],
+          "pokedex_fr": "Crache un feu si chaud qu'il fait fondre les rochers.",
+          "pokedex_en": "Spits fire hot enough to melt boulders."
+        },
+        {
+          "name": "Méga-Dracaufeu X",
+          "showdown_id": "charizard-megax",
+          "emoji": "🐲",
+          "color": "blue",
+          "min_level": 55,
+          "moves": [
+            "Dracosouffle",
+            "Damoclès"
+          ],
+          "types": [
+            "Feu",
+            "Dragon"
+          ],
+          "pokedex_fr": "Forme Méga X : type Dragon, attaque dévastatrice.",
+          "pokedex_en": "Mega X form: Dragon type, devastating power."
+        },
+        {
+          "name": "Méga-Dracaufeu Y",
+          "showdown_id": "charizard-megay",
+          "emoji": "🌋",
+          "color": "rainbow",
+          "min_level": 100,
+          "moves": [
+            "Lance-Soleil",
+            "Déflagration"
+          ],
+          "types": [
+            "Feu",
+            "Vol"
+          ],
+          "pokedex_fr": "Forme Méga Y : ailes immenses, vol stratosphérique.",
+          "pokedex_en": "Mega Y form: massive wings, stratospheric flight."
+        }
+      ]
+    },
+    "water": {
+      "label": "Lignée Eau",
+      "stages": [
+        {
+          "name": "Œuf",
+          "showdown_id": "egg",
+          "emoji": "🥚",
+          "color": "dim",
+          "min_level": 0,
+          "moves": []
+        },
+        {
+          "name": "Carapuce",
+          "showdown_id": "squirtle",
+          "emoji": "🐢",
+          "color": "cyan",
+          "min_level": 1,
+          "moves": [
+            "Charge",
+            "Mimi-Queue"
+          ],
+          "types": [
+            "Eau"
+          ],
+          "pokedex_fr": "Sa carapace est plus dure quand il y rentre. Bon nageur.",
+          "pokedex_en": "Hides in its shell. A skilled swimmer."
+        },
+        {
+          "name": "Carabaffe",
+          "showdown_id": "wartortle",
+          "emoji": "💧",
+          "color": "blue",
+          "min_level": 16,
+          "moves": [
+            "Pistolet à O",
+            "Repli"
+          ],
+          "types": [
+            "Eau"
+          ],
+          "pokedex_fr": "Sa queue duveteuse indique son âge et sa puissance.",
+          "pokedex_en": "Its furry tail reveals its age and power."
+        },
+        {
+          "name": "Tortank",
+          "showdown_id": "blastoise",
+          "emoji": "🌊",
+          "color": "blue",
+          "min_level": 36,
+          "moves": [
+            "Hydrocanon",
+            "Bulles d'O"
+          ],
+          "types": [
+            "Eau"
+          ],
+          "pokedex_fr": "Tire des jets d'eau capables de transpercer l'acier.",
+          "pokedex_en": "Water jets capable of piercing steel."
+        },
+        {
+          "name": "Méga-Tortank",
+          "showdown_id": "blastoise-mega",
+          "emoji": "💎",
+          "color": "cyan",
+          "min_level": 55,
+          "moves": [
+            "Hydroblast",
+            "Vibraqua"
+          ],
+          "types": [
+            "Eau"
+          ],
+          "pokedex_fr": "Forme Méga : canon central plus gros et plus précis.",
+          "pokedex_en": "Mega form: bigger and more precise central cannon."
+        },
+        {
+          "name": "Tortank Gigamax",
+          "showdown_id": "blastoise-gmax",
+          "emoji": "🛡️",
+          "color": "rainbow",
+          "min_level": 100,
+          "moves": [
+            "G-Max Cannonade",
+            "Surf"
+          ],
+          "types": [
+            "Eau"
+          ],
+          "pokedex_fr": "Gigamax : véritable forteresse marine.",
+          "pokedex_en": "Gigamax: a true sea fortress."
+        }
+      ]
+    },
+    "grass": {
+      "label": "Lignée Plante",
+      "stages": [
+        {
+          "name": "Œuf",
+          "showdown_id": "egg",
+          "emoji": "🥚",
+          "color": "dim",
+          "min_level": 0,
+          "moves": []
+        },
+        {
+          "name": "Bulbizarre",
+          "showdown_id": "bulbasaur",
+          "emoji": "🌱",
+          "color": "green",
+          "min_level": 1,
+          "moves": [
+            "Charge",
+            "Rugissement"
+          ],
+          "types": [
+            "Plante",
+            "Poison"
+          ],
+          "pokedex_fr": "Avec son bulbe dans le dos, il peut survivre des jours sans manger.",
+          "pokedex_en": "Can survive for days without eating thanks to its bulb."
+        },
+        {
+          "name": "Herbizarre",
+          "showdown_id": "ivysaur",
+          "emoji": "🌿",
+          "color": "green",
+          "min_level": 16,
+          "moves": [
+            "Tranch'Herbe",
+            "Poudre Dodo"
+          ],
+          "types": [
+            "Plante",
+            "Poison"
+          ],
+          "pokedex_fr": "Le bulbe a évolué en bouton de fleur, prêt à éclore.",
+          "pokedex_en": "The bulb has become a flower bud, ready to bloom."
+        },
+        {
+          "name": "Florizarre",
+          "showdown_id": "venusaur",
+          "emoji": "🌳",
+          "color": "green",
+          "min_level": 32,
+          "moves": [
+            "Lance-Soleil",
+            "Vampigraine"
+          ],
+          "types": [
+            "Plante",
+            "Poison"
+          ],
+          "pokedex_fr": "Ses pétales colorés émanent un parfum apaisant.",
+          "pokedex_en": "Its colorful petals release a calming scent."
+        },
+        {
+          "name": "Méga-Florizarre",
+          "showdown_id": "venusaur-mega",
+          "emoji": "🌺",
+          "color": "magenta",
+          "min_level": 55,
+          "moves": [
+            "Lance-Soleil",
+            "Soin"
+          ],
+          "types": [
+            "Plante",
+            "Poison"
+          ],
+          "pokedex_fr": "Forme Méga : fleur géante en pleine éclosion.",
+          "pokedex_en": "Mega form: giant flower in full bloom."
+        },
+        {
+          "name": "Florizarre Gigamax",
+          "showdown_id": "venusaur-gmax",
+          "emoji": "🌷",
+          "color": "rainbow",
+          "min_level": 100,
+          "moves": [
+            "G-Max Vine Lash",
+            "Synthèse"
+          ],
+          "types": [
+            "Plante",
+            "Poison"
+          ],
+          "pokedex_fr": "Gigamax : véritable jardin ambulant.",
+          "pokedex_en": "Gigamax: a walking garden."
+        }
+      ]
+    },
+    "electric": {
+      "label": "Lignée Électrik",
+      "stages": [
+        {
+          "name": "Œuf",
+          "showdown_id": "egg",
+          "emoji": "🥚",
+          "color": "dim",
+          "min_level": 0,
+          "moves": []
+        },
+        {
+          "name": "Pichu",
+          "showdown_id": "pichu",
+          "emoji": "⚡",
+          "color": "yellow",
+          "min_level": 1,
+          "moves": [
+            "Charge",
+            "Éclair"
+          ],
+          "types": [
+            "Électrik"
+          ],
+          "pokedex_fr": "Ses joues stockent l'électricité. Il s'auto-électrocute parfois.",
+          "pokedex_en": "Stores electricity in its cheeks. Sometimes shocks itself."
+        },
+        {
+          "name": "Pikachu",
+          "showdown_id": "pikachu",
+          "emoji": "⚡",
+          "color": "yellow",
+          "min_level": 10,
+          "moves": [
+            "Tonnerre",
+            "Vive-Attaque"
+          ],
+          "types": [
+            "Électrik"
+          ],
+          "pokedex_fr": "L'icône même de la franchise. Très joueur.",
+          "pokedex_en": "The franchise's icon. Very playful."
+        },
+        {
+          "name": "Raichu",
+          "showdown_id": "raichu",
+          "emoji": "🌩️",
+          "color": "yellow",
+          "min_level": 30,
+          "moves": [
+            "Fatal-Foudre",
+            "Coup d'Jus"
+          ],
+          "types": [
+            "Électrik"
+          ],
+          "pokedex_fr": "Sa queue agit comme paratonnerre.",
+          "pokedex_en": "Its tail acts as a lightning rod."
+        },
+        {
+          "name": "Raichu d'Alola",
+          "showdown_id": "raichu-alola",
+          "emoji": "🏝️",
+          "color": "magenta",
+          "min_level": 55,
+          "moves": [
+            "Psyko",
+            "Tonnerre"
+          ],
+          "types": [
+            "Électrik",
+            "Psy"
+          ],
+          "pokedex_fr": "Forme Alola : type Psy ajouté, surfe sur sa queue.",
+          "pokedex_en": "Alolan form: Psychic type added, surfs on its tail."
+        },
+        {
+          "name": "Pikachu Gigamax",
+          "showdown_id": "pikachu-gmax",
+          "emoji": "✨",
+          "color": "rainbow",
+          "min_level": 100,
+          "moves": [
+            "G-Max Volt Crash",
+            "Cataclectric"
+          ],
+          "types": [
+            "Électrik"
+          ],
+          "pokedex_fr": "Pikachu Gigamax : ses joues stockent assez pour alimenter une ville.",
+          "pokedex_en": "Gigamax Pikachu: cheeks store enough to power a city."
+        }
+      ]
+    },
+    "eevee": {
+      "label": "Lignée Eevee",
+      "stages": [
+        {
+          "name": "Œuf",
+          "showdown_id": "egg",
+          "emoji": "🥚",
+          "color": "dim",
+          "min_level": 0,
+          "moves": []
+        },
+        {
+          "name": "Évoli",
+          "showdown_id": "eevee",
+          "emoji": "🦊",
+          "color": "yellow",
+          "min_level": 1,
+          "moves": [
+            "Charge",
+            "Mimi-Queue"
+          ],
+          "types": [
+            "Normal"
+          ],
+          "pokedex_fr": "Pokémon évolutif. Son ADN s'adapte à son environnement.",
+          "pokedex_en": "Evolution Pokémon. Its DNA adapts to its environment."
+        },
+        {
+          "name": "Aquali",
+          "showdown_id": "vaporeon",
+          "emoji": "💦",
+          "color": "blue",
+          "min_level": 30,
+          "moves": [
+            "Hydrocanon",
+            "Vibraqua"
+          ],
+          "types": [
+            "Eau"
+          ],
+          "pokedex_fr": "Aquali : vit près des rivières. Ses cellules ressemblent à de l'eau.",
+          "pokedex_en": "Vaporeon: lives near rivers. Cells resemble water molecules."
+        },
+        {
+          "name": "Voltali",
+          "showdown_id": "jolteon",
+          "emoji": "⚡",
+          "color": "yellow",
+          "min_level": 30,
+          "moves": [
+            "Tonnerre",
+            "Vive-Attaque"
+          ],
+          "types": [
+            "Électrik"
+          ],
+          "pokedex_fr": "Voltali : pile vivante. Son poil hérissé canalise l'électricité.",
+          "pokedex_en": "Jolteon: living battery. Its bristled fur channels electricity."
+        },
+        {
+          "name": "Pyroli",
+          "showdown_id": "flareon",
+          "emoji": "🔥",
+          "color": "red",
+          "min_level": 30,
+          "moves": [
+            "Lance-Flammes",
+            "Crocs Feu"
+          ],
+          "types": [
+            "Feu"
+          ],
+          "pokedex_fr": "Pyroli : sac à feu interne. Sa température dépasse 900°C.",
+          "pokedex_en": "Flareon: internal fire sac. Body temperature over 900°C."
+        },
+        {
+          "name": "Mentali",
+          "showdown_id": "espeon",
+          "emoji": "🌞",
+          "color": "magenta",
+          "min_level": 30,
+          "moves": [
+            "Psyko",
+            "Vœu Soin"
+          ],
+          "types": [
+            "Psy"
+          ],
+          "pokedex_fr": "Mentali : dévoué à son dresseur. Ses pouvoirs psy se renforcent au soleil.",
+          "pokedex_en": "Espeon: devoted to its trainer. Psy powers strengthen in sunlight."
+        },
+        {
+          "name": "Noctali",
+          "showdown_id": "umbreon",
+          "emoji": "🌙",
+          "color": "magenta",
+          "min_level": 30,
+          "moves": [
+            "Ball'Ombre",
+            "Reflet Magik"
+          ],
+          "types": [
+            "Ténèbres"
+          ],
+          "pokedex_fr": "Noctali : fidèle à son dresseur. Ses anneaux brillent la nuit.",
+          "pokedex_en": "Umbreon: loyal to its trainer. Rings glow at night."
+        }
+      ]
+    }
+  }
+}

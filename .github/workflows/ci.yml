@@ -18,7 +18,8 @@ jobs:
           shellcheck -S error \
             bin/install.sh bin/uninstall.sh bin/status.sh \
             bin/update.sh bin/export.sh bin/import.sh \
-            lib/lib.sh lib/statusline.sh lib/pokemon-status.sh
+            lib/lib.sh lib/statusline.sh lib/pokemon-status.sh \
+            lib/build-data.sh
 
   validate-json:
     name: Validate JSON files
@@ -29,6 +30,21 @@ jobs:
         run: sudo apt-get install -y jq
       - name: Validate data.default.json
         run: jq empty lib/data.default.json
+      - name: Validate split sources
+        run: |
+          for f in lib/data/config.json lib/data/thresholds.json \
+                   lib/data/seasons.json lib/data/items.json lib/data/berries.json \
+                   lib/data/special/*.json lib/data/lineages/*.json \
+                   lib/data/wild_pool/*.json; do
+            jq empty "$f"
+          done
+      - name: Verify data.default.json is up-to-date with sources
+        run: |
+          bash lib/build-data.sh
+          if ! git diff --exit-code lib/data.default.json; then
+            echo "::error::lib/data.default.json is stale. Run \`bash lib/build-data.sh\` and commit the result."
+            exit 1
+          fi
       - name: Validate locales
         run: |
           jq empty lib/locales/fr.json

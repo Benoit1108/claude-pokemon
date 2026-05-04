@@ -1,0 +1,10 @@
+{
+  "eevee_friendship_threshold": 50,
+  "eevee_evolution_rules": {
+    "fire_stone": "flareon",
+    "water_stone": "vaporeon",
+    "thunder_stone": "jolteon",
+    "day_default": "espeon",
+    "night_default": "umbreon"
+  }
+}

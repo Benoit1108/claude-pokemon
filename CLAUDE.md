@@ -15,20 +15,29 @@ Compagnon Pokémon persistant pour la `statusLine` de Claude Code, distribué vi
 ```
 claude-pokemon/
 ├── bin/
-│   ├── claude-pokemon       Node CLI dispatcher (entry npx)
-│   ├── install.sh           Bootstrap ~/.claude/pokemon/, sprites, settings.json
+│   ├── claude-pokemon         Node CLI dispatcher (entry npx)
+│   ├── install.sh             Bootstrap ~/.claude/pokemon/, sprites, settings.json
 │   ├── update.sh, uninstall.sh, status.sh, export.sh, import.sh
 ├── lib/
-│   ├── lib.sh               Tick logic, badges, archives, helpers (43 KB)
-│   ├── statusline.sh        Rendu statusline (1 sortie par tick)
-│   ├── pokemon-status.sh    Sous-commandes /pokemon (45 KB)
-│   ├── data.default.json    Lignées, thresholds, items, wild_pool 151
-│   ├── locales/{fr,en}.json UI strings i18n
-│   └── extract_animations.py Pipeline Python+PIL (canvas 96x96 centré)
-├── skills/pokemon/SKILL.md   Slash command Claude Code
-├── assets/demo.gif           GIF démo référencé dans le README
-├── .demo/                    Scripts asciinema (regen reproductible du GIF)
-└── .github/workflows/ci.yml  CI : shellcheck, JSON, install dry-run, npm pack
+│   ├── lib.sh                 Tick logic, badges, archives, helpers (43 KB)
+│   ├── statusline.sh          Rendu statusline (1 sortie par tick)
+│   ├── pokemon-status.sh      Sous-commandes /pokemon (45 KB)
+│   ├── data.default.json      ⚠️ GÉNÉRÉ — ne pas éditer (source = lib/data/**)
+│   ├── data/                  Sources splittées par domaine
+│   │   ├── config.json        Toggles, taux, scales, event_chances
+│   │   ├── thresholds.json    XP par level (array 100 entries)
+│   │   ├── seasons.json       Modificateurs saisonniers
+│   │   ├── items.json, berries.json
+│   │   ├── special/eevee.json Friendship + evolution_rules
+│   │   ├── lineages/gen{N}.json    Lignées par génération
+│   │   └── wild_pool/gen{N}.json   Wilds par génération
+│   ├── build-data.sh          Concatène lib/data/** → lib/data.default.json (-S déterministe)
+│   ├── locales/{fr,en}.json   UI strings i18n
+│   └── extract_animations.py  Pipeline Python+PIL (canvas 96x96 centré)
+├── skills/pokemon/SKILL.md    Slash command Claude Code
+├── assets/demo.gif            GIF démo référencé dans le README
+├── .demo/                     Scripts asciinema (regen reproductible du GIF)
+└── .github/workflows/ci.yml   CI : shellcheck, JSON, build drift, install dry-run, npm pack
 ```
 
 L'**état utilisateur** vit dans `~/.claude/pokemon/state.json` (préservé entre les `update.sh`).
@@ -39,6 +48,7 @@ L'**état utilisateur** vit dans `~/.claude/pokemon/state.json` (préservé entr
 - **Pas de Co-Authored-By** dans les commits
 - **Pas de push** sur `main` sans validation explicite
 - **Strings UI** : toujours via `pokemon_t <key>` (jamais hardcoded en français/anglais)
+- **Data** : éditer **uniquement** `lib/data/**`, jamais `lib/data.default.json` directement. Re-build avec `npm run build:data` (ou `bash lib/build-data.sh`) avant commit. CI échoue si la source diverge du build.
 - **JSON keys** : ASCII uniquement, accents seulement dans les values
 - **Backward-compat schema** : ajout de champs en `// {}` defaults dans jq (jamais retirer un champ de `state.json`)
 - **printf format** : si plusieurs `%s`, vérifier le nombre d'args (printf cycle si trop d'args → bug fréquent qui duplique les sorties)

@@ -1,0 +1,52 @@
+{
+  "berries": [
+    {
+      "id": "sitrus",
+      "name": "Baie Sitrus",
+      "emoji": "🍇",
+      "xp_bonus": 1500
+    },
+    {
+      "id": "leppa",
+      "name": "Baie Léppa",
+      "emoji": "🍒",
+      "xp_bonus": 1000
+    },
+    {
+      "id": "oran",
+      "name": "Baie Oran",
+      "emoji": "🫐",
+      "xp_bonus": 800
+    },
+    {
+      "id": "mago",
+      "name": "Baie Mago",
+      "emoji": "🍑",
+      "xp_bonus": 1200
+    },
+    {
+      "id": "aspic",
+      "name": "Baie Aspic",
+      "emoji": "🍐",
+      "xp_bonus": 800
+    },
+    {
+      "id": "pomeg",
+      "name": "Baie Pomeg",
+      "emoji": "🍎",
+      "xp_bonus": 1000
+    },
+    {
+      "id": "wiki",
+      "name": "Baie Wiki",
+      "emoji": "🥝",
+      "xp_bonus": 1200
+    },
+    {
+      "id": "maron",
+      "name": "Baie Maron",
+      "emoji": "🌰",
+      "xp_bonus": 2000
+    }
+  ]
+}

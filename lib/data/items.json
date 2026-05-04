@@ -1,0 +1,57 @@
+{
+  "items": {
+    "fire_stone": {
+      "name": "Pierre Feu",
+      "emoji": "🔥",
+      "desc": "Évolue Évoli en Pyroli à Lv.30."
+    },
+    "water_stone": {
+      "name": "Pierre Eau",
+      "emoji": "💧",
+      "desc": "Évolue Évoli en Aquali à Lv.30."
+    },
+    "thunder_stone": {
+      "name": "Pierre Foudre",
+      "emoji": "⚡",
+      "desc": "Évolue Évoli en Voltali à Lv.30."
+    },
+    "xp_charm": {
+      "name": "Charme XP",
+      "name_en": "XP Charm",
+      "emoji": "🔮",
+      "desc": "Tenu : +10% XP gagné par tick.",
+      "desc_en": "Held: +10% XP per tick.",
+      "holdable": true,
+      "effect_xp_mult": 1.1
+    },
+    "lucky_egg": {
+      "name": "Œuf Chance",
+      "name_en": "Lucky Egg",
+      "emoji": "🥚",
+      "desc": "Tenu : +15% XP. Donne aussi +1 amitié par tick.",
+      "desc_en": "Held: +15% XP, +1 friendship per tick.",
+      "holdable": true,
+      "effect_xp_mult": 1.15,
+      "effect_friendship": 1
+    },
+    "soothe_bell": {
+      "name": "Grelot Zen",
+      "name_en": "Soothe Bell",
+      "emoji": "🔔",
+      "desc": "Tenu : +50% gain d'amitié par tick.",
+      "desc_en": "Held: +50% friendship gain per tick.",
+      "holdable": true,
+      "effect_friendship_mult": 1.5
+    },
+    "oran_berry": {
+      "name": "Baie Oran (combat)",
+      "name_en": "Oran Berry (battle)",
+      "emoji": "🫐",
+      "desc": "Consommée si blessé : retire le statut.",
+      "desc_en": "Consumed when injured: removes status.",
+      "holdable": true,
+      "consumable": true,
+      "effect_remove_injured": true
+    }
+  }
+}

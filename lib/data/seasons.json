@@ -1,0 +1,28 @@
+{
+  "seasons": {
+    "halloween": {
+      "month": 10,
+      "day_start": 25,
+      "day_end": 31,
+      "boost_pool": [
+        "gastly",
+        "haunter",
+        "gengar",
+        "drowzee",
+        "hypno"
+      ],
+      "boost_mult_xp": 1.5
+    },
+    "christmas": {
+      "month": 12,
+      "day_start": 20,
+      "day_end": 31,
+      "boost_pool": [
+        "jynx",
+        "articuno",
+        "lapras"
+      ],
+      "boost_mult_xp": 1.5
+    }
+  }
+}
