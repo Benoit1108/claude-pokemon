@@ -5,6 +5,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+## [1.0.0-beta.3] — 2026-05-04
+
+### Changed
+
+- **Balance** : seuil d'éclosion de l'œuf réduit de 500 000 → 300 000 XP. Le palier reste un "rite de passage" (~6× l'écart Lv.1→Lv.5) mais devient atteignable dans la première journée d'utilisation réelle. Propagation automatique aux installations existantes via `update.sh` (game-design constant, override les valeurs user).
+- **Architecture** : `lib/data.default.json` devient un artefact généré. Sources splittées par domaine dans `lib/data/**` (config, lineages par gen, wild_pool par gen, items, etc.). Build via `npm run build:data` (ou `bash lib/build-data.sh`). CI vérifie qu'aucun PR ne laisse l'artefact desyncé. Aucun impact end-user.
+- **Tracking version** : `data.default.json.version` (ancien int 4 manuellement bumpé) auto-injecté depuis `package.json.version` au build. Single source of truth, `jq .version ~/.claude/pokemon/data.json` mappe désormais directement sur un release npm.
+
+### Added
+
+- **Gen 2 starters (Johto)** : 3 nouvelles lignées Pokémon disponibles via `starter_pick: random` ou `/pokemon hatch <chikorita|cyndaquil|totodile>` :
+  - `chikorita` : Œuf → Germignon → Macronium → Méganium
+  - `cyndaquil` : Œuf → Héricendre → Feurisson → Typhlosion → Typhlosion d'Hisui (forme régionale Feu/Spectre lvl 55)
+  - `totodile` : Œuf → Kaiminus → Crocrodil → Aligatueur
+
+### Fixed
+
+- `bin/update.sh` annonçait "re-fetch sprites" mais ne le faisait pas. Les utilisateurs existants qui mettent à jour avec de nouvelles lignées avaient data.json mais pas les sprites correspondants. Correction : fetch des sprites manquants après le merge.
+- `/pokemon stats` affichait "Lignées complétées : N / 5" en hardcodé. Devient dynamique sur le total réel (8 désormais avec Gen 2).
+
+### Removed
+
+- `hatch_cost_tokens` du config (doublon redondant avec `thresholds[1]`)
+- `xp_per_token_scale` du config (jamais lu par le runtime, multiplicateurs runtime déjà câblés via context/type/daily/status)
+
 ## [1.0.0-beta.1] — 2026-05-02
 
 First public beta. Full feature set ready for testing.

@@ -19,7 +19,14 @@ cp "$ROOT/skills/pokemon/SKILL.md" "$HOME/.claude/skills/pokemon/SKILL.md"
 echo "Merge data.json (préserve customisations)..."
 default_data="$ROOT/lib/data.default.json"
 user_data="$TARGET/data.json"
-jq -s '.[0] * .[1]' "$default_data" "$user_data" > "$user_data.tmp" && mv "$user_data.tmp" "$user_data"
+# Force-propagate game-design constants from defaults (user customisations
+# don't apply to balance / metadata). Everything else: user wins via `*`.
+jq -s '
+  .[0] * .[1] * {
+    thresholds: .[0].thresholds,
+    version:    .[0].version
+  }
+' "$default_data" "$user_data" > "$user_data.tmp" && mv "$user_data.tmp" "$user_data"
 
 # Fetch any missing sprites (new lineages added via merge above)
 echo "Vérification des sprites manquants..."

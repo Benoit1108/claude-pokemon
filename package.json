@@ -1,6 +1,6 @@
 {
   "name": "claude-pokemon",
-  "version": "1.0.0-beta.2",
+  "version": "1.0.0-beta.3",
   "description": "A persistent Pokémon companion for Claude Code's statusLine. Hatch eggs, evolve, switch teams, catch wild Pokémon — all while you code.",
   "keywords": [
     "claude-code",
