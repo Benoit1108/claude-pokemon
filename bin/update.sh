@@ -19,12 +19,16 @@ cp "$ROOT/skills/pokemon/SKILL.md" "$HOME/.claude/skills/pokemon/SKILL.md"
 echo "Merge data.json (préserve customisations)..."
 default_data="$ROOT/lib/data.default.json"
 user_data="$TARGET/data.json"
-# Force-propagate game-design constants from defaults (user customisations
-# don't apply to balance / metadata). Everything else: user wins via `*`.
+# Force-propagate game-design constants + content arrays from defaults.
+# (user customisations don't apply to balance / metadata / pokédex content.)
+# Note: jq's `*` recursively merges objects but OVERWRITES arrays, so without
+# explicit override here `wild_pool` extensions would never reach existing users.
+# Everything else: user wins via the standard `*` recursive merge.
 jq -s '
   .[0] * .[1] * {
     thresholds: .[0].thresholds,
-    version:    .[0].version
+    version:    .[0].version,
+    wild_pool:  .[0].wild_pool
   }
 ' "$default_data" "$user_data" > "$user_data.tmp" && mv "$user_data.tmp" "$user_data"
 

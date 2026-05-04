@@ -175,7 +175,7 @@ view_pokedex() {
     fi
   done
 
-  # Wild encounters section — Gen 1 dex (151 entries, sorted by national_dex)
+  # Wild encounters section — Gen 1 + Gen 2 dex (251 entries, sorted by national_dex)
   local wild_seen total_wild lang
   wild_seen=$(jq -r '(.pokedex_wild // {}) | length' "$POKEMON_STATE")
   total_wild=$(jq -r '.wild_pool | length' "$POKEMON_DATA")

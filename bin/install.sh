@@ -174,7 +174,7 @@ ${B}Prochaines étapes :${R}
 ${B}Sous-commandes utiles :${R}
   /pokemon              Vue principale
   /pokemon team         Équipe Pokémon
-  /pokemon pokedex      Pokédex Gen 1 (151)
+  /pokemon pokedex      Pokédex Gen 1+2 (251)
   /pokemon switch <n>   Changer de compagnon
   /pokemon hatch        Nouvel œuf
   /pokemon stats        Stats de vie + multiplicateurs
