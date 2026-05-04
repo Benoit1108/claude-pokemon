@@ -1,5 +1,4 @@
 {
-  "version": 4,
   "language": "fr",
   "display_sprite_in_statusline": "left",
   "enable_animations": false,
@@ -8,8 +7,6 @@
   "shiny_chance": 0.01,
   "shiny_hunter_mode": false,
   "starter_pick": "random",
-  "xp_per_token_scale": 300,
-  "hatch_cost_tokens": 500000,
   "trade_cooldown_hours": 24,
   "battle_chance_on_encounter": 0.3,
   "battle_injured_ticks": 5,

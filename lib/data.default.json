@@ -68,7 +68,6 @@
     "berry": 0.005,
     "encounter": 0.001
   },
-  "hatch_cost_tokens": 500000,
   "item_drop_chance_on_encounter": 0.3,
   "items": {
     "fire_stone": {
@@ -952,7 +951,7 @@
     318458000
   ],
   "trade_cooldown_hours": 24,
-  "version": 4,
+  "version": "1.0.0-beta.2",
   "wild_pool": [
     {
       "emoji": "🌿",
@@ -2313,6 +2312,5 @@
       "rarity": "legendary",
       "type": "Psychic"
     }
-  ],
-  "xp_per_token_scale": 300
+  ]
 }

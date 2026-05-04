@@ -27,8 +27,13 @@ merged=$(jq -s 'reduce .[] as $x ({}; . * $x)' "${obj_files[@]}")
 # Wild pool: concat arrays from each gen file (each file = {wild_pool: [...]})
 wild_pool=$(jq -s 'map(.wild_pool) | add' "$SRC_DIR"/wild_pool/*.json)
 
-# Inject wild_pool, output with -S for byte-stable diff
-printf '%s\n' "$merged" | jq --argjson wp "$wild_pool" -S '.wild_pool = $wp' > "$OUT.tmp"
+# Auto-inject version from package.json (single source of truth — no manual sync)
+pkg_version=$(jq -r '.version' package.json)
+
+# Inject wild_pool + version, output with -S for byte-stable diff
+printf '%s\n' "$merged" \
+  | jq --argjson wp "$wild_pool" --arg v "$pkg_version" -S '.wild_pool = $wp | .version = $v' \
+  > "$OUT.tmp"
 mv "$OUT.tmp" "$OUT"
 
 echo "✓ Built $OUT ($(wc -l < "$OUT") lignes, $(wc -c < "$OUT") octets)"
