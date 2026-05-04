@@ -11,6 +11,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 - **Wild_pool Gen 2** : 100 nouveaux Pokémon (#152-251) dans le Pokédex (Johto). Distribution : 92 common, 2 rare (Heracross, Tyranitar), 6 legendary (Raikou, Entei, Suicune, Lugia, Ho-Oh, Celebi). Pokédex passe à 251 entries. Propagation forcée via `update.sh` aux installs existants.
 - **Thèmes UI** : `data.json.theme` contrôle l'accent (titres, gauges, badges, étoiles shiny). 4 thèmes — `default` (gold), `dark` (electric cyan), `light` (sépia, fond clair), `retro` (GameBoy green + palette monochrome stages+types). Aucun changement de comportement par défaut.
 
+### Changed
+
+- **Eevee evolution canonique** : à Lv.30 sans pierre tenue, le choix Mentali (Espeon) / Noctali (Umbreon) est désormais gated par `eevee_friendship_threshold` (default 50). Friendship ≥ seuil + jour (UTC 6-17) → Mentali, ≥ seuil + nuit → Noctali. En dessous du seuil, fallback aléatoire vers une forme élémentaire (Aquali/Voltali/Pyroli) puisque le système force l'évolution à Lv.30. La règle des pierres tenues reste prioritaire. Pour la plupart des users, friendship dépasse 50 bien avant Lv.30 → comportement inchangé en pratique.
+
 ## [1.0.0-beta.3] — 2026-05-04
 
 ### Changed

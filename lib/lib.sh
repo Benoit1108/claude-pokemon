@@ -837,6 +837,12 @@ pokemon_tick() {
       fi
       # Eevee evolution choice at Lv.30 — must run BEFORE the history log so
       # pokemon_evo_field returns the chosen form, not the default Aquali.
+      # Decision tree (canonical Gen 2 rules) :
+      #   1. Held stone wins (consumed) → Pyroli/Aquali/Voltali
+      #   2. Friendship ≥ threshold + day  → Mentali (Espeon)
+      #   3. Friendship ≥ threshold + night → Noctali (Umbreon)
+      #   4. Friendship < threshold → random stone form (game forces evolution
+      #      at Lv.30 so we can't keep Eevee waiting like in canon)
       if [ "$lineage" = "eevee" ] && [ "$prev_level" -lt 30 ] && [ "$new_level" -ge 30 ]; then
         local chosen_form="" used_stone=""
         for stone in fire_stone water_stone thunder_stone; do
@@ -849,12 +855,21 @@ pokemon_tick() {
           fi
         done
         if [ -z "$chosen_form" ]; then
-          local hour
+          local friendship_value friendship_threshold hour
+          friendship_value=$(jq -r '.friendship // 0' <<<"$state")
+          friendship_threshold=$(jq -r '.eevee_friendship_threshold // 50' "$POKEMON_DATA")
           hour=$(date -u +%H)
-          if [ "$hour" -ge 6 ] && [ "$hour" -lt 18 ]; then
-            chosen_form=$(jq -r '.eevee_evolution_rules.day_default' "$POKEMON_DATA")
+          if [ "$friendship_value" -ge "$friendship_threshold" ]; then
+            if [ "$hour" -ge 6 ] && [ "$hour" -lt 18 ]; then
+              chosen_form=$(jq -r '.eevee_evolution_rules.day_default' "$POKEMON_DATA")
+            else
+              chosen_form=$(jq -r '.eevee_evolution_rules.night_default' "$POKEMON_DATA")
+            fi
           else
-            chosen_form=$(jq -r '.eevee_evolution_rules.night_default' "$POKEMON_DATA")
+            # Low friendship fallback: random elemental form (no stone consumed)
+            local fallback_stones=("fire_stone" "water_stone" "thunder_stone")
+            local fallback_stone="${fallback_stones[$((RANDOM % 3))]}"
+            chosen_form=$(jq -r --arg s "$fallback_stone" '.eevee_evolution_rules[$s]' "$POKEMON_DATA")
           fi
         fi
         state=$(jq --arg form "$chosen_form" '.eevee_form = $form' <<<"$state")

@@ -65,6 +65,17 @@ bash ~/.claude/pokemon-status.sh stats         # Stats
 bash bin/uninstall.sh --confirm                # Cleanup
 ```
 
+## Mécaniques d'évolution Eevee (Lv.30)
+
+Décision dans `lib.sh:840` (block dans `pokemon_tick`). Ordre :
+1. **Pierre tenue** : `fire_stone` → Pyroli, `water_stone` → Aquali, `thunder_stone` → Voltali. Pierre consommée.
+2. **Friendship ≥ seuil** (`eevee_friendship_threshold`, default 50) :
+   - jour (UTC 6-17) → Mentali (Espeon)
+   - nuit (UTC 18-5) → Noctali (Umbreon)
+3. **Friendship < seuil** : fallback aléatoire vers une forme élémentaire (Aquali/Voltali/Pyroli) — sans pierre consommée. Justification : le système force l'évolution à Lv.30 (contrairement à canon où Évoli reste Évoli jusqu'à friendship élevée), donc on ne peut pas bloquer l'évolution.
+
+Friendship est lifetime (pas reset sur hatch). Pour la plupart des players, le seuil 50 est atteint bien avant Lv.30 → branche fallback rarement déclenchée.
+
 ## Thèmes
 
 `data.json.theme` contrôle l'accent UI (titres, gauges ≥75%, badges, ★ shiny) :
