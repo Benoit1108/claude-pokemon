@@ -112,6 +112,18 @@
     "master_eevee": [
       "Eevee Master",
       "Lv.100 on Eevee Lineage"
+    ],
+    "master_chikorita": [
+      "Chikorita Master",
+      "Lv.100 on Johto Grass Lineage"
+    ],
+    "master_cyndaquil": [
+      "Cyndaquil Master",
+      "Lv.100 on Johto Fire Lineage"
+    ],
+    "master_totodile": [
+      "Totodile Master",
+      "Lv.100 on Johto Water Lineage"
     ]
   },
   "team": {

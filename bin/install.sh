@@ -178,7 +178,7 @@ ${B}Sous-commandes utiles :${R}
   /pokemon switch <n>   Changer de compagnon
   /pokemon hatch        Nouvel œuf
   /pokemon stats        Stats de vie + multiplicateurs
-  /pokemon badges       Badges acquis (12)
+  /pokemon badges       Badges acquis (15)
   /pokemon help         Liste complète
 
 ${B}Personnalisation :${R}

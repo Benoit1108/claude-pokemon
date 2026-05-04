@@ -225,6 +225,7 @@ view_badges() {
   local all_badges=(
     hatch first_evolution first_shiny champion centurion constellation
     master_pokedex master_fire master_water master_grass master_electric master_eevee
+    master_chikorita master_cyndaquil master_totodile
   )
   for id in "${all_badges[@]}"; do
     earned_at=$(jq -r --arg id "$id" '.badges[] | select(.id == $id) | .earned_at' "$POKEMON_STATE")
@@ -905,7 +906,7 @@ view_main() {
     jq -r '.badges[] | .id' "$POKEMON_STATE" | while read -r bid; do
       printf '%s ' "$(pokemon_badge_meta "$bid" emoji)"
     done
-    printf ' %s(%d/%d)%s\n\n' "$DIM" "$badges_count" "12" "$RESET"
+    printf ' %s(%d/%d)%s\n\n' "$DIM" "$badges_count" "15" "$RESET"
   fi
 
   # End of "compagnon card" section

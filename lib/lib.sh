@@ -427,11 +427,14 @@ pokemon_check_badges() {
     | (if (.lifetime_stats.total_tokens >= 100000000) then add_badge("centurion") else . end)
     | (if (.lifetime_stats.total_shinies >= 5) then add_badge("constellation") else . end)
     | (if ([.pokedex | to_entries[] | select(.value.seen)] | length) >= 5 then add_badge("master_pokedex") else . end)
-    | (if (.lifetime_stats.lineages_completed | index("fire"))     != null then add_badge("master_fire")     else . end)
-    | (if (.lifetime_stats.lineages_completed | index("water"))    != null then add_badge("master_water")    else . end)
-    | (if (.lifetime_stats.lineages_completed | index("grass"))    != null then add_badge("master_grass")    else . end)
-    | (if (.lifetime_stats.lineages_completed | index("electric")) != null then add_badge("master_electric") else . end)
-    | (if (.lifetime_stats.lineages_completed | index("eevee"))    != null then add_badge("master_eevee")    else . end)
+    | (if (.lifetime_stats.lineages_completed | index("fire"))      != null then add_badge("master_fire")      else . end)
+    | (if (.lifetime_stats.lineages_completed | index("water"))     != null then add_badge("master_water")     else . end)
+    | (if (.lifetime_stats.lineages_completed | index("grass"))     != null then add_badge("master_grass")     else . end)
+    | (if (.lifetime_stats.lineages_completed | index("electric"))  != null then add_badge("master_electric")  else . end)
+    | (if (.lifetime_stats.lineages_completed | index("eevee"))     != null then add_badge("master_eevee")     else . end)
+    | (if (.lifetime_stats.lineages_completed | index("chikorita")) != null then add_badge("master_chikorita") else . end)
+    | (if (.lifetime_stats.lineages_completed | index("cyndaquil")) != null then add_badge("master_cyndaquil") else . end)
+    | (if (.lifetime_stats.lineages_completed | index("totodile"))  != null then add_badge("master_totodile")  else . end)
   ' <<<"$state"
 }
 
@@ -452,6 +455,9 @@ pokemon_badge_meta() {
     master_grass)      emoji="🌿" ;;
     master_electric)   emoji="⚡" ;;
     master_eevee)      emoji="🦊" ;;
+    master_chikorita)  emoji="🍃" ;;
+    master_cyndaquil)  emoji="🦔" ;;
+    master_totodile)   emoji="🐊" ;;
     *)                 emoji="?"  ;;
   esac
   case "$field" in

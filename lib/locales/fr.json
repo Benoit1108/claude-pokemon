@@ -112,6 +112,18 @@
     "master_eevee": [
       "Maître Eevee",
       "Lv.100 sur Lignée Eevee"
+    ],
+    "master_chikorita": [
+      "Maître Germignon",
+      "Lv.100 sur Lignée Plante (Johto)"
+    ],
+    "master_cyndaquil": [
+      "Maître Héricendre",
+      "Lv.100 sur Lignée Feu (Johto)"
+    ],
+    "master_totodile": [
+      "Maître Kaiminus",
+      "Lv.100 sur Lignée Eau (Johto)"
     ]
   },
   "team": {
