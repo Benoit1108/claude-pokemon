@@ -21,4 +21,32 @@ default_data="$ROOT/lib/data.default.json"
 user_data="$TARGET/data.json"
 jq -s '.[0] * .[1]' "$default_data" "$user_data" > "$user_data.tmp" && mv "$user_data.tmp" "$user_data"
 
+# Fetch any missing sprites (new lineages added via merge above)
+echo "Vérification des sprites manquants..."
+mkdir -p "$TARGET/sprites/normal" "$TARGET/sprites/shiny" \
+         "$TARGET/sprites-mini/normal" "$TARGET/sprites-mini/shiny"
+ids=$(jq -r '.lineages | to_entries[] | .value.stages[].showdown_id' "$user_data" | sort -u)
+dl_count=0
+if command -v chafa >/dev/null 2>&1; then
+  for variant in normal shiny; do
+    url_path="gen5"
+    [ "$variant" = "shiny" ] && url_path="gen5-shiny"
+    for id in $ids; do
+      out_std="$TARGET/sprites/$variant/$id.txt"
+      out_mini="$TARGET/sprites-mini/$variant/$id.txt"
+      if [ -s "$out_std" ] && [ -s "$out_mini" ]; then continue; fi
+      tmp=$(mktemp --suffix=.png)
+      if curl -sf -o "$tmp" "https://play.pokemonshowdown.com/sprites/$url_path/$id.png" 2>/dev/null; then
+        chafa --size 32x16 --symbols block "$tmp" > "$out_std" 2>/dev/null
+        chafa --size 24x12 --symbols block "$tmp" > "$out_mini" 2>/dev/null
+        dl_count=$((dl_count+1))
+      fi
+      rm -f "$tmp"
+    done
+  done
+  echo "  $dl_count nouveaux sprites téléchargés"
+else
+  echo "  chafa absent — sprites non rafraîchis"
+fi
+
 echo "✓ Update terminé. Relance Claude Code."

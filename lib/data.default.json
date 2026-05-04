@@ -127,6 +127,145 @@
   },
   "language": "fr",
   "lineages": {
+    "chikorita": {
+      "label": "Lignée Plante (Johto)",
+      "stages": [
+        {
+          "color": "dim",
+          "emoji": "🥚",
+          "min_level": 0,
+          "moves": [],
+          "name": "Œuf",
+          "showdown_id": "egg"
+        },
+        {
+          "color": "green",
+          "emoji": "🌱",
+          "min_level": 1,
+          "moves": [
+            "Charge",
+            "Rugissement"
+          ],
+          "name": "Germignon",
+          "pokedex_en": "Loves basking in the sun. The leaf on its head has a sweet aroma.",
+          "pokedex_fr": "Aime se prélasser au soleil. La feuille sur sa tête dégage un parfum sucré.",
+          "showdown_id": "chikorita",
+          "types": [
+            "Plante"
+          ]
+        },
+        {
+          "color": "green",
+          "emoji": "🍀",
+          "min_level": 16,
+          "moves": [
+            "Tranch'Herbe",
+            "Synthèse"
+          ],
+          "name": "Macronium",
+          "pokedex_en": "The spicy aroma from its neck whets the appetite.",
+          "pokedex_fr": "Le parfum épicé qui émane de son cou réveille l'appétit.",
+          "showdown_id": "bayleef",
+          "types": [
+            "Plante"
+          ]
+        },
+        {
+          "color": "green",
+          "emoji": "🌺",
+          "min_level": 32,
+          "moves": [
+            "Lance-Soleil",
+            "Bélier"
+          ],
+          "name": "Méganium",
+          "pokedex_en": "Its breath calms aggressive feelings and revives withered plants.",
+          "pokedex_fr": "Son souffle apaise les esprits belliqueux et ravive les plantes desséchées.",
+          "showdown_id": "meganium",
+          "types": [
+            "Plante"
+          ]
+        }
+      ]
+    },
+    "cyndaquil": {
+      "label": "Lignée Feu (Johto)",
+      "stages": [
+        {
+          "color": "dim",
+          "emoji": "🥚",
+          "min_level": 0,
+          "moves": [],
+          "name": "Œuf",
+          "showdown_id": "egg"
+        },
+        {
+          "color": "yellow",
+          "emoji": "🦔",
+          "min_level": 1,
+          "moves": [
+            "Charge",
+            "Groz'Yeux"
+          ],
+          "name": "Héricendre",
+          "pokedex_en": "When in danger, it flares up flames on its back for protection.",
+          "pokedex_fr": "Quand il se sent en danger, il enflamme son dos pour se protéger.",
+          "showdown_id": "cyndaquil",
+          "types": [
+            "Feu"
+          ]
+        },
+        {
+          "color": "red",
+          "emoji": "🔥",
+          "min_level": 16,
+          "moves": [
+            "Roue de Feu",
+            "Brouillard"
+          ],
+          "name": "Feurisson",
+          "pokedex_en": "Dodges foes with agility, then scorches them with intense flames.",
+          "pokedex_fr": "Esquive ses ennemis avec agilité avant de les calciner avec ses flammes.",
+          "showdown_id": "quilava",
+          "types": [
+            "Feu"
+          ]
+        },
+        {
+          "color": "red",
+          "emoji": "🌋",
+          "min_level": 32,
+          "moves": [
+            "Lance-Flammes",
+            "Surchauffe"
+          ],
+          "name": "Typhlosion",
+          "pokedex_en": "Its flames can turn a dormant volcano into a raging inferno.",
+          "pokedex_fr": "Ses flammes peuvent transformer un volcan endormi en brasier.",
+          "showdown_id": "typhlosion",
+          "types": [
+            "Feu"
+          ]
+        },
+        {
+          "color": "magenta",
+          "emoji": "👻",
+          "min_level": 55,
+          "moves": [
+            "Vortex Infernal",
+            "Ball'Ombre"
+          ],
+          "name": "Typhlosion d'Hisui",
+          "pokedex_en": "Hisuian form: guides lost souls with its spectral flames.",
+          "pokedex_fr": "Forme d'Hisui : guide les âmes égarées avec ses flammes spectrales.",
+          "showdown_id": "typhlosion-hisui",
+          "types": [
+            "Feu",
+            "Spectre"
+          ]
+        }
+      ]
+    },
     "eevee": {
       "label": "Lignée Eevee",
       "stages": [
@@ -520,6 +659,67 @@
           "types": [
             "Plante",
             "Poison"
+          ]
+        }
+      ]
+    },
+    "totodile": {
+      "label": "Lignée Eau (Johto)",
+      "stages": [
+        {
+          "color": "dim",
+          "emoji": "🥚",
+          "min_level": 0,
+          "moves": [],
+          "name": "Œuf",
+          "showdown_id": "egg"
+        },
+        {
+          "color": "cyan",
+          "emoji": "🐊",
+          "min_level": 1,
+          "moves": [
+            "Charge",
+            "Rugissement"
+          ],
+          "name": "Kaiminus",
+          "pokedex_en": "Loves to bite anything. Even its trainer must watch their fingers!",
+          "pokedex_fr": "Adore mordre tout ce qui passe. Même son dresseur doit faire attention !",
+          "showdown_id": "totodile",
+          "types": [
+            "Eau"
+          ]
+        },
+        {
+          "color": "blue",
+          "emoji": "💦",
+          "min_level": 16,
+          "moves": [
+            "Morsure",
+            "Pistolet à O"
+          ],
+          "name": "Crocrodil",
+          "pokedex_en": "Its sharp fangs keep regrowing. It never lets go of its prey.",
+          "pokedex_fr": "Ses crocs acérés se replantent constamment. Il ne lâche jamais sa proie.",
+          "showdown_id": "croconaw",
+          "types": [
+            "Eau"
+          ]
+        },
+        {
+          "color": "blue",
+          "emoji": "🌊",
+          "min_level": 32,
+          "moves": [
+            "Hydrocanon",
+            "Mâchouille"
+          ],
+          "name": "Aligatueur",
+          "pokedex_en": "Its jaws are so powerful, they can crush metal in a single bite.",
+          "pokedex_fr": "Sa mâchoire est si puissante qu'elle peut broyer le métal en un coup.",
+          "showdown_id": "feraligatr",
+          "types": [
+            "Eau"
           ]
         }
       ]

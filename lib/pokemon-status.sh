@@ -113,6 +113,7 @@ view_stats() {
   maxlvl=$(jq -r '.max_level' <<<"$s")
   compagnons=$(jq -r '.total_compagnons' <<<"$s")
   completed=$(jq -r '.lineages_completed | length' <<<"$s")
+  total_lineages=$(jq -r '.lineages | length' "$POKEMON_DATA")
   first_shiny=$(jq -r '.first_shiny_at // "—"' <<<"$s")
 
   printf "  %s$(pokemon_t_pad stats.total_tokens 22)%s :  %s\\n"    "$DIM" "$RESET" "$(fmt_int "$tokens")"
@@ -120,7 +121,7 @@ view_stats() {
   printf "  %s$(pokemon_t_pad stats.total_shinies 22)%s :  %s\\n"    "$DIM" "$RESET" "$(fmt_int "$shinies")"
   printf "  %s$(pokemon_t_pad stats.max_level 22)%s :  Lv.%s\\n" "$DIM" "$RESET" "$maxlvl"
   printf "  %s$(pokemon_t_pad stats.total_compagnons 22)%s :  %s\\n"    "$DIM" "$RESET" "$(fmt_int "$compagnons")"
-  printf "  %s$(pokemon_t_pad stats.lineages_completed 22)%s :  %s / 5\\n" "$DIM" "$RESET" "$completed"
+  printf "  %s$(pokemon_t_pad stats.lineages_completed 22)%s :  %s / %s\\n" "$DIM" "$RESET" "$completed" "$total_lineages"
   printf "  %s$(pokemon_t_pad stats.first_shiny 22)%s :  %s\\n\\n"  "$DIM" "$RESET" "${first_shiny:0:10}"
 
   # Active multipliers (last tick)

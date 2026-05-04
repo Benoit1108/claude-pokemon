@@ -1,0 +1,204 @@
+{
+  "lineages": {
+    "chikorita": {
+      "label": "Lignée Plante (Johto)",
+      "stages": [
+        {
+          "name": "Œuf",
+          "showdown_id": "egg",
+          "emoji": "🥚",
+          "color": "dim",
+          "min_level": 0,
+          "moves": []
+        },
+        {
+          "name": "Germignon",
+          "showdown_id": "chikorita",
+          "emoji": "🌱",
+          "color": "green",
+          "min_level": 1,
+          "moves": [
+            "Charge",
+            "Rugissement"
+          ],
+          "types": [
+            "Plante"
+          ],
+          "pokedex_fr": "Aime se prélasser au soleil. La feuille sur sa tête dégage un parfum sucré.",
+          "pokedex_en": "Loves basking in the sun. The leaf on its head has a sweet aroma."
+        },
+        {
+          "name": "Macronium",
+          "showdown_id": "bayleef",
+          "emoji": "🍀",
+          "color": "green",
+          "min_level": 16,
+          "moves": [
+            "Tranch'Herbe",
+            "Synthèse"
+          ],
+          "types": [
+            "Plante"
+          ],
+          "pokedex_fr": "Le parfum épicé qui émane de son cou réveille l'appétit.",
+          "pokedex_en": "The spicy aroma from its neck whets the appetite."
+        },
+        {
+          "name": "Méganium",
+          "showdown_id": "meganium",
+          "emoji": "🌺",
+          "color": "green",
+          "min_level": 32,
+          "moves": [
+            "Lance-Soleil",
+            "Bélier"
+          ],
+          "types": [
+            "Plante"
+          ],
+          "pokedex_fr": "Son souffle apaise les esprits belliqueux et ravive les plantes desséchées.",
+          "pokedex_en": "Its breath calms aggressive feelings and revives withered plants."
+        }
+      ]
+    },
+    "cyndaquil": {
+      "label": "Lignée Feu (Johto)",
+      "stages": [
+        {
+          "name": "Œuf",
+          "showdown_id": "egg",
+          "emoji": "🥚",
+          "color": "dim",
+          "min_level": 0,
+          "moves": []
+        },
+        {
+          "name": "Héricendre",
+          "showdown_id": "cyndaquil",
+          "emoji": "🦔",
+          "color": "yellow",
+          "min_level": 1,
+          "moves": [
+            "Charge",
+            "Groz'Yeux"
+          ],
+          "types": [
+            "Feu"
+          ],
+          "pokedex_fr": "Quand il se sent en danger, il enflamme son dos pour se protéger.",
+          "pokedex_en": "When in danger, it flares up flames on its back for protection."
+        },
+        {
+          "name": "Feurisson",
+          "showdown_id": "quilava",
+          "emoji": "🔥",
+          "color": "red",
+          "min_level": 16,
+          "moves": [
+            "Roue de Feu",
+            "Brouillard"
+          ],
+          "types": [
+            "Feu"
+          ],
+          "pokedex_fr": "Esquive ses ennemis avec agilité avant de les calciner avec ses flammes.",
+          "pokedex_en": "Dodges foes with agility, then scorches them with intense flames."
+        },
+        {
+          "name": "Typhlosion",
+          "showdown_id": "typhlosion",
+          "emoji": "🌋",
+          "color": "red",
+          "min_level": 32,
+          "moves": [
+            "Lance-Flammes",
+            "Surchauffe"
+          ],
+          "types": [
+            "Feu"
+          ],
+          "pokedex_fr": "Ses flammes peuvent transformer un volcan endormi en brasier.",
+          "pokedex_en": "Its flames can turn a dormant volcano into a raging inferno."
+        },
+        {
+          "name": "Typhlosion d'Hisui",
+          "showdown_id": "typhlosion-hisui",
+          "emoji": "👻",
+          "color": "magenta",
+          "min_level": 55,
+          "moves": [
+            "Vortex Infernal",
+            "Ball'Ombre"
+          ],
+          "types": [
+            "Feu",
+            "Spectre"
+          ],
+          "pokedex_fr": "Forme d'Hisui : guide les âmes égarées avec ses flammes spectrales.",
+          "pokedex_en": "Hisuian form: guides lost souls with its spectral flames."
+        }
+      ]
+    },
+    "totodile": {
+      "label": "Lignée Eau (Johto)",
+      "stages": [
+        {
+          "name": "Œuf",
+          "showdown_id": "egg",
+          "emoji": "🥚",
+          "color": "dim",
+          "min_level": 0,
+          "moves": []
+        },
+        {
+          "name": "Kaiminus",
+          "showdown_id": "totodile",
+          "emoji": "🐊",
+          "color": "cyan",
+          "min_level": 1,
+          "moves": [
+            "Charge",
+            "Rugissement"
+          ],
+          "types": [
+            "Eau"
+          ],
+          "pokedex_fr": "Adore mordre tout ce qui passe. Même son dresseur doit faire attention !",
+          "pokedex_en": "Loves to bite anything. Even its trainer must watch their fingers!"
+        },
+        {
+          "name": "Crocrodil",
+          "showdown_id": "croconaw",
+          "emoji": "💦",
+          "color": "blue",
+          "min_level": 16,
+          "moves": [
+            "Morsure",
+            "Pistolet à O"
+          ],
+          "types": [
+            "Eau"
+          ],
+          "pokedex_fr": "Ses crocs acérés se replantent constamment. Il ne lâche jamais sa proie.",
+          "pokedex_en": "Its sharp fangs keep regrowing. It never lets go of its prey."
+        },
+        {
+          "name": "Aligatueur",
+          "showdown_id": "feraligatr",
+          "emoji": "🌊",
+          "color": "blue",
+          "min_level": 32,
+          "moves": [
+            "Hydrocanon",
+            "Mâchouille"
+          ],
+          "types": [
+            "Eau"
+          ],
+          "pokedex_fr": "Sa mâchoire est si puissante qu'elle peut broyer le métal en un coup.",
+          "pokedex_en": "Its jaws are so powerful, they can crush metal in a single bite."
+        }
+      ]
+    }
+  }
+}
