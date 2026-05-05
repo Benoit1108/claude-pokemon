@@ -17,5 +17,10 @@
   "event_chances": {
     "berry": 0.005,
     "encounter": 0.001
+  },
+  "stats_share": {
+    "enabled": false,
+    "endpoint": "https://claude-pokemon-api.benoit-2001.workers.dev",
+    "anon_id": null
   }
 }

@@ -76,6 +76,29 @@ Décision dans `lib.sh:840` (block dans `pokemon_tick`). Ordre :
 
 Friendship est lifetime (pas reset sur hatch). Pour la plupart des players, le seuil 50 est atteint bien avant Lv.30 → branche fallback rarement déclenchée.
 
+## Stats partagées (opt-in, anonymes)
+
+Backend = Cloudflare Worker `claude-pokemon-api` dans `api/` (séparé du package npm). Sources : `api/src/index.js` (~250 LoC, vanilla JS, no deps). Storage : Cloudflare KV (free tier).
+
+**Endpoints** (voir `api/README.md` pour le contract complet) :
+- `POST /v1/submit` — submit stats (rate-limited 24h par anon_id)
+- `GET /v1/leaderboard?metric=X&limit=N`
+- `GET /v1/aggregate`
+- `DELETE /v1/forget?anon_id=X` (RGPD)
+- `GET /v1/health`
+
+**Privacy** : pas de logs IP côté serveur, anon_id généré localement (8 hex via /dev/urandom), whitelist stricte sur les champs submit (extras rejetés).
+
+**Deploy** :
+```bash
+cd api/
+wrangler deploy
+```
+
+URL prod actuelle : `https://claude-pokemon-api.benoit-2001.workers.dev`.
+
+CLI side : `view_stats_share`, `view_leaderboard`, `view_aggregate` dans `lib/pokemon-status.sh`. Endpoint configuré dans `lib/data/config.json.stats_share.endpoint`.
+
 ## Thèmes
 
 `data.json.theme` contrôle l'accent UI (titres, gauges ≥75%, badges, ★ shiny) :

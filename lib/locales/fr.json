@@ -194,6 +194,43 @@
     "cooldown": "Échange déjà fait aujourd'hui. Prochain disponible dans %sh.",
     "usage": "Usage : /pokemon trade [<dresseur>]"
   },
+  "share": {
+    "title": "📡 STATS PARTAGÉES (anonymes, opt-in)",
+    "status_enabled": "✓ Activé — anon_id : %s",
+    "status_endpoint": "endpoint : %s",
+    "status_disabled": "Désactivé. Tes stats restent locales.",
+    "usage": "Sous-commandes : enable --confirm | disable | submit | forget | status",
+    "privacy_notice": "Ce qui sera envoyé (uniquement) : anon_id (généré local, non lié à ton identité), lifetime_stats (tokens, evolutions, shinies, max_level, lineages_completed, games_won/played), active.lineage + level, badges, pokedex_seen_count.\n  Ce qui n'est PAS envoyé : IP (strippée serveur-side), conversations, chemins de fichiers, équipe, pokédex détaillé, items, friendship, total_xp précis.\n  Submit max 1×/24h. Tu peux tout supprimer via /pokemon stats-share forget (RGPD).",
+    "confirm_hint": "Pour activer : /pokemon stats-share enable --confirm",
+    "enabled": "✓ Stats partagées activées. anon_id : %s. Lance /pokemon stats-share submit pour pousser tes premières stats.",
+    "already_enabled": "Déjà activé.",
+    "already_disabled": "Déjà désactivé.",
+    "disabled": "✓ Désactivé. Plus aucune donnée ne sera envoyée.",
+    "disable_hint": "Note : tes données déjà sur le serveur restent. Utilise `forget` pour les supprimer (RGPD).",
+    "no_id": "Pas d'anon_id local — tu n'as jamais soumis de stats.",
+    "forgotten": "✓ Données supprimées du serveur (anon_id : %s).",
+    "forget_failed": "Échec de la suppression — vérifie ta connexion ou retry.",
+    "not_enabled": "Stats share non activées. Lance /pokemon stats-share enable --confirm d'abord.",
+    "submit_ok": "✓ Stats envoyées. Prochain submit dans 24h.",
+    "cooldown": "Cooldown actif. Prochain submit dans ~%sh.",
+    "submit_failed": "Échec submit (HTTP %s). Vérifie ta connexion ou réessaie plus tard.",
+    "unknown_subcmd": "Sous-commande inconnue : %s. Voir /pokemon stats-share status."
+  },
+  "leaderboard": {
+    "title": "🏆 LEADERBOARD — %s",
+    "subtitle": "%s players ayant submit",
+    "no_endpoint": "Pas d'endpoint configuré dans data.json.stats_share.endpoint.",
+    "fetch_failed": "Endpoint injoignable ou erreur réseau."
+  },
+  "aggregate": {
+    "title": "🌍 STATS GLOBALES",
+    "empty": "Aucun player n'a encore submit ses stats.",
+    "players": "Players actifs",
+    "tokens": "Tokens cumulés (tous)",
+    "shinies": "Shinies observés",
+    "shiny_rate": "Taux shiny réel",
+    "distribution": "Lignée actuelle (par player)"
+  },
   "game": {
     "title": "❓ DEVINE LE POKÉMON",
     "no_active": "Pas de compagnon actif. Lance /pokemon hatch d'abord.",

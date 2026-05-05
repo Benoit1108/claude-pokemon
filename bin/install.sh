@@ -179,7 +179,17 @@ ${B}Sous-commandes utiles :${R}
   /pokemon hatch        Nouvel œuf
   /pokemon stats        Stats de vie + multiplicateurs
   /pokemon badges       Badges acquis (15)
+  /pokemon game         Mini-jeu : devine le Pokémon
+  /pokemon leaderboard  Top players (opt-in stats partagées)
+  /pokemon stats-share  Activer/désactiver les stats partagées
   /pokemon help         Liste complète
+
+${B}Stats partagées (opt-in, anonymes) :${R}
+  ${D}/pokemon stats-share enable --confirm${R}  pour participer au leaderboard global
+  ${D}/pokemon stats-share submit${R}            pousse tes stats actuelles (1×/24h)
+  ${D}/pokemon leaderboard${R}                   top 10 par tokens cumulés
+  ${D}/pokemon aggregate${R}                     stats globales (taux shiny réel, etc.)
+  Voir api/README.md pour le détail privacy.
 
 ${B}Personnalisation :${R}
   Édite ${D}~/.claude/pokemon/data.json${R} pour changer langue, lignées, seuils XP.

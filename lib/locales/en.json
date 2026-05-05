@@ -194,6 +194,43 @@
     "cooldown": "Trade already done today. Next available in %sh.",
     "usage": "Usage: /pokemon trade [<trainer>]"
   },
+  "share": {
+    "title": "📡 SHARED STATS (anonymous, opt-in)",
+    "status_enabled": "✓ Enabled — anon_id: %s",
+    "status_endpoint": "endpoint: %s",
+    "status_disabled": "Disabled. Your stats stay local.",
+    "usage": "Subcommands: enable --confirm | disable | submit | forget | status",
+    "privacy_notice": "What gets sent (only): anon_id (locally generated, not tied to identity), lifetime_stats (tokens, evolutions, shinies, max_level, lineages_completed, games_won/played), active.lineage + level, badges, pokedex_seen_count.\n  What is NOT sent: IP (server-side stripped), conversations, file paths, team, detailed pokédex, items, friendship, precise total_xp.\n  Max 1 submit per 24h. Right-to-delete via /pokemon stats-share forget (GDPR).",
+    "confirm_hint": "To enable: /pokemon stats-share enable --confirm",
+    "enabled": "✓ Shared stats enabled. anon_id: %s. Run /pokemon stats-share submit to push your first stats.",
+    "already_enabled": "Already enabled.",
+    "already_disabled": "Already disabled.",
+    "disabled": "✓ Disabled. No more data will be sent.",
+    "disable_hint": "Note: data already on the server stays. Use `forget` to delete it (GDPR).",
+    "no_id": "No local anon_id — you've never submitted stats.",
+    "forgotten": "✓ Data deleted from server (anon_id: %s).",
+    "forget_failed": "Delete failed — check connection or retry.",
+    "not_enabled": "Shared stats not enabled. Run /pokemon stats-share enable --confirm first.",
+    "submit_ok": "✓ Stats submitted. Next submit in 24h.",
+    "cooldown": "Cooldown active. Next submit in ~%sh.",
+    "submit_failed": "Submit failed (HTTP %s). Check connection or retry later.",
+    "unknown_subcmd": "Unknown subcommand: %s. See /pokemon stats-share status."
+  },
+  "leaderboard": {
+    "title": "🏆 LEADERBOARD — %s",
+    "subtitle": "%s players submitted",
+    "no_endpoint": "No endpoint configured in data.json.stats_share.endpoint.",
+    "fetch_failed": "Endpoint unreachable or network error."
+  },
+  "aggregate": {
+    "title": "🌍 GLOBAL STATS",
+    "empty": "No player has submitted stats yet.",
+    "players": "Active players",
+    "tokens": "Tokens combined (all)",
+    "shinies": "Shinies observed",
+    "shiny_rate": "Actual shiny rate",
+    "distribution": "Active lineage (per player)"
+  },
   "game": {
     "title": "❓ GUESS THE POKÉMON",
     "no_active": "No active buddy. Run /pokemon hatch first.",

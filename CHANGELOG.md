@@ -18,6 +18,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 ### Added (suite)
 
 - **Mini-jeu `/pokemon game`** : « Devine le Pokémon ». Tirage aléatoire dans le wild_pool 251 entries, indices type/lettres/initiale/génération. `/pokemon game` (start ou rappel hints), `/pokemon game <nom>` (submit), `/pokemon game skip` (annule sans pénalité), `/pokemon game help`. Bonne réponse = +500 XP + 2 amitié sur le compagnon actif. Cooldown 15 min entre quiz complétés (correct ou wrong, pas skip) pour éviter le grind. Comparaison de nom case-insensitive et accent-insensitive (iconv ASCII translit). Stats `games_won` et `games_played` dans `lifetime_stats`.
+- **Stats partagées (opt-in)** : nouveau backend Cloudflare Worker (`api/` dans le repo) hébergeant un endpoint REST anonyme. Les users qui activent `/pokemon stats-share enable --confirm` reçoivent un anon_id local (8 hex) et peuvent submit leurs stats lifetime + actives 1×/24h. `/pokemon leaderboard <metric>` affiche le top N (total_tokens, total_shinies, max_level, badges_count, games_won, etc.). `/pokemon aggregate` montre les stats globales : nombre de players, tokens cumulés, taux shiny réellement observé, distribution des lignées actives. Privacy : aucune IP loggée serveur-side, anon_id non lié à l'identité, whitelist stricte côté Worker, droit de suppression via `/pokemon stats-share forget` (RGPD). Free tier Cloudflare Workers + KV (1K writes/jour = ~1000 daily submitters).
 
 ## [1.0.0-beta.3] — 2026-05-04
 

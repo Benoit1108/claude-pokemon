@@ -1167,6 +1167,225 @@ view_game() {
   ) 200>"$POKEMON_LOCK"
 }
 
+# ── Subcommand: stats-share / leaderboard / aggregate ────────────────────────
+# Opt-in shared stats : envoi anonymous (anon_id) → endpoint Cloudflare Worker.
+# Privacy : voir api/README.md. Aucune IP n'est loggée côté serveur.
+
+# Build minimal payload from state.json + config (whitelist strict)
+_share_build_payload() {
+  local anon_id="$1" client_ver="$2"
+  local now
+  now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  jq -n \
+    --arg id "$anon_id" \
+    --arg ver "$client_ver" \
+    --arg at "$now" \
+    --slurpfile state "$POKEMON_STATE" \
+    '{
+      anon_id: $id,
+      schema_version: 1,
+      client_version: $ver,
+      submitted_at: $at,
+      stats: {
+        lifetime: {
+          total_tokens:        ($state[0].lifetime_stats.total_tokens // 0),
+          total_evolutions:    ($state[0].lifetime_stats.total_evolutions // 0),
+          total_shinies:       ($state[0].lifetime_stats.total_shinies // 0),
+          max_level:           ($state[0].lifetime_stats.max_level // 0),
+          total_compagnons:    ($state[0].lifetime_stats.total_compagnons // 0),
+          lineages_completed:  ($state[0].lifetime_stats.lineages_completed // []),
+          games_won:           ($state[0].lifetime_stats.games_won // 0),
+          games_played:        ($state[0].lifetime_stats.games_played // 0)
+        },
+        active: {
+          lineage:        ($state[0].lineage // null),
+          current_level:  ($state[0].current_level // 0),
+          is_shiny:       ($state[0].is_shiny // false)
+        },
+        badges:             ($state[0].badges // [] | map(.id)),
+        pokedex_seen_count: (($state[0].pokedex_wild // {}) | keys | length)
+      }
+    }'
+}
+
+view_stats_share() {
+  local sub="${1:-}"
+  printf "\\n  %s%s$(pokemon_t share.title)%s\\n\\n" "$BOLD" "$GOLD" "$RESET"
+
+  local enabled endpoint anon_id
+  enabled=$(jq -r '.stats_share.enabled // false' "$POKEMON_DATA")
+  endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
+  anon_id=$(jq -r '.stats_share.anon_id // ""' "$POKEMON_DATA")
+
+  case "$sub" in
+    enable|on)
+      if [ "$enabled" = "true" ]; then
+        printf "  %s$(pokemon_t share.already_enabled)%s\n\n" "$DIM" "$RESET"
+        printf "  %s%s%s\n\n" "$DIM" "anon_id : $anon_id" "$RESET"
+        return
+      fi
+      if [ "${2:-}" != "--confirm" ]; then
+        printf "  %s$(pokemon_t share.privacy_notice)%s\n\n" "$DIM" "$RESET"
+        printf "  %s$(pokemon_t share.confirm_hint)%s\n\n" "$BOLD" "$RESET"
+        return
+      fi
+      # Generate anon_id (8 hex chars from /dev/urandom)
+      local new_id
+      new_id=$(head -c 4 /dev/urandom | od -An -tx1 | tr -d ' \n')
+      jq --arg id "$new_id" '
+        .stats_share.enabled = true
+        | .stats_share.anon_id = $id
+      ' "$POKEMON_DATA" > "$POKEMON_DATA.tmp" && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      printf "  %s$(pokemon_t share.enabled "$new_id")%s\n\n" "$GOLD" "$RESET"
+      ;;
+
+    disable|off)
+      if [ "$enabled" != "true" ]; then
+        printf "  %s$(pokemon_t share.already_disabled)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      jq '.stats_share.enabled = false' "$POKEMON_DATA" > "$POKEMON_DATA.tmp" \
+        && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      printf "  %s$(pokemon_t share.disabled)%s\n\n" "$DIM" "$RESET"
+      printf "  %s$(pokemon_t share.disable_hint)%s\n\n" "$DIM" "$RESET"
+      ;;
+
+    forget)
+      if [ -z "$anon_id" ]; then
+        printf "  %s$(pokemon_t share.no_id)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local resp
+      resp=$(curl -sf -X DELETE "$endpoint/v1/forget?anon_id=$anon_id" 2>&1)
+      if [ -n "$resp" ]; then
+        printf "  %s$(pokemon_t share.forgotten "$anon_id")%s\n\n" "$GOLD" "$RESET"
+        jq '.stats_share.enabled = false | .stats_share.anon_id = null' \
+          "$POKEMON_DATA" > "$POKEMON_DATA.tmp" && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      else
+        printf "  %s$(pokemon_t share.forget_failed)%s\n\n" "$DIM" "$RESET"
+      fi
+      ;;
+
+    submit|push)
+      if [ "$enabled" != "true" ]; then
+        printf "  %s$(pokemon_t share.not_enabled)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local pkg_ver
+      pkg_ver=$(jq -r '.version // "unknown"' "$POKEMON_DATA")
+      local payload
+      payload=$(_share_build_payload "$anon_id" "$pkg_ver")
+      local http_code
+      http_code=$(curl -s -o /tmp/share-resp.$$ -w "%{http_code}" \
+        -X POST "$endpoint/v1/submit" \
+        -H "content-type: application/json" \
+        --data "$payload" 2>/dev/null)
+      case "$http_code" in
+        200)
+          printf "  %s$(pokemon_t share.submit_ok)%s\n\n" "$GOLD" "$RESET"
+          ;;
+        429)
+          local cd
+          cd=$(jq -r '.cooldown_remaining_s // 0' /tmp/share-resp.$$ 2>/dev/null)
+          local hours=$((cd / 3600))
+          printf "  %s$(pokemon_t share.cooldown "$hours")%s\n\n" "$DIM" "$RESET"
+          ;;
+        *)
+          printf "  %s$(pokemon_t share.submit_failed "$http_code")%s\n\n" "$DIM" "$RESET"
+          ;;
+      esac
+      rm -f /tmp/share-resp.$$
+      ;;
+
+    status|"")
+      if [ "$enabled" = "true" ]; then
+        printf "  %s$(pokemon_t share.status_enabled "$anon_id")%s\n" "$GOLD" "$RESET"
+        printf "  %s$(pokemon_t share.status_endpoint "$endpoint")%s\n\n" "$DIM" "$RESET"
+      else
+        printf "  %s$(pokemon_t share.status_disabled)%s\n\n" "$DIM" "$RESET"
+      fi
+      printf "  %s$(pokemon_t share.usage)%s\n\n" "$DIM" "$RESET"
+      ;;
+
+    *)
+      printf "  %s$(pokemon_t share.unknown_subcmd "$sub")%s\n\n" "$DIM" "$RESET"
+      ;;
+  esac
+}
+
+view_leaderboard() {
+  local metric="${1:-total_tokens}"
+  local limit="${2:-10}"
+  printf "\\n  %s%s$(pokemon_t leaderboard.title "$metric")%s\\n\\n" "$BOLD" "$GOLD" "$RESET"
+
+  local endpoint
+  endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
+  if [ -z "$endpoint" ]; then
+    printf "  %s$(pokemon_t leaderboard.no_endpoint)%s\n\n" "$DIM" "$RESET"; return
+  fi
+
+  local resp
+  resp=$(curl -sf "$endpoint/v1/leaderboard?metric=$metric&limit=$limit" 2>/dev/null)
+  if [ -z "$resp" ]; then
+    printf "  %s$(pokemon_t leaderboard.fetch_failed)%s\n\n" "$DIM" "$RESET"; return
+  fi
+
+  local total_players my_id
+  total_players=$(jq -r '.total_players' <<<"$resp")
+  my_id=$(jq -r '.stats_share.anon_id // ""' "$POKEMON_DATA")
+
+  printf "  %s$(pokemon_t leaderboard.subtitle "$total_players")%s\n\n" "$DIM" "$RESET"
+
+  jq -r --arg me "$my_id" '.top | to_entries[] |
+    "\(.key + 1)|\(.value.anon_id)|\(.value.value)|\(.value.lineage // "-")|\(.value.level)|\(.value.is_shiny)|\(if .value.anon_id == $me then "*" else "" end)"' <<<"$resp" \
+  | while IFS='|' read -r rank id val lin lvl shiny is_me; do
+      local mark="$DIM"
+      [ "$is_me" = "*" ] && mark="$GOLD"
+      local star=""
+      [ "$shiny" = "true" ] && star="${GOLD}★ ${RESET}"
+      printf "  %s%2s.%s  %s%-12s%s  %s%12s%s   %s(%s lv.%s%s)%s\n" \
+        "$mark" "$rank" "$RESET" "$BOLD" "$id" "$RESET" \
+        "$mark" "$val" "$RESET" "$DIM" "$lin" "$lvl" "$star" "$RESET"
+    done
+  printf "\n"
+}
+
+view_aggregate() {
+  printf "\\n  %s%s$(pokemon_t aggregate.title)%s\\n\\n" "$BOLD" "$GOLD" "$RESET"
+  local endpoint resp
+  endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
+  if [ -z "$endpoint" ]; then
+    printf "  %s$(pokemon_t leaderboard.no_endpoint)%s\n\n" "$DIM" "$RESET"; return
+  fi
+  resp=$(curl -sf "$endpoint/v1/aggregate" 2>/dev/null)
+  if [ -z "$resp" ]; then
+    printf "  %s$(pokemon_t leaderboard.fetch_failed)%s\n\n" "$DIM" "$RESET"; return
+  fi
+
+  local players=$(jq -r '.total_players' <<<"$resp")
+  if [ "$players" = "0" ] || [ "$players" = "null" ]; then
+    printf "  %s$(pokemon_t aggregate.empty)%s\n\n" "$DIM" "$RESET"; return
+  fi
+
+  local tokens shinies rate
+  tokens=$(jq -r '.total_tokens_combined' <<<"$resp")
+  shinies=$(jq -r '.total_shinies_observed' <<<"$resp")
+  rate=$(jq -r '.shiny_rate_observed // 0' <<<"$resp")
+
+  printf "  %s$(pokemon_t_pad aggregate.players 22)%s :  %s\n"        "$DIM" "$RESET" "$(fmt_int "$players")"
+  printf "  %s$(pokemon_t_pad aggregate.tokens 22)%s :  %s\n"         "$DIM" "$RESET" "$(fmt_int "$tokens")"
+  printf "  %s$(pokemon_t_pad aggregate.shinies 22)%s :  %s\n"        "$DIM" "$RESET" "$(fmt_int "$shinies")"
+  printf "  %s$(pokemon_t_pad aggregate.shiny_rate 22)%s :  %s\n\n"   "$DIM" "$RESET" "$rate"
+
+  printf "  %s%s$(pokemon_t aggregate.distribution)%s\n" "$BOLD" "$GOLD" "$RESET"
+  jq -r '.active_lineage_distribution | to_entries | sort_by(-.value)[] |
+    "\(.key)|\(.value)"' <<<"$resp" \
+  | while IFS='|' read -r lin count; do
+      printf "    %s%-12s%s : %d\n" "$DIM" "$lin" "$RESET" "$count"
+    done
+  printf "\n"
+}
+
 # ── Dispatch ─────────────────────────────────────────────────────────────────
 case "${1:-}" in
   --shiny)            toggle_shiny ;;
@@ -1186,5 +1405,8 @@ case "${1:-}" in
   take)               view_take ;;
   trade)              view_trade "${2:-Anonymous}" ;;
   game)               view_game "${@:2}" ;;
+  stats-share|share)  view_stats_share "${2:-}" "${3:-}" ;;
+  leaderboard|lb)     view_leaderboard "${2:-total_tokens}" "${3:-10}" ;;
+  aggregate|global)   view_aggregate ;;
   *)                  view_main ;;
 esac

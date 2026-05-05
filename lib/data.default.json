@@ -847,6 +847,11 @@
   "shiny_hunter_mode": false,
   "shiny_mode": "random",
   "starter_pick": "random",
+  "stats_share": {
+    "anon_id": null,
+    "enabled": false,
+    "endpoint": "https://claude-pokemon-api.benoit-2001.workers.dev"
+  },
   "theme": "default",
   "thresholds": [
     0,
