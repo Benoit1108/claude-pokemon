@@ -21,6 +21,7 @@
   "stats_share": {
     "enabled": false,
     "endpoint": "https://claude-pokemon-api.benoit-dev.workers.dev",
-    "anon_id": null
+    "anon_id": null,
+    "display_name": null
   }
 }

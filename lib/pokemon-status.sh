@@ -1173,16 +1173,18 @@ view_game() {
 
 # Build minimal payload from state.json + config (whitelist strict)
 _share_build_payload() {
-  local anon_id="$1" client_ver="$2"
+  local anon_id="$1" client_ver="$2" display_name="${3:-}"
   local now
   now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   jq -n \
     --arg id "$anon_id" \
+    --arg name "$display_name" \
     --arg ver "$client_ver" \
     --arg at "$now" \
     --slurpfile state "$POKEMON_STATE" \
     '{
       anon_id: $id,
+      display_name: (if $name == "" then null else $name end),
       schema_version: 1,
       client_version: $ver,
       submitted_at: $at,
@@ -1212,10 +1214,11 @@ view_stats_share() {
   local sub="${1:-}"
   printf "\\n  %s%s$(pokemon_t share.title)%s\\n\\n" "$BOLD" "$GOLD" "$RESET"
 
-  local enabled endpoint anon_id
+  local enabled endpoint anon_id display_name
   enabled=$(jq -r '.stats_share.enabled // false' "$POKEMON_DATA")
   endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
   anon_id=$(jq -r '.stats_share.anon_id // ""' "$POKEMON_DATA")
+  display_name=$(jq -r '.stats_share.display_name // ""' "$POKEMON_DATA")
 
   case "$sub" in
     enable|on)
@@ -1266,6 +1269,34 @@ view_stats_share() {
       fi
       ;;
 
+    name|pseudo)
+      local new_name="${2:-}"
+      if [ -z "$new_name" ]; then
+        if [ -n "$display_name" ]; then
+          printf "  %s$(pokemon_t share.name_current "$display_name")%s\n\n" "$GOLD" "$RESET"
+        else
+          printf "  %s$(pokemon_t share.name_unset)%s\n\n" "$DIM" "$RESET"
+        fi
+        printf "  %s$(pokemon_t share.name_usage)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      if [ "$new_name" = "clear" ] || [ "$new_name" = "remove" ]; then
+        jq '.stats_share.display_name = null' "$POKEMON_DATA" > "$POKEMON_DATA.tmp" \
+          && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+        printf "  %s$(pokemon_t share.name_cleared)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      # Validate locally (same regex as Worker)
+      if ! [[ "$new_name" =~ ^[a-zA-Z0-9_-]{2,24}$ ]]; then
+        printf "  %s$(pokemon_t share.name_invalid)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      jq --arg n "$new_name" '.stats_share.display_name = $n' "$POKEMON_DATA" \
+        > "$POKEMON_DATA.tmp" && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      printf "  %s$(pokemon_t share.name_set "$new_name")%s\n\n" "$GOLD" "$RESET"
+      printf "  %s$(pokemon_t share.name_set_hint)%s\n\n" "$DIM" "$RESET"
+      ;;
+
     submit|push)
       if [ "$enabled" != "true" ]; then
         printf "  %s$(pokemon_t share.not_enabled)%s\n\n" "$DIM" "$RESET"
@@ -1274,7 +1305,7 @@ view_stats_share() {
       local pkg_ver
       pkg_ver=$(jq -r '.version // "unknown"' "$POKEMON_DATA")
       local payload
-      payload=$(_share_build_payload "$anon_id" "$pkg_ver")
+      payload=$(_share_build_payload "$anon_id" "$pkg_ver" "$display_name")
       local http_code
       http_code=$(curl -s -o /tmp/share-resp.$$ -w "%{http_code}" \
         -X POST "$endpoint/v1/submit" \
@@ -1300,6 +1331,11 @@ view_stats_share() {
     status|"")
       if [ "$enabled" = "true" ]; then
         printf "  %s$(pokemon_t share.status_enabled "$anon_id")%s\n" "$GOLD" "$RESET"
+        if [ -n "$display_name" ]; then
+          printf "  %s$(pokemon_t share.status_pseudo "$display_name")%s\n" "$GOLD" "$RESET"
+        else
+          printf "  %s$(pokemon_t share.status_no_pseudo)%s\n" "$DIM" "$RESET"
+        fi
         printf "  %s$(pokemon_t share.status_endpoint "$endpoint")%s\n\n" "$DIM" "$RESET"
       else
         printf "  %s$(pokemon_t share.status_disabled)%s\n\n" "$DIM" "$RESET"
@@ -1337,14 +1373,21 @@ view_leaderboard() {
   printf "  %s$(pokemon_t leaderboard.subtitle "$total_players")%s\n\n" "$DIM" "$RESET"
 
   jq -r --arg me "$my_id" '.top | to_entries[] |
-    "\(.key + 1)|\(.value.anon_id)|\(.value.value)|\(.value.lineage // "-")|\(.value.level)|\(.value.is_shiny)|\(if .value.anon_id == $me then "*" else "" end)"' <<<"$resp" \
-  | while IFS='|' read -r rank id val lin lvl shiny is_me; do
+    "\(.key + 1)|\(.value.anon_id)|\(.value.display_name // "")|\(.value.value)|\(.value.lineage // "-")|\(.value.level)|\(.value.is_shiny)|\(if .value.anon_id == $me then "*" else "" end)"' <<<"$resp" \
+  | while IFS='|' read -r rank id name val lin lvl shiny is_me; do
       local mark="$DIM"
       [ "$is_me" = "*" ] && mark="$GOLD"
       local star=""
       [ "$shiny" = "true" ] && star="${GOLD}★ ${RESET}"
-      printf "  %s%2s.%s  %s%-12s%s  %s%12s%s   %s(%s lv.%s%s)%s\n" \
-        "$mark" "$rank" "$RESET" "$BOLD" "$id" "$RESET" \
+      # Render label : pseudo#shortid (4 first chars of anon_id) if pseudo set, else full anon_id
+      local label
+      if [ -n "$name" ]; then
+        label="${name}#${id:0:4}"
+      else
+        label="$id"
+      fi
+      printf "  %s%2s.%s  %s%-20s%s  %s%12s%s   %s(%s lv.%s%s)%s\n" \
+        "$mark" "$rank" "$RESET" "$BOLD" "$label" "$RESET" \
         "$mark" "$val" "$RESET" "$DIM" "$lin" "$lvl" "$star" "$RESET"
     done
   printf "\n"
