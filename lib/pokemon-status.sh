@@ -1516,6 +1516,32 @@ view_stats_share() {
   esac
 }
 
+# Map a lineage id to its iconic emoji (used in leaderboard render + trainer-card).
+# Kept synced with api/src/index.js LINEAGE_EMOJI constant.
+_lineage_emoji() {
+  case "$1" in
+    fire)       printf '🔥' ;;
+    water)      printf '💧' ;;
+    grass)      printf '🌿' ;;
+    electric)   printf '⚡' ;;
+    eevee)      printf '🦊' ;;
+    chikorita)  printf '🌱' ;;
+    cyndaquil)  printf '🦔' ;;
+    totodile)   printf '🐊' ;;
+    *)          printf '❓' ;;
+  esac
+}
+
+# Format the rank prefix : 🥇🥈🥉 for top 3, "N." for the rest.
+_rank_prefix() {
+  case "$1" in
+    1) printf '🥇' ;;
+    2) printf '🥈' ;;
+    3) printf '🥉' ;;
+    *) printf '%2s.' "$1" ;;
+  esac
+}
+
 view_leaderboard() {
   local metric="${1:-total_tokens}"
   local limit="${2:-10}"
@@ -1545,7 +1571,7 @@ view_leaderboard() {
       local mark="$DIM"
       [ "$is_me" = "*" ] && mark="$GOLD"
       local star=""
-      [ "$shiny" = "true" ] && star="${GOLD}★ ${RESET}"
+      [ "$shiny" = "true" ] && star="${GOLD} ✦${RESET}"
       # Render label : pseudo#shortid (4 first chars of anon_id) if pseudo set, else full anon_id
       local label
       if [ -n "$name" ]; then
@@ -1553,9 +1579,21 @@ view_leaderboard() {
       else
         label="$id"
       fi
-      printf "  %s%2s.%s  %s%-20s%s  %s%12s%s   %s(%s lv.%s%s)%s\n" \
-        "$mark" "$rank" "$RESET" "$BOLD" "$label" "$RESET" \
-        "$mark" "$val" "$RESET" "$DIM" "$lin" "$lvl" "$star" "$RESET"
+      local rank_prefix lineage_emoji formatted_val
+      rank_prefix=$(_rank_prefix "$rank")
+      lineage_emoji=$(_lineage_emoji "$lin")
+      formatted_val=$(fmt_int "$val")
+      # Egg state (lvl 0) shown with 🥚 instead of "lv.0"
+      local lvl_label
+      if [ "$lvl" = "0" ]; then
+        lvl_label="🥚"
+      else
+        lvl_label="lv.$lvl"
+      fi
+      printf "  %s  %s%-20s%s  %s%14s%s   %s%s %s %s%s%s\n" \
+        "$rank_prefix" "${BOLD}${mark}" "$label" "$RESET" \
+        "$mark" "$formatted_val" "$RESET" \
+        "$DIM" "$lineage_emoji" "$lin" "$lvl_label" "$star" "$RESET"
     done
   printf "\n"
 }
@@ -1591,7 +1629,9 @@ view_aggregate() {
   jq -r '.active_lineage_distribution | to_entries | sort_by(-.value)[] |
     "\(.key)|\(.value)"' <<<"$resp" \
   | while IFS='|' read -r lin count; do
-      printf "    %s%-12s%s : %d\n" "$DIM" "$lin" "$RESET" "$count"
+      local lineage_emoji
+      lineage_emoji=$(_lineage_emoji "$lin")
+      printf "    %s %s%-12s%s : %d\n" "$lineage_emoji" "$DIM" "$lin" "$RESET" "$count"
     done
   printf "\n"
 }
