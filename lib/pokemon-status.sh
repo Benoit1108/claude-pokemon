@@ -1480,6 +1480,13 @@ view_stats_share() {
         --data "$payload" 2>/dev/null)
       case "$http_code" in
         200)
+          # Track submit timestamp locally so the auto-submit hook in
+          # pokemon_tick doesn't redundantly fire for the next 24h.
+          local now_iso
+          now_iso=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          jq --arg now "$now_iso" '.last_stats_submit_at = $now' \
+            "$POKEMON_STATE" > "$POKEMON_STATE.tmp" \
+            && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
           printf "  %s$(pokemon_t share.submit_ok)%s\n\n" "$GOLD" "$RESET"
           ;;
         429)

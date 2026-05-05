@@ -965,6 +965,81 @@ pokemon_tick() {
     # Run badge checks against the latest state (idempotent)
     state=$(pokemon_check_badges "$state" "$now")
 
+    # ── Auto-submit shared stats (fire-and-forget, every 24h) ──────────────
+    # Opt-in only. If user enabled stats_share + has anon_id + last submit > 24h ago
+    # (or never), POST stats to the Worker in background. Server has its own
+    # cooldown so worst case = 429 ignored. Optimistically updates
+    # last_stats_submit_at to throttle local retries.
+    local share_enabled
+    share_enabled=$(jq -r '.stats_share.enabled // false' "$POKEMON_DATA" 2>/dev/null || echo "false")
+    if [ "$share_enabled" = "true" ] && [ -n "$lineage" ] && [ "$lineage" != "null" ]; then
+      local share_anon_id share_endpoint share_display_name last_share
+      share_anon_id=$(jq -r '.stats_share.anon_id // ""' "$POKEMON_DATA")
+      share_endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
+      share_display_name=$(jq -r '.stats_share.display_name // ""' "$POKEMON_DATA")
+      last_share=$(jq -r '.last_stats_submit_at // ""' <<<"$state")
+
+      if [ -n "$share_anon_id" ] && [ -n "$share_endpoint" ]; then
+        local should_submit=false
+        if [ -z "$last_share" ]; then
+          should_submit=true
+        else
+          local last_share_epoch now_epoch hours_passed
+          now_epoch=$(date -u +%s)
+          last_share_epoch=$(date -u -d "$last_share" +%s 2>/dev/null || echo 0)
+          hours_passed=$(( (now_epoch - last_share_epoch) / 3600 ))
+          [ "$hours_passed" -ge 24 ] && should_submit=true
+        fi
+
+        if [ "$should_submit" = "true" ]; then
+          state=$(jq --arg now "$now" '.last_stats_submit_at = $now' <<<"$state")
+          local pkg_ver auto_payload
+          pkg_ver=$(jq -r '.version // "unknown"' "$POKEMON_DATA")
+          auto_payload=$(jq -n \
+            --arg id "$share_anon_id" \
+            --arg name "$share_display_name" \
+            --arg ver "$pkg_ver" \
+            --arg at "$now" \
+            --argjson st "$state" '
+            {
+              anon_id: $id,
+              display_name: (if $name == "" then null else $name end),
+              schema_version: 1,
+              client_version: $ver,
+              submitted_at: $at,
+              stats: {
+                lifetime: {
+                  total_tokens:       ($st.lifetime_stats.total_tokens // 0),
+                  total_evolutions:   ($st.lifetime_stats.total_evolutions // 0),
+                  total_shinies:      ($st.lifetime_stats.total_shinies // 0),
+                  max_level:          ($st.lifetime_stats.max_level // 0),
+                  total_compagnons:   ($st.lifetime_stats.total_compagnons // 0),
+                  lineages_completed: ($st.lifetime_stats.lineages_completed // []),
+                  games_won:          ($st.lifetime_stats.games_won // 0),
+                  games_played:       ($st.lifetime_stats.games_played // 0)
+                },
+                active: {
+                  lineage:       ($st.lineage // null),
+                  current_level: ($st.current_level // 0),
+                  is_shiny:      ($st.is_shiny // false)
+                },
+                badges:             ($st.badges // [] | map(.id)),
+                pokedex_seen_count: (($st.pokedex_wild // {}) | keys | length)
+              }
+            }
+          ')
+          # Background curl, fd 200 closed to release the flock immediately on
+          # parent subshell exit (don't hold the lock during the HTTP request).
+          (
+            curl -s --max-time 5 -X POST "$share_endpoint/v1/submit" \
+              -H "content-type: application/json" \
+              --data "$auto_payload" >/dev/null 2>&1
+          ) 200>&- </dev/null >/dev/null 2>&1 &
+          disown 2>/dev/null || true
+        fi
+      fi
+    fi
+
     cutoff=$(date -u -d '30 days ago' +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null \
           || date -u -v-30d +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null \
           || echo "1970-01-01T00:00:00Z")
