@@ -1334,6 +1334,113 @@ view_recap() {
   fi
 }
 
+# ── Subcommand: trainer-card ─────────────────────────────────────────────────
+# Affiche une carte de dresseur stylée — pendant CLI de la trainer card web
+# qui sera servie en Phase 2. Compact, scannable, vanity-feature pour partager
+# son profil avec un screenshot.
+
+view_trainer_card() {
+  printf '\n'
+  pokemon_box_top "$(pokemon_t trainer_card.title)" 64
+
+  local state lineage level total_xp is_shiny friendship created_at
+  local total_tokens total_shinies total_compagnons total_lineages_completed
+  local games_won games_played pokedex_count
+  local lang share_enabled share_anon_id share_display_name
+  state=$(cat "$POKEMON_STATE")
+  lineage=$(jq -r '.lineage // "fire"' <<<"$state")
+  level=$(jq -r '.current_level' <<<"$state")
+  total_xp=$(jq -r '.total_xp' <<<"$state")
+  is_shiny=$(jq -r '.is_shiny // false' <<<"$state")
+  friendship=$(jq -r '.friendship // 0' <<<"$state")
+  created_at=$(jq -r '.created_at // "—"' <<<"$state")
+  total_tokens=$(jq -r '.lifetime_stats.total_tokens // 0' <<<"$state")
+  total_shinies=$(jq -r '.lifetime_stats.total_shinies // 0' <<<"$state")
+  total_compagnons=$(jq -r '.lifetime_stats.total_compagnons // 0' <<<"$state")
+  total_lineages_completed=$(jq -r '.lifetime_stats.lineages_completed // [] | length' <<<"$state")
+  games_won=$(jq -r '.lifetime_stats.games_won // 0' <<<"$state")
+  games_played=$(jq -r '.lifetime_stats.games_played // 0' <<<"$state")
+  pokedex_count=$(jq -r '.pokedex_wild // {} | keys | length' <<<"$state")
+  lang=$(jq -r '.language // "fr"' "$POKEMON_DATA")
+
+  share_enabled=$(jq -r '.stats_share.enabled // false' "$POKEMON_DATA")
+  share_anon_id=$(jq -r '.stats_share.anon_id // ""' "$POKEMON_DATA")
+  share_display_name=$(jq -r '.stats_share.display_name // ""' "$POKEMON_DATA")
+
+  local lineage_label total_lineages lineage_emoji
+  lineage_label=$(jq -r --arg l "$lineage" '.lineages[$l].label // $l' "$POKEMON_DATA")
+  total_lineages=$(jq -r '.lineages | length' "$POKEMON_DATA")
+  lineage_emoji=$(_lineage_emoji "$lineage")
+
+  # Resolve current stage emoji + name
+  local stage_name stage_emoji
+  stage_name=$(pokemon_evo_field "$lineage" "$level" "name")
+  stage_emoji=$(pokemon_evo_field "$lineage" "$level" "emoji")
+  local shiny_mark=""
+  [ "$is_shiny" = "true" ] && shiny_mark=" ${GOLD}✦${RESET}"
+
+  # Header : pseudo + trainer since
+  local label
+  if [ -n "$share_display_name" ] && [ -n "$share_anon_id" ]; then
+    label="${share_display_name}#${share_anon_id:0:4}"
+  elif [ -n "$share_anon_id" ]; then
+    label="$share_anon_id"
+  else
+    label="$(pokemon_t trainer_card.unnamed)"
+  fi
+  printf "\n  %s🎮 %s%s%s%s\n" "$BOLD" "$GOLD" "$label" "$RESET" "$shiny_mark"
+  printf "  %s$(pokemon_t trainer_card.trainer_since "${created_at:0:10}")%s\n\n" "$DIM" "$RESET"
+
+  # Companion line
+  printf "  %s$(pokemon_t_pad trainer_card.companion 22)%s :  %s %s%s%s · Lv.%s\n" \
+    "$DIM" "$RESET" "$stage_emoji" "$BOLD" "$stage_name" "$RESET" "$level"
+  printf "  %s$(pokemon_t_pad trainer_card.lineage 22)%s :  %s %s\n\n" \
+    "$DIM" "$RESET" "$lineage_emoji" "$lineage_label"
+
+  # Stats block
+  printf "  %s%s$(pokemon_t trainer_card.stats_section)%s\n" "$BOLD" "$GOLD" "$RESET"
+  printf "  %s$(pokemon_t_pad trainer_card.tokens 22)%s :  %s\n" "$DIM" "$RESET" "$(fmt_int "$total_tokens")"
+  printf "  %s$(pokemon_t_pad trainer_card.xp 22)%s :  %s\n" "$DIM" "$RESET" "$(fmt_int "$total_xp")"
+  printf "  %s$(pokemon_t_pad trainer_card.friendship 22)%s :  %s\n" "$DIM" "$RESET" "$(fmt_int "$friendship")"
+  printf "  %s$(pokemon_t_pad trainer_card.shinies 22)%s :  %s\n" "$DIM" "$RESET" "$total_shinies"
+  printf "  %s$(pokemon_t_pad trainer_card.lineages_done 22)%s :  %s / %s\n" \
+    "$DIM" "$RESET" "$total_lineages_completed" "$total_lineages"
+  printf "  %s$(pokemon_t_pad trainer_card.games 22)%s :  %s / %s\n" \
+    "$DIM" "$RESET" "$games_won" "$games_played"
+  printf "  %s$(pokemon_t_pad trainer_card.pokedex 22)%s :  %s / 251\n\n" "$DIM" "$RESET" "$pokedex_count"
+
+  # Badges block — display all earned badges with their emoji
+  local badges_count
+  badges_count=$(jq -r '.badges | length' <<<"$state")
+  if [ "$badges_count" -gt 0 ]; then
+    printf "  %s%s$(pokemon_t trainer_card.badges_section "$badges_count")%s\n" "$BOLD" "$GOLD" "$RESET"
+    jq -r '.badges[] | .id' <<<"$state" | while read -r bid; do
+      local emoji blabel
+      emoji=$(pokemon_badge_meta "$bid" emoji)
+      blabel=$(pokemon_badge_meta "$bid" label)
+      printf "  %s · %s\n" "$emoji" "$blabel"
+    done
+    printf "\n"
+  fi
+
+  # Stats share status
+  printf "  %s%s$(pokemon_t trainer_card.share_section)%s\n" "$BOLD" "$GOLD" "$RESET"
+  if [ "$share_enabled" = "true" ]; then
+    printf "  %s$(pokemon_t trainer_card.share_active "$share_anon_id")%s\n" "$DIM" "$RESET"
+    if [ -n "$share_display_name" ]; then
+      printf "  %s$(pokemon_t trainer_card.share_pseudo "$share_display_name")%s\n" "$DIM" "$RESET"
+    fi
+  else
+    printf "  %s$(pokemon_t trainer_card.share_inactive)%s\n" "$DIM" "$RESET"
+  fi
+
+  # Arena placeholder (Phase 2)
+  printf "  %s$(pokemon_t trainer_card.arena_soon)%s\n" "$DIM" "$RESET"
+
+  pokemon_box_bottom 64
+  printf '\n'
+}
+
 # ── Subcommand: stats-share / leaderboard / aggregate ────────────────────────
 # Opt-in shared stats : envoi anonymous (anon_id) → endpoint Cloudflare Worker.
 # Privacy : voir api/README.md. Aucune IP n'est loggée côté serveur.
@@ -1663,6 +1770,7 @@ case "${1:-}" in
   trade)              view_trade "${2:-Anonymous}" ;;
   game)               view_game "${@:2}" ;;
   recap|summary)      view_recap "${2:-}" ;;
+  trainer-card|card)  view_trainer_card ;;
   stats-share|share)  view_stats_share "${2:-}" "${3:-}" ;;
   leaderboard|lb)     view_leaderboard "${2:-total_tokens}" "${3:-10}" ;;
   aggregate|global)   view_aggregate ;;

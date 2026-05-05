@@ -194,6 +194,27 @@
     "cooldown": "Échange déjà fait aujourd'hui. Prochain disponible dans %sh.",
     "usage": "Usage : /pokemon trade [<dresseur>]"
   },
+  "trainer_card": {
+    "title": "TRAINER CARD",
+    "unnamed": "(no pseudo · enable stats-share)",
+    "trainer_since": "Dresseur depuis %s",
+    "companion": "Compagnon actif",
+    "lineage": "Lignée",
+    "stats_section": "📊 Stats lifetime",
+    "tokens": "Tokens consommés",
+    "xp": "XP cumulés (active)",
+    "friendship": "Amitié (lifetime)",
+    "shinies": "Shinies trouvés",
+    "lineages_done": "Lignées complétées",
+    "games": "Quizz gagnés",
+    "pokedex": "Pokédex sauvages",
+    "badges_section": "🏆 Badges acquis (%s)",
+    "share_section": "📡 Stats partagées",
+    "share_active": "Activé · anon_id %s · sync auto every 24h",
+    "share_pseudo": "Pseudo public : %s",
+    "share_inactive": "Désactivé · /pokemon stats-share enable --confirm pour rejoindre le leaderboard",
+    "arena_soon": "⚔️  Arena : Phase 2 — coming soon (combats async, leaderboard ELO)"
+  },
   "recap": {
     "title": "📜 RECAP DE SESSION",
     "scope_session": "session courante",

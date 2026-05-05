@@ -194,6 +194,27 @@
     "cooldown": "Trade already done today. Next available in %sh.",
     "usage": "Usage: /pokemon trade [<trainer>]"
   },
+  "trainer_card": {
+    "title": "TRAINER CARD",
+    "unnamed": "(no pseudo · enable stats-share)",
+    "trainer_since": "Trainer since %s",
+    "companion": "Active buddy",
+    "lineage": "Lineage",
+    "stats_section": "📊 Lifetime stats",
+    "tokens": "Tokens consumed",
+    "xp": "XP (active)",
+    "friendship": "Friendship (lifetime)",
+    "shinies": "Shinies found",
+    "lineages_done": "Lineages completed",
+    "games": "Quizzes won",
+    "pokedex": "Wild pokédex",
+    "badges_section": "🏆 Badges earned (%s)",
+    "share_section": "📡 Shared stats",
+    "share_active": "Enabled · anon_id %s · auto-sync every 24h",
+    "share_pseudo": "Public pseudo: %s",
+    "share_inactive": "Disabled · /pokemon stats-share enable --confirm to join the leaderboard",
+    "arena_soon": "⚔️  Arena: Phase 2 — coming soon (async battles, ELO leaderboard)"
+  },
   "recap": {
     "title": "📜 SESSION RECAP",
     "scope_session": "current session",

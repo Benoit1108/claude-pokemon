@@ -181,6 +181,7 @@ ${B}Sous-commandes utiles :${R}
   /pokemon badges       Badges acquis (15)
   /pokemon game         Mini-jeu : devine le Pokémon
   /pokemon recap        Résumé des events de la session
+  /pokemon trainer-card Carte de dresseur stylée (à screenshoter & partager)
   /pokemon leaderboard  Top players (opt-in stats partagées)
   /pokemon stats-share  Activer/désactiver les stats partagées
   /pokemon help         Liste complète
