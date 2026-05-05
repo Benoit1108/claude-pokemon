@@ -5,6 +5,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+### Added
+
+- **End-of-session recap** (`/pokemon recap`) : résume les events de la session (baies, rencontres, combats, items, évolutions, badges débloqués) + les deltas vs baseline (XP gagnés, friendship +N, progression hatch, level transitions). Résout le pain UX où les events scrollaient en silence pendant que tu codais. Scopes : `session` (défaut, basé sur le session_id Claude Code le plus récent) ou `today` (depuis 00:00 UTC). Premier sub-batch de Phase 1 du roadmap.
+
 ## [1.0.0-beta.4] — 2026-05-05
 
 ### Added

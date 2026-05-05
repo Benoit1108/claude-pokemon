@@ -180,6 +180,7 @@ ${B}Sous-commandes utiles :${R}
   /pokemon stats        Stats de vie + multiplicateurs
   /pokemon badges       Badges acquis (15)
   /pokemon game         Mini-jeu : devine le Pokémon
+  /pokemon recap        Résumé des events de la session
   /pokemon leaderboard  Top players (opt-in stats partagées)
   /pokemon stats-share  Activer/désactiver les stats partagées
   /pokemon help         Liste complète

@@ -815,6 +815,21 @@ pokemon_tick() {
           (if (.sessions[$sid].max_context_tokens // 0) > $tokens
            then (.sessions[$sid].max_context_tokens // 0) else $tokens end)
       | .last_updated = $now
+      # Capture baseline snapshot ONCE per session, used by /pokemon recap
+      # to compute deltas (XP gained, friendship gained, evolutions during session).
+      | (if (.sessions[$sid].baseline | not) then
+          .sessions[$sid].baseline = {
+            total_xp:         (.total_xp - $delta),
+            friendship:       (.friendship // 0),
+            lifetime_tokens:  (.lifetime_stats.total_tokens - $raw_delta),
+            lineage:          .lineage,
+            current_level:    .current_level,
+            evolution_count:  ((.evolution_history // []) | length),
+            badge_count:      ((.badges // []) | length),
+            pokedex_wild_count: ((.pokedex_wild // {}) | keys | length),
+            games_won:        (.lifetime_stats.games_won // 0)
+          }
+        else . end)
     ' <<<"$state")
 
     total_xp=$(jq -r '.total_xp' <<<"$state")

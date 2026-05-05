@@ -194,6 +194,25 @@
     "cooldown": "Trade already done today. Next available in %sh.",
     "usage": "Usage: /pokemon trade [<trainer>]"
   },
+  "recap": {
+    "title": "📜 SESSION RECAP",
+    "scope_session": "current session",
+    "scope_today": "since today (UTC)",
+    "context": "Scope: %s · duration: %s",
+    "no_session": "No active session. Run a Claude Code command to start.",
+    "unknown_scope": "Unknown scope: %s. Usage: /pokemon recap [session|today]",
+    "no_events": "No events during this period. Keep coding, they'll come 🌱",
+    "deltas": "📊 Progress",
+    "tokens_consumed": "Tokens consumed",
+    "xp_gained": "XP gained",
+    "friendship_gained": "Friendship gained",
+    "level_progress": "Level",
+    "level_stable": "Level",
+    "hatch_progress": "Hatch progress",
+    "events_title": "🎉 Events (%s)",
+    "evolutions_title": "✨ Evolutions",
+    "badges_title": "🏆 Badges unlocked"
+  },
   "share": {
     "title": "📡 SHARED STATS (anonymous, opt-in)",
     "status_enabled": "✓ Enabled — anon_id: %s",

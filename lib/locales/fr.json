@@ -194,6 +194,25 @@
     "cooldown": "Échange déjà fait aujourd'hui. Prochain disponible dans %sh.",
     "usage": "Usage : /pokemon trade [<dresseur>]"
   },
+  "recap": {
+    "title": "📜 RECAP DE SESSION",
+    "scope_session": "session courante",
+    "scope_today": "depuis ce matin (UTC)",
+    "context": "Période : %s · durée : %s",
+    "no_session": "Aucune session active. Lance une commande Claude Code pour démarrer.",
+    "unknown_scope": "Scope inconnu : %s. Usage : /pokemon recap [session|today]",
+    "no_events": "Aucun event durant cette période. Continue à coder, ça arrivera 🌱",
+    "deltas": "📊 Progression",
+    "tokens_consumed": "Tokens consommés",
+    "xp_gained": "XP gagnés",
+    "friendship_gained": "Amitié gagnée",
+    "level_progress": "Niveau",
+    "level_stable": "Niveau",
+    "hatch_progress": "Progression hatch",
+    "events_title": "🎉 Events (%s)",
+    "evolutions_title": "✨ Évolutions",
+    "badges_title": "🏆 Badges débloqués"
+  },
   "share": {
     "title": "📡 STATS PARTAGÉES (anonymes, opt-in)",
     "status_enabled": "✓ Activé — anon_id : %s",

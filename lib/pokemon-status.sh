@@ -1167,6 +1167,173 @@ view_game() {
   ) 200>"$POKEMON_LOCK"
 }
 
+# ── Subcommand: recap (résumé fin de session) ────────────────────────────────
+# Affiche un résumé des events de la session courante (encounters, baies, items,
+# évolutions, badges débloqués, deltas XP/friendship, progression hatch).
+# Le baseline est capturé au premier tick de chaque session_id (cf. lib.sh).
+# Sans arg = session courante (most-recent .last_seen). Arg "today" = depuis 00:00 UTC.
+
+view_recap() {
+  local scope="${1:-session}"
+  printf "\\n  %s%s$(pokemon_t recap.title)%s\\n\\n" "$BOLD" "$GOLD" "$RESET"
+
+  local state since_iso label
+  state=$(cat "$POKEMON_STATE")
+
+  case "$scope" in
+    today)
+      since_iso=$(date -u +"%Y-%m-%dT00:00:00Z")
+      label=$(pokemon_t recap.scope_today)
+      ;;
+    session|"")
+      # Find session with the most recent last_seen (= active session)
+      local sid
+      sid=$(jq -r '.sessions // {} | to_entries | sort_by(.value.last_seen) | last.key // ""' <<<"$state")
+      if [ -z "$sid" ] || [ "$sid" = "null" ]; then
+        printf "  %s$(pokemon_t recap.no_session)%s\n\n" "$DIM" "$RESET"; return
+      fi
+      since_iso=$(jq -r --arg sid "$sid" '.sessions[$sid].first_seen' <<<"$state")
+      label=$(pokemon_t recap.scope_session)
+      ;;
+    *)
+      printf "  %s$(pokemon_t recap.unknown_scope "$scope")%s\n\n" "$DIM" "$RESET"; return
+      ;;
+  esac
+
+  # Compute time delta + duration display
+  local now_epoch since_epoch dur_min
+  now_epoch=$(date -u +%s)
+  since_epoch=$(date -u -d "$since_iso" +%s 2>/dev/null || echo "$now_epoch")
+  dur_min=$(( (now_epoch - since_epoch) / 60 ))
+  local dur_label
+  if [ "$dur_min" -lt 60 ]; then
+    dur_label="${dur_min}min"
+  else
+    dur_label="$((dur_min / 60))h$(printf '%02d' $((dur_min % 60)))"
+  fi
+
+  printf "  %s$(pokemon_t recap.context "$label" "$dur_label")%s\n\n" "$DIM" "$RESET"
+
+  # ── Deltas (only meaningful for session scope where baseline exists) ──
+  if [ "$scope" = "session" ] || [ "$scope" = "" ]; then
+    local sid baseline
+    sid=$(jq -r '.sessions // {} | to_entries | sort_by(.value.last_seen) | last.key // ""' <<<"$state")
+    baseline=$(jq -r --arg sid "$sid" '.sessions[$sid].baseline // null' <<<"$state")
+
+    if [ "$baseline" != "null" ]; then
+      local xp_delta fr_delta tok_delta lvl_now lvl_then
+      xp_delta=$(jq -r --arg sid "$sid" '.total_xp - .sessions[$sid].baseline.total_xp' <<<"$state")
+      fr_delta=$(jq -r --arg sid "$sid" '(.friendship // 0) - .sessions[$sid].baseline.friendship' <<<"$state")
+      tok_delta=$(jq -r --arg sid "$sid" '.lifetime_stats.total_tokens - .sessions[$sid].baseline.lifetime_tokens' <<<"$state")
+      lvl_now=$(jq -r '.current_level' <<<"$state")
+      lvl_then=$(jq -r --arg sid "$sid" '.sessions[$sid].baseline.current_level' <<<"$state")
+
+      printf "  %s%s$(pokemon_t recap.deltas)%s\n" "$BOLD" "$GOLD" "$RESET"
+      printf "    %s$(pokemon_t_pad recap.tokens_consumed 22)%s :  %s\n" "$DIM" "$RESET" "$(fmt_int "$tok_delta")"
+      printf "    %s$(pokemon_t_pad recap.xp_gained 22)%s :  +%s\n" "$DIM" "$RESET" "$(fmt_int "$xp_delta")"
+      printf "    %s$(pokemon_t_pad recap.friendship_gained 22)%s :  +%s\n" "$DIM" "$RESET" "$(fmt_int "$fr_delta")"
+      if [ "$lvl_now" -gt "$lvl_then" ]; then
+        printf "    %s$(pokemon_t_pad recap.level_progress 22)%s :  Lv.%s → %sLv.%s%s\n" "$DIM" "$RESET" "$lvl_then" "$GOLD" "$lvl_now" "$RESET"
+      else
+        # Compute hatch progress for level 0 specially
+        if [ "$lvl_now" -eq 0 ]; then
+          local total_xp threshold pct
+          total_xp=$(jq -r '.total_xp' <<<"$state")
+          threshold=$(jq -r '.thresholds[1]' "$POKEMON_DATA")
+          pct=$(awk -v t="$total_xp" -v th="$threshold" 'BEGIN{printf "%d", (t/th)*100}')
+          printf "    %s$(pokemon_t_pad recap.hatch_progress 22)%s :  %s%% vers Lv.1\n" "$DIM" "$RESET" "$pct"
+        else
+          printf "    %s$(pokemon_t_pad recap.level_stable 22)%s :  Lv.%s\n" "$DIM" "$RESET" "$lvl_now"
+        fi
+      fi
+      printf "\n"
+    fi
+  fi
+
+  # ── Events filtered since since_iso ──
+  local events_json
+  events_json=$(jq -c --arg since "$since_iso" '
+    [.recent_events // [] | .[] | select(.at >= $since)]
+  ' <<<"$state")
+
+  local n_events
+  n_events=$(jq -r 'length' <<<"$events_json")
+
+  if [ "$n_events" = "0" ]; then
+    printf "  %s$(pokemon_t recap.no_events)%s\n\n" "$DIM" "$RESET"
+  else
+    printf "  %s%s$(pokemon_t recap.events_title "$n_events")%s\n" "$BOLD" "$GOLD" "$RESET"
+    local lang
+    lang=$(jq -r '.language // "fr"' "$POKEMON_DATA")
+    jq -r --arg lang "name_$lang" '.[] |
+      "\(.type)|\(.id // "")|\(.at)|\(.xp // 0)|\(.name // "")|\(.emoji // "")|\(.wild_level // 0)"' <<<"$events_json" | \
+    while IFS='|' read -r etype eid eat exp ename eemoji wlvl; do
+      local time_short
+      time_short="${eat:11:5}"  # HH:MM
+      case "$etype" in
+        berry)
+          printf "    %s%s%s  🍇 %s%s %s +%s XP\n" "$DIM" "$time_short" "$RESET" "$eemoji" "$RESET" "$ename" "$exp"
+          ;;
+        encounter)
+          local wn we
+          wn=$(jq -r --arg id "$eid" --arg lang "name_$lang" '.wild_pool[] | select(.id == $id) | .[$lang]' "$POKEMON_DATA")
+          we=$(jq -r --arg id "$eid" '.wild_pool[] | select(.id == $id) | .emoji' "$POKEMON_DATA")
+          printf "    %s%s%s  🎯 %s%s %s rencontré\n" "$DIM" "$time_short" "$RESET" "$we" "$RESET" "$wn"
+          ;;
+        battle_won)
+          local wn
+          wn=$(jq -r --arg id "$eid" --arg lang "name_$lang" '.wild_pool[] | select(.id == $id) | .[$lang]' "$POKEMON_DATA")
+          printf "    %s%s%s  ⚔️  %sbattle won%s vs %s Lv.%s (+%s XP)\n" "$DIM" "$time_short" "$RESET" "$GOLD" "$RESET" "$wn" "$wlvl" "$exp"
+          ;;
+        battle_lost)
+          local wn
+          wn=$(jq -r --arg id "$eid" --arg lang "name_$lang" '.wild_pool[] | select(.id == $id) | .[$lang]' "$POKEMON_DATA")
+          printf "    %s%s%s  💢 %sbattle lost%s vs %s Lv.%s\n" "$DIM" "$time_short" "$RESET" "$DIM" "$RESET" "$wn" "$wlvl"
+          ;;
+        item)
+          printf "    %s%s%s  🎁 %s%s %s obtenu\n" "$DIM" "$time_short" "$RESET" "$eemoji" "$RESET" "$ename"
+          ;;
+      esac
+    done
+    printf "\n"
+  fi
+
+  # ── Evolutions during the period ──
+  local evos
+  evos=$(jq -c --arg since "$since_iso" '
+    [.evolution_history // [] | .[] | select(.evolved_at >= $since)]
+  ' <<<"$state")
+  local n_evos
+  n_evos=$(jq -r 'length' <<<"$evos")
+  if [ "$n_evos" -gt 0 ]; then
+    printf "  %s%s$(pokemon_t recap.evolutions_title)%s\n" "$BOLD" "$GOLD" "$RESET"
+    jq -r '.[] | "\(.level)|\(.name)|\(.evolved_at)"' <<<"$evos" | \
+    while IFS='|' read -r elvl ename eat; do
+      printf "    %s%s%s  ✨ Lv.%s — %s%s%s\n" "$DIM" "${eat:11:5}" "$RESET" "$elvl" "$BOLD" "$ename" "$RESET"
+    done
+    printf "\n"
+  fi
+
+  # ── Badges earned during the period ──
+  local new_badges
+  new_badges=$(jq -c --arg since "$since_iso" '
+    [.badges // [] | .[] | select(.earned_at >= $since)]
+  ' <<<"$state")
+  local n_badges
+  n_badges=$(jq -r 'length' <<<"$new_badges")
+  if [ "$n_badges" -gt 0 ]; then
+    printf "  %s%s$(pokemon_t recap.badges_title)%s\n" "$BOLD" "$GOLD" "$RESET"
+    jq -r '.[] | "\(.id)|\(.earned_at)"' <<<"$new_badges" | \
+    while IFS='|' read -r bid bat; do
+      local emoji label
+      emoji=$(pokemon_badge_meta "$bid" emoji)
+      label=$(pokemon_badge_meta "$bid" label)
+      printf "    %s%s%s  %s  %s%s%s\n" "$DIM" "${bat:11:5}" "$RESET" "$emoji" "$BOLD" "$label" "$RESET"
+    done
+    printf "\n"
+  fi
+}
+
 # ── Subcommand: stats-share / leaderboard / aggregate ────────────────────────
 # Opt-in shared stats : envoi anonymous (anon_id) → endpoint Cloudflare Worker.
 # Privacy : voir api/README.md. Aucune IP n'est loggée côté serveur.
@@ -1448,6 +1615,7 @@ case "${1:-}" in
   take)               view_take ;;
   trade)              view_trade "${2:-Anonymous}" ;;
   game)               view_game "${@:2}" ;;
+  recap|summary)      view_recap "${2:-}" ;;
   stats-share|share)  view_stats_share "${2:-}" "${3:-}" ;;
   leaderboard|lb)     view_leaderboard "${2:-total_tokens}" "${3:-10}" ;;
   aggregate|global)   view_aggregate ;;
