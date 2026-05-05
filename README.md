@@ -6,20 +6,28 @@ A persistent **Pokémon companion** for [Claude Code](https://claude.com/claude-
   <img src="assets/demo.gif" alt="claude-pokemon demo : statusline + /pokemon view" width="720">
 </p>
 
+<p align="center">
+  <em>4 themes (default / dark / light / retro) — switch via <code>data.json.theme</code></em><br>
+  <img src="assets/themes-demo.gif" alt="claude-pokemon themes preview" width="720">
+</p>
+
 ## Features
 
-- 🥚 **Hatch your starter** : Bulbasaur, Charmander, Squirtle, Pikachu, or Eevee
-- 🌟 **Pokémon-canonical XP curve** (Medium Slow, Lv.0 → Lv.100)
+- 🥚 **Hatch your starter** : Bulbasaur, Charmander, Squirtle, Pikachu, Eevee — and Gen 2 Johto starters (Chikorita, Cyndaquil, Totodile)
+- 🌟 **Pokémon-canonical XP curve** (Medium Slow, Lv.0 → Lv.100). Hatch threshold rebalanced to 300K (achievable in first day of real use)
 - ✨ **Shiny system** : 1/100 chance, +25% with Shiny Charm after first
-- 🐊 **Mega evolutions & Gigamax** at Lv.55 / Lv.100
-- 🏆 **12 Achievement badges**
+- 🐊 **Mega evolutions & Gigamax** at Lv.55 / Lv.100 (Hisuian Typhlosion for Gen 2 Fire)
+- 🏆 **15 Achievement badges** including Master badges per lineage
 - 👥 **Team management** (6 max) + unlimited PC storage
-- 📖 **Pokédex Gen 1** (151 wild encounters)
+- 📖 **Pokédex Gen 1+2** (251 wild encounters)
+- 🎨 **4 UI themes** : `default` (gold), `dark` (cyan), `light` (sepia), `retro` (GameBoy green monochrome)
+- ❓ **Mini-game** `/pokemon game` : guess the Pokémon from hints (+500 XP reward)
+- 📡 **Optional shared stats** : `/pokemon stats-share enable --confirm` → opt-in anonymous leaderboard via Cloudflare Worker (set a public pseudo via `name <pseudo>`, GDPR-compliant `forget` to delete)
 - 🥋 **Battle system** (30% of encounters → win/lose, XP bonus or injured status)
 - 🎁 **Held items** (XP Charm, Lucky Egg, Soothe Bell, Berry)
 - 🔄 **Trade simulation** (1/day random Pokémon)
 - 🎃 **Seasonal events** (Halloween, Christmas)
-- 💖 **Friendship counter**
+- 💖 **Friendship counter** (gates Eevee → Espeon/Umbreon evolutions canonically)
 - 🌍 **i18n** : Français + English (more languages welcome via PR)
 
 ## Install
