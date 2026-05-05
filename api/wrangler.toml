@@ -1,0 +1,15 @@
+name = "claude-pokemon-api"
+main = "src/index.js"
+compatibility_date = "2026-05-05"
+workers_dev = true
+
+# Disable observability/logging entirely — we don't want IPs in CF logs.
+# (Workers Logs are off by default but explicit here for safety.)
+[observability]
+enabled = false
+
+# KV namespace bound as `env.STATS`. The `id` is filled after running:
+#   wrangler kv namespace create STATS
+[[kv_namespaces]]
+binding = "STATS"
+id = "c5e69cf5ee87443786b562ab4dffd347"
