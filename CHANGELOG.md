@@ -5,6 +5,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+## [1.0.0-beta.4] — 2026-05-05
+
 ### Added
 
 - **Master badges Gen 2** : 3 nouveaux badges débloqués à Lv.100 sur les lignées Johto (`master_chikorita` 🍃, `master_cyndaquil` 🦔, `master_totodile` 🐊). Total badges 12 → 15.
