@@ -6,11 +6,6 @@ A persistent **Pokémon companion** for [Claude Code](https://claude.com/claude-
   <img src="assets/demo.gif" alt="claude-pokemon demo : statusline + /pokemon view" width="720">
 </p>
 
-<p align="center">
-  <em>4 themes (default / dark / light / retro) — switch via <code>data.json.theme</code></em><br>
-  <img src="assets/themes-demo.gif" alt="claude-pokemon themes preview" width="720">
-</p>
-
 ## Features
 
 - 🥚 **Hatch your starter** : Bulbasaur, Charmander, Squirtle, Pikachu, Eevee — and Gen 2 Johto starters (Chikorita, Cyndaquil, Totodile)
@@ -120,6 +115,34 @@ Edit `~/.claude/pokemon/data.json` to tune everything :
 ```bash
 jq '.language = "en"' ~/.claude/pokemon/data.json | sponge ~/.claude/pokemon/data.json
 ```
+
+## Themes
+
+`data.json.theme` accepts `default` / `dark` / `light` / `retro`. The first three only retint the accent color (titles, gauges ≥75%, badge dates, shiny stars). `retro` goes further and collapses the full stage/type palette to a 4-tone GameBoy green for a monochrome DMG vibe.
+
+<table>
+  <tr>
+    <td align="center"><sub><b>default</b> — gold accent (current)</sub><br><img src="assets/theme-default.png" alt="default theme" width="380"></td>
+    <td align="center"><sub><b>dark</b> — electric cyan</sub><br><img src="assets/theme-dark.png" alt="dark theme" width="380"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>light</b> — sepia (readable on light terminals)</sub><br><img src="assets/theme-light.png" alt="light theme" width="380"></td>
+    <td align="center"><sub><b>retro</b> — GameBoy DMG green</sub><br><img src="assets/theme-retro.png" alt="retro theme" width="380"></td>
+  </tr>
+</table>
+
+```bash
+jq '.theme = "retro"' ~/.claude/pokemon/data.json | sponge ~/.claude/pokemon/data.json
+```
+
+<details>
+<summary>Voir l'animation des 4 thèmes (GIF)</summary>
+
+<p align="center">
+  <img src="assets/themes-demo.gif" alt="themes animated preview" width="720">
+</p>
+
+</details>
 
 ## Mechanics
 

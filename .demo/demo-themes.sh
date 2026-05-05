@@ -32,17 +32,17 @@ clear
 
 type "# claude-pokemon — 4 thèmes UI dans data.json.theme"
 sleep 1.5
-echo
 
 for theme in default dark light retro; do
+  clear
   type "# theme = \"$theme\""
   set_theme "$theme"
   sleep 0.5
   type "/pokemon stats"
   bash "$POKEMON" stats 2>&1 | head -14
-  sleep 3
-  echo
+  sleep 3.5
 done
 
+clear
 type "# data.json.theme accepte : default | dark | light | retro"
 sleep 2
