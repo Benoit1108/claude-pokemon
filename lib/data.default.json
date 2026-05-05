@@ -850,7 +850,7 @@
   "stats_share": {
     "anon_id": null,
     "enabled": false,
-    "endpoint": "https://claude-pokemon-api.benoit-2001.workers.dev"
+    "endpoint": "https://claude-pokemon-api.benoit-dev.workers.dev"
   },
   "theme": "default",
   "thresholds": [

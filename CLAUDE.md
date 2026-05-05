@@ -95,7 +95,7 @@ cd api/
 wrangler deploy
 ```
 
-URL prod actuelle : `https://claude-pokemon-api.benoit-2001.workers.dev`.
+URL prod actuelle : `https://claude-pokemon-api.benoit-dev.workers.dev`.
 
 CLI side : `view_stats_share`, `view_leaderboard`, `view_aggregate` dans `lib/pokemon-status.sh`. Endpoint configuré dans `lib/data/config.json.stats_share.endpoint`.
 
