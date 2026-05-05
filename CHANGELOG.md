@@ -7,7 +7,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ### Added
 
-- **End-of-session recap** (`/pokemon recap`) : résume les events de la session (baies, rencontres, combats, items, évolutions, badges débloqués) + les deltas vs baseline (XP gagnés, friendship +N, progression hatch, level transitions). Résout le pain UX où les events scrollaient en silence pendant que tu codais. Scopes : `session` (défaut, basé sur le session_id Claude Code le plus récent) ou `today` (depuis 00:00 UTC). Premier sub-batch de Phase 1 du roadmap.
+- **End-of-session recap** (`/pokemon recap`) : résume les events de la session (baies, rencontres, combats, items, évolutions, badges débloqués) + les deltas vs baseline (XP gagnés, friendship +N, progression hatch, level transitions). Résout le pain UX où les events scrollaient en silence pendant que tu codais. Scopes : `session` (défaut, basé sur le session_id Claude Code le plus récent) ou `today` (depuis 00:00 UTC). Sub-batch 1.1 du roadmap.
+- **README badge SVG** (Phase 1.2) : nouvel endpoint Worker `GET /v1/badge/<anon_id>.svg` qui retourne un SVG live (~480×100, 1.2 KB) avec le pseudo, la lignée actuelle + niveau, tokens cumulés, shinies, badges. Self-contained (zéro dépendance externe — GitHub camo friendly), cache 5 min. Embed via `![](https://claude-pokemon-api.benoit-dev.workers.dev/v1/badge/<id>.svg)`. Fallback placeholder SVG sur 404 / invalid id. Levier viralité : chaque user qui colle le badge sur son README GitHub devient un point d'entrée organique vers le projet.
 
 ## [1.0.0-beta.4] — 2026-05-05
 

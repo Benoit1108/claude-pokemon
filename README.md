@@ -144,6 +144,20 @@ jq '.theme = "retro"' ~/.claude/pokemon/data.json | sponge ~/.claude/pokemon/dat
 
 </details>
 
+## Share your stats — README badge
+
+Once you've opted in to shared stats (`/pokemon stats-share enable --confirm` then `submit`), you can embed a live badge of your stats on your GitHub README, profile, blog, etc. The badge auto-refreshes (5min cache) and shows your active companion + key lifetime stats.
+
+<p align="center">
+  <img src="https://claude-pokemon-api.benoit-dev.workers.dev/v1/badge/c5bbdea6.svg" alt="claude-pokemon badge example">
+</p>
+
+```markdown
+![claude-pokemon stats](https://claude-pokemon-api.benoit-dev.workers.dev/v1/badge/<your-anon-id>.svg)
+```
+
+Replace `<your-anon-id>` with your local `anon_id` (visible via `/pokemon stats-share status`). Want a public pseudo to display instead of the raw id? Set one with `/pokemon stats-share name <pseudo>` (charset `[a-zA-Z0-9_-]`, 2-24 chars), then re-submit.
+
 ## Mechanics
 
 ### XP Curve
