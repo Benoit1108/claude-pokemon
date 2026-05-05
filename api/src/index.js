@@ -15,6 +15,7 @@
 const SCHEMA_VERSION = 1;
 const SUBMIT_COOLDOWN_S = 24 * 60 * 60;     // 24h between submits per anon_id
 const ANON_ID_RE = /^[a-f0-9]{8,16}$/;
+const DISPLAY_NAME_RE = /^[a-zA-Z0-9_-]{2,24}$/;  // user-chosen public pseudo
 const ALLOWED_LINEAGES = new Set([
   "fire", "water", "grass", "electric", "eevee",
   "chikorita", "cyndaquil", "totodile",
@@ -53,6 +54,12 @@ function validateSubmit(body) {
 
   if (typeof body.anon_id !== "string" || !ANON_ID_RE.test(body.anon_id)) {
     errs.push("anon_id must match /^[a-f0-9]{8,16}$/");
+  }
+  // display_name : optional. If present, must match charset + length.
+  if (body.display_name !== undefined && body.display_name !== null && body.display_name !== "") {
+    if (typeof body.display_name !== "string" || !DISPLAY_NAME_RE.test(body.display_name)) {
+      errs.push("display_name must match /^[a-zA-Z0-9_-]{2,24}$/ (or be null/empty)");
+    }
   }
   if (body.schema_version !== SCHEMA_VERSION) {
     errs.push(`schema_version must be ${SCHEMA_VERSION} (got ${body.schema_version})`);
@@ -146,6 +153,7 @@ async function handleSubmit(request, env) {
   // Persist (overwrite by anon_id — pseudo-idempotent)
   const record = {
     anon_id,
+    display_name: body.display_name || null,
     schema_version: body.schema_version,
     client_version: body.client_version,
     submitted_at: body.submitted_at,
@@ -200,6 +208,7 @@ async function handleLeaderboard(url, env) {
   const ranked = records
     .map(r => ({
       anon_id: r.anon_id,
+      display_name: r.display_name || null,
       value: metricFromRecord(r, metric),
       lineage: r.stats.active.lineage,
       level: r.stats.active.current_level,
