@@ -75,29 +75,36 @@ Goal : extend the project beyond the terminal, give Pokémon a public life.
 - GameBoy-dither page transitions
 - Theme sync CLI ↔ web (your `data.json.theme` colors the site too)
 
-### 2.5 — Real Pokémon sprites (~3-5 days)
+### 2.5 — Real Pokémon sprites + idle micro-anim (~3-5 days)
 Replace lineage emojis with actual Pokémon Showdown sprites in the web UI.
 - Hot-link `play.pokemonshowdown.com/sprites/gen5/<showdown_id>.png` (already used by the CLI)
 - Static sprites first in `BattleParticipantCard`, `OpponentRow`, `LeaderboardTable`, `PokedexCard`. Animated GIFs (`/sprites/ani/`) on the battle replay page only.
 - Shiny variant pulled automatically from `is_shiny` field.
 - Fallback to current emoji if sprite 404 (graceful degradation).
+- **Idle yoyo** : non-active sprites (leaderboard, opponents list) get a slow 2-3 s vertical bounce loop — gives the page life without being distracting.
 - (Later if Showdown changes URLs : proxy via Worker with cache.)
 
-### 2.6 — Bot trainers ladder (~1 week)
+### 2.6 — Bot trainers ladder + dynamic backgrounds (~1 week)
 Solo gameplay loop : a static list of NPC trainers with rising difficulty, beatable in async mode (deterministic resolution against AI snapshots).
 - 10-20 bots in `app/data/bot-trainers.ts` : Bug Catcher Lv.5 → Champion Lv.50, varied lineages.
 - Progression in `localStorage` first (offline-friendly), optional sync to Worker for cross-device profile.
 - New page `/ladder` with the bots laid out as a "trail" / map.
 - Reward at the end : "Trail Conqueror" badge displayed on web trainer card + title on leaderboard.
 - Battles still resolve via the existing `resolveBattle()` engine (no new logic required).
+- **Dynamic backgrounds** : `/battle/[id]` and the ladder tiles get a `linear-gradient` that shifts based on the encountered trainer's lineage (forest greens for grass, sunset oranges for fire, etc.).
 
-### 2.7 — Manual combat vs bots (~1-2 weeks)
+### 2.7 — Manual combat vs bots + battle juice pack (~1-2 weeks)
 The big interactive jump : player picks one of 4 attacks per turn, bot AI responds. Browser-only logic (no Worker roundtrip during the fight).
 - Battle engine refactored to step-by-step API : `nextTurn(state, action) → newState`. Stays deterministic for replay parity.
 - 4-attacks model : add a `moves[]` field per stage (already partially modeled in `lib/data/lineages/*.json` — extend with damage/effectiveness modifiers per move).
 - Bot AI : simple rule-based (prioritize super-effective, switch to crit chance if HP low). Difficulty levels = rule-set tiers.
 - UI : attack picker overlay during the player's turn, animated countdown, sound feedback.
 - Async PvP unaffected — manual mode is bots-only.
+- **Visual juice pack** (combat-specific) :
+  - Confetti on victory (`canvas-confetti`, ~3 KB)
+  - Screen shake on critical (small `<main>` transform)
+  - Floating damage numbers (`−12` floats above hit sprite, fade out)
+  - Particle effects per attack type (flames for fire, droplets for water, leaves for grass — pure CSS or tiny inline SVG)
 
 ### 2.8 — Battle quotes + GG reactions (~3-4 days)
 Light social layer without the cost of moderating free chat.
@@ -106,7 +113,14 @@ Light social layer without the cost of moderating free chat.
 - Worker endpoint `POST /v1/arena/battle/<id>/react` (rate-limited per anon_id per battle).
 - No free text. No user-to-user DM yet.
 
-### 2.9 — Real-time PvP 1v1 (~2-3 weeks, biggest infra jump)
+### 2.9 — Customizable trainer profile (~1 week)
+Identity layer for the public trainer card. Builds on the quote from 2.8.
+- **Avatar** : picked from Pokémon Showdown sprites — full Pokédex pickable in CLI via `/pokemon trainer-avatar <showdown_id>`. Stored in submit payload, displayed on web `/trainer/[anonId]` and arena pool tile.
+- **Bio** : 160 chars max (Twitter-style), set via CLI `/pokemon bio <text>`. Ratelimited at submit.
+- **3 pinned badges** : pick which 3 of your earned badges show on the public card (instead of the full grid).
+- **Accent color** : auto-derived from the active lineage — no custom override (keeps moderation surface zero).
+
+### 2.10 — Real-time PvP 1v1 + battle highlights GIF (~2-3 weeks, biggest infra jump)
 Both players decide simultaneously each turn (manual combat against another human, not an async snapshot).
 - Cloudflare Durable Object per active match (room = battle session). WebSocket connection for each peer.
 - Matchmaking : "Looking for opponent" button → server pairs two waiting players.
@@ -114,15 +128,30 @@ Both players decide simultaneously each turn (manual combat against another huma
 - Same UI as 2.7 (4 attacks per turn) but the opponent is human.
 - Reconnection grace period (~60 s) if a player loses connection.
 - Result still recorded as a `battle:<id>` row for replay parity.
+- **Battle highlights** : at the end of any replay (PvP or async), button "Export 3 s clip" → server-side renders the KO moment as a GIF (reuses the `.demo/` Playwright pipeline). Twitch-clip vibes, share-friendly.
 
-### 2.10+ — Stretch features (post-2.9, scope to be sized)
+### 2.11 — Pokédex-driven achievements (~3-5 days, CLI ↔ web crossover)
+Make the wild encounters of the CLI matter on the public profile.
+- New badges tied to `pokedex_wild` data : "Vu un Lugia sauvage", "Capturé tous les Gen 1 starters", "Pokédex 50 % rempli", etc.
+- CLI : extend `pokemon_check_badges()` in `lib/lib.sh` with the new conditions (idempotent, runs every tick).
+- Submit payload already carries `pokedex_seen_count` — extend with a hashed bitmap of seen species so we can render which specific entries are unlocked on the web.
+- Web : new "Pokédex achievements" section on `/trainer/[anonId]` with the unlocked icons.
+
+### 2.12 — Easter eggs + sound themes + CLI↔web sync (~3-5 days)
+Polish pack — multiple small wins bundled.
+- **Sound theme switcher** : extend the existing 🔊 toggle into a 3-state cycle — `8-bit` (current) / `orchestral` (richer envelopes, longer attack/release) / `silent`. Stored in `localStorage`.
+- **Easter eggs** :
+  - Konami code anywhere → permanent retro mode (until cleared from localStorage)
+  - 10× click on the logo → hidden message / animation
+  - URL param `?secret=<hash>` unlocks dev-only features
+- **CLI↔web QR sync** : new CLI command `/pokemon link` displays a QR code in the terminal. Scanning on a mobile browser auto-logs the user into their `anon_id` profile (no password). Useful to view your own trainer card from your phone instantly.
+
+### 2.13+ — Stretch (post-arena complete, scope TBD)
 - **3v3 team battles** : pick 3 from your team, switch mid-battle, type-coverage strategy.
-- **Customizable trainer profile** : avatar (picked from Showdown sprites), bio, public favorites, achievements showcase.
-- **Visual polish pass** : confetti on victory, screen shake on critical, particle effects on attack type, floating damage numbers, dynamic backgrounds (forest / cave / city per battle context).
 - **Tournaments / seasons** : monthly bracket, seasonal leaderboard reset, Hall of Fame.
 - **Daily challenges** : "Win with a Lv.<X>" / "Beat 3 trainers" → bonus XP in CLI.
-- **Trade system** : Pokémon snapshot exchange between trainers (the original Phase 2 vision included this).
-- **Achievements dynamiques** : streaks, unusual wins, record-keeping.
+- **Trade system** : Pokémon snapshot exchange between trainers (original Phase 2 vision included this).
+- **Achievements dynamiques** : streaks, unusual wins, record-keeping beyond pokédex-based ones.
 - **Spectator mode** : live view of currently-running PvP matches + curated "Replay of the day".
 - **i18n FR/EN** sur le web (le CLI l'est déjà).
 - **PWA mobile** : installable, push notifications when challenged.
