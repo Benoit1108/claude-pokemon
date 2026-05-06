@@ -20,8 +20,16 @@ context_tokens=$(echo "$input" | jq -r '
   // empty
 ')
 if [ -z "$context_tokens" ] && [ -n "$used" ]; then
-  window_size=$(echo "$input" | jq -r '
-    .model.context_window // .context_window.size // 200000
+  # Detect 1M-context models (Opus 1M, Sonnet 1M) when Claude Code doesn't
+  # provide model.context_window directly. Without this the 200K default
+  # silently caps XP-eligible context growth at ~200K, breaking long-form
+  # users on premium tiers.
+  case "$model" in
+    *"1M context"*|*"(1M)"*) default_window=1000000 ;;
+    *)                       default_window=200000 ;;
+  esac
+  window_size=$(echo "$input" | jq -r --argjson dw "$default_window" '
+    .model.context_window // .context_window.size // $dw
   ')
   context_tokens=$(awk -v p="$used" -v w="$window_size" 'BEGIN{printf "%d", (p*w)/100}')
 fi

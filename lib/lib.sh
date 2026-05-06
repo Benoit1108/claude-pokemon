@@ -602,14 +602,69 @@ pokemon_tick() {
       ' <<<"$state")
     fi
 
+    # Forward-compat: if the threshold curve was tightened upward (e.g.
+    # rebalance via update.sh), the stored current_level may now be ahead
+    # of what total_xp supports. Clamp DOWN to the level matching current
+    # XP. We never bump UP here — that's the level-up logic later in the
+    # tick. Also clears evolution_flash so we don't show a transition
+    # animation for a passive regression.
+    local _stored_level _expected_level _xp_now
+    _stored_level=$(jq -r '.current_level // 0' <<<"$state")
+    _xp_now=$(jq -r '.total_xp // 0' <<<"$state")
+    _expected_level=$(pokemon_compute_level_from_xp "$_xp_now")
+    if [ "$_stored_level" -gt "$_expected_level" ]; then
+      state=$(jq --argjson lvl "$_expected_level" '
+        .current_level = $lvl | .evolution_flash_remaining = 0
+      ' <<<"$state")
+    fi
+
     is_shiny=$(jq -r '.is_shiny' <<<"$state")
     prev_level=$(jq -r '.current_level' <<<"$state")
-    prev_max=$(jq -r --arg sid "$session_id" '.sessions[$sid].max_context_tokens // 0' <<<"$state")
+
+    # Per-tick context delta — tokens consumed since the previous tick (not
+    # historical high-water). Migration: when last_tick_tokens is absent
+    # (legacy state), seed from the old max_context_tokens so existing users
+    # don't get a one-time windfall on first tick after upgrading.
+    prev_tokens=$(jq -r --arg sid "$session_id" \
+      '.sessions[$sid].last_tick_tokens // (.sessions[$sid].max_context_tokens // 0)' <<<"$state")
+
+    local raw_delta=0
+    if [ "$current_tokens" -gt "$prev_tokens" ]; then
+      raw_delta=$(( current_tokens - prev_tokens ))
+    fi
+
+    # Per-turn XP credit (System H) — Claude Code's statusline ticks several
+    # times during a single Claude response (each tool call boundary). If
+    # we credited XP per tick, a heavy response could clear multiple levels
+    # in one user message. Instead we accumulate raw_delta in pending_tokens
+    # per session and only credit when ≥30 s have passed since the last
+    # credit (gap heuristic for "new turn"). Inside a response ticks fire
+    # rapidly (gap < 30 s) so they just feed the accumulator; between turns
+    # the user pauses (gap ≥ 30 s) and the next tick credits the captured
+    # growth. Cap stays at 10K tokens per credit (anti-spike).
+    local tick_cap=10000
+    local pending_tokens last_credit_at gap_s now_epoch
+    pending_tokens=$(jq -r --arg sid "$session_id" \
+      '.sessions[$sid].pending_tokens // 0' <<<"$state")
+    pending_tokens=$(( pending_tokens + raw_delta ))
+    now_epoch=$(date -u +%s)
+    last_credit_at=$(jq -r --arg sid "$session_id" \
+      '.sessions[$sid].last_xp_credit_at // 0' <<<"$state")
+    gap_s=$(( now_epoch - last_credit_at ))
 
     delta=0
-    if [ "$current_tokens" -gt "$prev_max" ]; then
-      delta=$(( current_tokens - prev_max ))
+    if [ "$gap_s" -ge 30 ] && [ "$pending_tokens" -gt 0 ]; then
+      if [ "$pending_tokens" -gt "$tick_cap" ]; then
+        delta="$tick_cap"
+      else
+        delta="$pending_tokens"
+      fi
+      pending_tokens=$(( pending_tokens - delta ))
+      state=$(jq --arg sid "$session_id" --argjson n "$now_epoch" \
+        '.sessions[$sid].last_xp_credit_at = $n' <<<"$state")
     fi
+    state=$(jq --arg sid "$session_id" --argjson p "$pending_tokens" \
+      '.sessions[$sid].pending_tokens = $p' <<<"$state")
 
     xp_multiplier=$(pokemon_xp_multiplier "$used_pct")
     type_match_mult=$(pokemon_type_match_mult "$lineage" "$used_pct")
@@ -682,14 +737,21 @@ pokemon_tick() {
       fi
     done < <(jq -r '.seasons // {} | to_entries[] | "\(.key)\t\(.value.month)\t\(.value.month)\t\(.value.day_start)\t\(.value.day_end)\t\(.value.boost_mult_xp // 1.0)"' "$POKEMON_DATA")
 
-    # Combined XP multiplier (with held + injured + season)
+    # Combined XP multiplier (context * type * daily * status * held * injured
+    # * season). Compound is hard-capped at 2× to prevent extreme stacking
+    # (e.g. low-context + daily + season all firing) from inflating a single
+    # credit beyond ~2 levels worth.
     if [ "$shiny_hunter" = "true" ]; then
       weighted_delta=0  # no XP in hunter mode
     else
       weighted_delta=$(awk -v d="$delta" -v xp="$xp_multiplier" -v tm="$type_match_mult" \
                            -v db="$daily_mult" -v st="$status_mult" -v hi="$held_mult" -v ij="$injured_mult" \
                            -v se="$season_mult" \
-                           'BEGIN{printf "%d", d * xp * tm * db * st * hi * ij * se}')
+                           'BEGIN{
+                             m = xp * tm * db * st * hi * ij * se
+                             if (m > 2.0) m = 2.0
+                             printf "%d", d * m
+                           }')
     fi
 
     # Track multipliers in state for /creature display
@@ -805,7 +867,7 @@ pokemon_tick() {
     state=$(jq --arg sid "$session_id" \
                --argjson tokens "$current_tokens" \
                --argjson delta "$weighted_delta" \
-               --argjson raw_delta "$delta" \
+               --argjson raw_delta "$raw_delta" \
                --arg now "$now" '
       .total_xp += $delta
       | .lifetime_stats.total_tokens += $raw_delta
@@ -814,6 +876,7 @@ pokemon_tick() {
       | .sessions[$sid].max_context_tokens =
           (if (.sessions[$sid].max_context_tokens // 0) > $tokens
            then (.sessions[$sid].max_context_tokens // 0) else $tokens end)
+      | .sessions[$sid].last_tick_tokens = $tokens
       | .last_updated = $now
       # Capture baseline snapshot ONCE per session, used by /pokemon recap
       # to compute deltas (XP gained, friendship gained, evolutions during session).
@@ -1192,15 +1255,24 @@ pokemon_render_inline() {
   # Si shiny, on remplace la couleur de stage par doré pour le nom.
   [ -n "$shiny_color" ] && color_code="$shiny_color"
 
-  local progress_pct next_threshold xp_label next_label
+  local progress_pct current_threshold next_threshold xp_label next_label
   progress_pct=$(pokemon_progress_pct "$total_xp" "$level")
   [ -z "$progress_pct" ] && progress_pct=0
 
+  # Display style : show progress WITHIN the current level (Pokémon-game-style:
+  # always reset to 0 each level), not cumulative XP toward the absolute
+  # threshold. The total cumulative XP is still available via /pokemon stats.
+  current_threshold=$(jq -r --argjson lvl "$level" '.thresholds[$lvl] // 0' "$POKEMON_DATA")
   next_threshold=$(jq -r --argjson lvl "$level" '
     (.thresholds | length - 1) as $maxL |
     if $lvl >= $maxL then .thresholds[$maxL]
     else .thresholds[$lvl + 1] end
   ' "$POKEMON_DATA")
+  local xp_in_level next_level_size
+  xp_in_level=$(( total_xp - current_threshold ))
+  next_level_size=$(( next_threshold - current_threshold ))
+  [ "$xp_in_level" -lt 0 ] && xp_in_level=0
+  [ "$next_level_size" -lt 1 ] && next_level_size=1
 
   _xp_fmt() {
     local n="$1"
@@ -1221,8 +1293,8 @@ pokemon_render_inline() {
     fi
   }
 
-  xp_label=$(_xp_fmt "$total_xp")
-  next_label=$(_xp_fmt "$next_threshold")
+  xp_label=$(_xp_fmt "$xp_in_level")
+  next_label=$(_xp_fmt "$next_level_size")
 
   local pct_color
   if [ "$progress_pct" -ge 75 ]; then
