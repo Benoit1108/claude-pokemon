@@ -3,7 +3,7 @@
 
 import type { Env } from '../env.d'
 import { svgResp } from '../lib/http'
-import { getStats } from '../lib/kv'
+import { getArena, getStats } from '../lib/kv'
 import { svgBadge, svgPlaceholder } from '../lib/svg'
 
 export async function handleBadge(pathname: string, env: Env): Promise<Response> {
@@ -16,5 +16,7 @@ export async function handleBadge(pathname: string, env: Env): Promise<Response>
   if (!record) {
     return svgResp(svgPlaceholder('trainer not found'), 404, 60)
   }
-  return svgResp(svgBadge(record), 200, 300)
+  // Arena indicator : badge shows ⚔️ if the trainer opted in.
+  const arena = await getArena(env, anon_id)
+  return svgResp(svgBadge(record, { arenaEnabled: !!arena }), 200, 300)
 }

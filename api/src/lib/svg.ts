@@ -56,7 +56,11 @@ export function fmtTokens(n: number): string {
   return String(n)
 }
 
-export function svgBadge(record: KVRecord): string {
+export interface BadgeOptions {
+  arenaEnabled?: boolean
+}
+
+export function svgBadge(record: KVRecord, opts: BadgeOptions = {}): string {
   const display = record.display_name
     ? `${escapeXml(record.display_name)}#${record.anon_id.slice(0, 4)}`
     : escapeXml(record.anon_id)
@@ -69,7 +73,9 @@ export function svgBadge(record: KVRecord): string {
   const tokens = fmtTokens(lt.total_tokens || 0)
   const shinies = lt.total_shinies || 0
   const badges = (record.stats.badges || []).length
+  const pokedex = record.stats.pokedex_seen_count || 0
   const shinyMark = record.stats.active.is_shiny ? ' ✦' : ''
+  const arenaTag = opts.arenaEnabled ? ' · ⚔️' : ''
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="100" role="img" aria-label="claude-pokemon stats for ${display}">
   <defs>
@@ -85,8 +91,8 @@ export function svgBadge(record: KVRecord): string {
   <rect width="480" height="100" rx="10" fill="url(#bg)" stroke="${accent}" stroke-width="1" stroke-opacity="0.4"/>
   <rect x="0" y="0" width="6" height="100" rx="3" fill="url(#accent)"/>
   <text x="22" y="28" font-family="ui-monospace,Menlo,monospace" font-size="15" fill="#fff" font-weight="700">🎮 ${display}${shinyMark}</text>
-  <text x="22" y="52" font-family="ui-monospace,Menlo,monospace" font-size="13" fill="${accent}">${lineageEmoji} ${escapeXml(lineageLabel)} · Lv.${lvl}</text>
-  <text x="22" y="78" font-family="ui-monospace,Menlo,monospace" font-size="12" fill="#9ba3af">⚡ ${tokens} tokens · ⭐ ${shinies} · 🏆 ${badges}/15</text>
+  <text x="22" y="52" font-family="ui-monospace,Menlo,monospace" font-size="13" fill="${accent}">${lineageEmoji} ${escapeXml(lineageLabel)} · Lv.${lvl}${arenaTag}</text>
+  <text x="22" y="78" font-family="ui-monospace,Menlo,monospace" font-size="12" fill="#9ba3af">⚡ ${tokens} · ⭐ ${shinies} · 📖 ${pokedex}/251 · 🏆 ${badges}/15</text>
   <text x="458" y="20" font-family="ui-monospace,Menlo,monospace" font-size="9" fill="#4a5562" text-anchor="end">claude-pokemon</text>
 </svg>`
 }

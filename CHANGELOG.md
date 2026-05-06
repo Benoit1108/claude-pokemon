@@ -5,6 +5,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+### Changed
+
+- **SVG badge enrichi** (`/v1/badge/<anon_id>.svg`). Affiche maintenant `⚔️` à côté de la lignée+niveau si le dresseur est inscrit dans le pool arena (handler interroge `getArena` en plus de `getStats`, ~1 KV read en plus). La ligne stats du bas inclut le compteur Pokédex `📖 X/251` (donnée déjà dans le payload submit, juste pas exploitée). Layout serré pour rester dans 480 px : retrait du label "tokens" sous-entendu par l'icône `⚡`.
+
 ## [1.0.0-beta.6] — 2026-05-06
 
 ### Added

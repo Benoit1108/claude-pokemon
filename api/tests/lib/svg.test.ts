@@ -105,10 +105,31 @@ describe('svgBadge', () => {
     expect(svg).not.toContain('✦')
   })
 
-  it('includes formatted token count + badges/15', () => {
+  it('includes formatted token count + pokédex + badges/15', () => {
     const svg = svgBadge(baseRecord)
-    expect(svg).toContain('2.6M tokens')
+    expect(svg).toContain('2.6M')
+    expect(svg).toContain('📖 5/251')
     expect(svg).toContain('🏆 4/15')
+  })
+
+  it('shows ⚔️ arena indicator when arenaEnabled=true', () => {
+    const svg = svgBadge(baseRecord, { arenaEnabled: true })
+    expect(svg).toContain('⚔️')
+  })
+
+  it('omits ⚔️ arena indicator when arenaEnabled=false (default)', () => {
+    const svg = svgBadge(baseRecord)
+    expect(svg).not.toContain('⚔️')
+    const svg2 = svgBadge(baseRecord, { arenaEnabled: false })
+    expect(svg2).not.toContain('⚔️')
+  })
+
+  it('renders pokédex count from stats.pokedex_seen_count', () => {
+    const svg = svgBadge({
+      ...baseRecord,
+      stats: { ...baseRecord.stats, pokedex_seen_count: 127 },
+    })
+    expect(svg).toContain('📖 127/251')
   })
 
   it('falls back to fire styling if active.lineage is null', () => {
