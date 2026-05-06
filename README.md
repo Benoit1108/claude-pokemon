@@ -62,6 +62,25 @@ sudo apt install jq chafa util-linux curl gifsicle
 brew install jq chafa util-linux curl gifsicle
 ```
 
+<a id="windows-users"></a>
+**Windows users (WSL required)** :
+
+The CLI requires a POSIX shell environment (bash, chafa, flock, POSIX paths). Native Windows isn't supported, but **WSL works perfectly** :
+
+```powershell
+# In PowerShell (admin, one-time)
+wsl --install
+```
+
+Then in your WSL terminal :
+```bash
+sudo apt install jq chafa util-linux curl gifsicle
+npm install -g claude-pokemon
+npx claude-pokemon install
+```
+
+The upcoming **web arena** (Phase 2 of the [roadmap](ROADMAP.md)) will let you consult the leaderboard, trainer cards, and global stats from any browser — no CLI needed for the social features.
+
 ## Usage
 
 After install, in Claude Code :

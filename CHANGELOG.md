@@ -5,6 +5,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+### Changed
+
+- **Windows UX guidance** : retrait de la whitelist `os: ["linux", "darwin"]` dans package.json (l'install npm passe maintenant sur Windows). À l'exécution, `bin/claude-pokemon` détecte Windows pure (non-WSL) et affiche un message friendly guidant vers WSL au lieu de l'`EBADPLATFORM` cryptique de npm. Section `## Windows users` ajoutée au README. Native Windows reste non-supporté (besoin de bash + chafa + flock + paths POSIX), WSL fonctionne parfaitement.
+
 ## [1.0.0-beta.5] — 2026-05-05
 
 ### Added

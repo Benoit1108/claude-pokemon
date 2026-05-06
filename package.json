@@ -24,10 +24,6 @@
   "engines": {
     "node": ">=14"
   },
-  "os": [
-    "linux",
-    "darwin"
-  ],
   "bin": {
     "claude-pokemon": "./bin/claude-pokemon"
   },
