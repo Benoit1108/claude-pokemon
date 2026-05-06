@@ -7,6 +7,7 @@ import {
   SCHEMA_VERSION,
   ALLOWED_LINEAGES,
   ALLOWED_BADGES,
+  type BattleParticipant,
   type SubmitPayload,
 } from '../types'
 
@@ -108,5 +109,34 @@ export function validateSubmit(body: unknown): string[] {
     errs.push('stats.pokedex_seen_count must be non-negative number')
   }
 
+  return errs
+}
+
+/**
+ * Validate a BattleParticipant snapshot (used for arena enable + opponent
+ * registration). Strict whitelist on lineage + level bounds.
+ */
+export function validateTeamSnapshot(body: unknown): string[] {
+  const errs: string[] = []
+  if (!body || typeof body !== 'object') return ['team_snapshot must be object']
+  const p = body as Partial<BattleParticipant>
+
+  if (typeof p.anon_id !== 'string' || !ANON_ID_RE.test(p.anon_id)) {
+    errs.push('team_snapshot.anon_id must match /^[a-f0-9]{8,16}$/')
+  }
+  if (p.display_name !== undefined && p.display_name !== null && p.display_name !== '') {
+    if (typeof p.display_name !== 'string' || !DISPLAY_NAME_RE.test(p.display_name)) {
+      errs.push('team_snapshot.display_name must match /^[a-zA-Z0-9_-]{2,24}$/')
+    }
+  }
+  if (typeof p.lineage !== 'string' || !ALLOWED_LINEAGES.has(p.lineage)) {
+    errs.push(`team_snapshot.lineage must be one of allowed lineages`)
+  }
+  if (typeof p.level !== 'number' || p.level < 1 || p.level > 100) {
+    errs.push('team_snapshot.level must be 1-100')
+  }
+  if (typeof p.is_shiny !== 'boolean') {
+    errs.push('team_snapshot.is_shiny must be boolean')
+  }
   return errs
 }

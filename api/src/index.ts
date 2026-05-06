@@ -21,6 +21,12 @@ import { handleAggregate } from './handlers/aggregate'
 import { handleForget } from './handlers/forget'
 import { handleTrainer } from './handlers/trainer'
 import { handleBadge } from './handlers/badge'
+import { handleArenaEnable } from './handlers/arena/enable'
+import { handleArenaDisable } from './handlers/arena/disable'
+import { handleArenaRegenerate } from './handlers/arena/regenerate'
+import { handleArenaChallenge } from './handlers/arena/challenge'
+import { handleArenaBattle } from './handlers/arena/battle'
+import { handleArenaOpponents } from './handlers/arena/opponents'
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -51,6 +57,24 @@ export default {
       }
       if (url.pathname.startsWith('/v1/trainer/') && request.method === 'GET') {
         return await handleTrainer(url.pathname, env)
+      }
+      if (url.pathname === '/v1/arena/enable' && request.method === 'POST') {
+        return await handleArenaEnable(request, env)
+      }
+      if (url.pathname === '/v1/arena/disable' && request.method === 'DELETE') {
+        return await handleArenaDisable(request, url, env)
+      }
+      if (url.pathname === '/v1/arena/regenerate' && request.method === 'POST') {
+        return await handleArenaRegenerate(request, env)
+      }
+      if (url.pathname === '/v1/arena/challenge' && request.method === 'POST') {
+        return await handleArenaChallenge(request, env)
+      }
+      if (url.pathname === '/v1/arena/opponents' && request.method === 'GET') {
+        return await handleArenaOpponents(url, env)
+      }
+      if (url.pathname.startsWith('/v1/arena/battle/') && request.method === 'GET') {
+        return await handleArenaBattle(url.pathname, env)
       }
       return jsonResp({ error: 'not_found', path: url.pathname }, 404)
     } catch (err) {
