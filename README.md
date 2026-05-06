@@ -177,6 +177,20 @@ Once you've opted in to shared stats (`/pokemon stats-share enable --confirm` th
 
 Replace `<your-anon-id>` with your local `anon_id` (visible via `/pokemon stats-share status`). Want a public pseudo to display instead of the raw id? Set one with `/pokemon stats-share name <pseudo>` (charset `[a-zA-Z0-9_-]`, 2-24 chars), then re-submit.
 
+## 🌐 Web arena
+
+The companion **web arena** is live at **[claude-pokemon-arena.pages.dev](https://claude-pokemon-arena.pages.dev/)** :
+
+- 🏆 Live leaderboard of all opted-in trainers
+- 🌍 Global aggregate stats (total tokens, real shiny rate, etc.)
+- 🧬 Active lineage distribution
+- ⚔️ Async battles (Phase 2.3 — coming soon)
+- 🎴 Public trainer cards (Phase 2.2 — coming soon)
+
+The site is built with Nuxt 4 + Vue 3 + UnoCSS, deployed on Cloudflare Pages. Source : [Benoit1108/claude-pokemon-arena](https://github.com/Benoit1108/claude-pokemon-arena).
+
+Browser-friendly — no CLI needed to consult the leaderboard or trainer cards.
+
 ## Mechanics
 
 ### XP Curve

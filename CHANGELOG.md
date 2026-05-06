@@ -5,6 +5,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+### Added
+
+- **🌐 Web arena live** : la première page du site compagnon est en ligne sur [claude-pokemon-arena.pages.dev](https://claude-pokemon-arena.pages.dev/) (Sprint 1 de Phase 2). Affiche le leaderboard live, les stats globales et la distribution des lignées actives, le tout fetché en SSR depuis le Worker API existant. Stack Nuxt 4 + Vue 3 + UnoCSS sur Cloudflare Pages free tier. Repo séparé : [Benoit1108/claude-pokemon-arena](https://github.com/Benoit1108/claude-pokemon-arena). Browser-friendly = ouvre la porte aux utilisateurs Windows / mobile pour le côté social sans installer la CLI. Sprint 2.2/2.3/2.4 (trainer pages, battle replay, animations) à venir.
+
 ### Changed
 
 - **Windows UX guidance** : retrait de la whitelist `os: ["linux", "darwin"]` dans package.json (l'install npm passe maintenant sur Windows). À l'exécution, `bin/claude-pokemon` détecte Windows pure (non-WSL) et affiche un message friendly guidant vers WSL au lieu de l'`EBADPLATFORM` cryptique de npm. Section `## Windows users` ajoutée au README. Native Windows reste non-supporté (besoin de bash + chafa + flock + paths POSIX), WSL fonctionne parfaitement.
