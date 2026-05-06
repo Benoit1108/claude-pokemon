@@ -1,4 +1,10 @@
 {
+  "arena": {
+    "enabled": false,
+    "enabled_at": null,
+    "last_battle_id": null,
+    "web_url": "https://claude-pokemon-arena.pages.dev"
+  },
   "battle_chance_on_encounter": 0.3,
   "battle_injured_ticks": 5,
   "battle_xp_max": 5000,

@@ -23,5 +23,11 @@
     "endpoint": "https://claude-pokemon-api.benoit-dev.workers.dev",
     "anon_id": null,
     "display_name": null
+  },
+  "arena": {
+    "enabled": false,
+    "enabled_at": null,
+    "last_battle_id": null,
+    "web_url": "https://claude-pokemon-arena.pages.dev"
   }
 }

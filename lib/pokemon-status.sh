@@ -1630,6 +1630,297 @@ view_stats_share() {
   esac
 }
 
+# ── Arena (Sprint 2.3) — async PvP via the Worker ───────────────────────────
+# The arena_secret is stored in a separate file (not data.json) so it isn't
+# accidentally exported / shared. chmod 600 on save.
+
+POKEMON_ARENA_SECRET_FILE="$POKEMON_DIR/.arena-secret"
+
+_arena_load_secret() {
+  [ -f "$POKEMON_ARENA_SECRET_FILE" ] || return 1
+  cat "$POKEMON_ARENA_SECRET_FILE"
+}
+
+_arena_save_secret() {
+  local secret="$1"
+  printf '%s' "$secret" > "$POKEMON_ARENA_SECRET_FILE"
+  chmod 600 "$POKEMON_ARENA_SECRET_FILE"
+}
+
+_arena_clear_secret() {
+  rm -f "$POKEMON_ARENA_SECRET_FILE"
+}
+
+# Build the team_snapshot JSON from current state.json.
+# Returns 1 if no active companion (caller should warn).
+_arena_build_team() {
+  local anon_id="$1"
+  local display_name="$2"
+  local lineage current_level is_shiny
+  lineage=$(jq -r '.lineage // ""' "$POKEMON_STATE")
+  current_level=$(jq -r '.current_level // 0' "$POKEMON_STATE")
+  is_shiny=$(jq -r '.is_shiny // false' "$POKEMON_STATE")
+  if [ -z "$lineage" ] || [ "$current_level" -lt 1 ]; then
+    return 1
+  fi
+  jq -n \
+    --arg id "$anon_id" \
+    --arg n "$display_name" \
+    --arg lin "$lineage" \
+    --argjson lvl "$current_level" \
+    --argjson shiny "$is_shiny" '
+      {
+        anon_id: $id,
+        display_name: ($n | select(. != "")),
+        lineage: $lin,
+        level: $lvl,
+        is_shiny: $shiny
+      }
+    '
+}
+
+# Render a battle (challenger vs defender, turn log, winner) in the terminal.
+# Input: raw JSON envelope from /v1/arena/challenge or /v1/arena/battle/:id.
+_arena_render_battle() {
+  local raw="$1"
+  local b
+  b=$(jq '.battle // .' <<<"$raw")
+  local c_name c_lin c_lvl c_shiny d_name d_lin d_lvl d_shiny winner reason turns_count
+  c_name=$(jq -r '.challenger.display_name // .challenger.anon_id' <<<"$b")
+  c_lin=$(jq -r '.challenger.lineage' <<<"$b")
+  c_lvl=$(jq -r '.challenger.level' <<<"$b")
+  c_shiny=$(jq -r '.challenger.is_shiny' <<<"$b")
+  d_name=$(jq -r '.defender.display_name // .defender.anon_id' <<<"$b")
+  d_lin=$(jq -r '.defender.lineage' <<<"$b")
+  d_lvl=$(jq -r '.defender.level' <<<"$b")
+  d_shiny=$(jq -r '.defender.is_shiny' <<<"$b")
+  winner=$(jq -r '.winner' <<<"$b")
+  reason=$(jq -r '.reason' <<<"$b")
+  turns_count=$(jq -r '.turns | length' <<<"$b")
+
+  local c_emoji d_emoji c_star d_star
+  c_emoji=$(_lineage_emoji "$c_lin")
+  d_emoji=$(_lineage_emoji "$d_lin")
+  c_star=""; d_star=""
+  [ "$c_shiny" = "true" ] && c_star='★'
+  [ "$d_shiny" = "true" ] && d_star='★'
+
+  printf "  %s%s %s %s%s %sLv.%s%s   %svs%s   %s%s %s %s%s %sLv.%s%s\n\n" \
+    "$BOLD" "$c_emoji" "$c_name" "$c_star" "$RESET" "$DIM" "$c_lvl" "$RESET" \
+    "$DIM" "$RESET" \
+    "$BOLD" "$d_emoji" "$d_name" "$d_star" "$RESET" "$DIM" "$d_lvl" "$RESET"
+
+  jq -r '.turns[] | "\(.turn)|\(.actor)|\(.damage)|\(.effectiveness)|\(.critical)"' <<<"$b" | \
+  while IFS='|' read -r tn actor dmg eff crit; do
+    local who eff_label crit_label
+    if [ "$actor" = "challenger" ]; then who="$c_emoji"; else who="$d_emoji"; fi
+    case "$eff" in
+      2.0|2)  eff_label="2.0×" ;;
+      0.5)    eff_label="0.5×" ;;
+      *)      eff_label="" ;;
+    esac
+    crit_label=""
+    [ "$crit" = "true" ] && crit_label=" CRIT!"
+    printf "  %sTurn %2s%s  %s -%s HP %s%s%s\n" "$DIM" "$tn" "$RESET" "$who" "$dmg" "$DIM" "$eff_label$crit_label" "$RESET"
+  done
+
+  printf "\n"
+  case "$winner" in
+    challenger) printf "  %s%s$(pokemon_t arena.winner_challenger "$c_name")%s\n\n" "$BOLD" "$GOLD" "$RESET" ;;
+    defender)   printf "  %s%s$(pokemon_t arena.winner_defender "$d_name")%s\n\n" "$BOLD" "$GOLD" "$RESET" ;;
+    *)          printf "  %s$(pokemon_t arena.winner_draw)%s\n\n" "$DIM" "$RESET" ;;
+  esac
+  printf "  %s$(pokemon_t arena.battle_summary "$turns_count" "$reason")%s\n\n" "$DIM" "$RESET"
+}
+
+view_arena() {
+  local sub="${1:-status}"
+  printf "\\n  %s%s$(pokemon_t arena.title)%s\\n\\n" "$BOLD" "$GOLD" "$RESET"
+
+  local endpoint web_url anon_id display_name enabled
+  endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
+  web_url=$(jq -r '.arena.web_url // "https://claude-pokemon-arena.pages.dev"' "$POKEMON_DATA")
+  anon_id=$(jq -r '.stats_share.anon_id // ""' "$POKEMON_DATA")
+  display_name=$(jq -r '.stats_share.display_name // ""' "$POKEMON_DATA")
+  enabled=$(jq -r '.arena.enabled // false' "$POKEMON_DATA")
+
+  case "$sub" in
+    enable|on)
+      if [ -z "$anon_id" ]; then
+        printf "  %s$(pokemon_t arena.no_anon_id)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      if [ "$enabled" = "true" ]; then
+        printf "  %s$(pokemon_t arena.already_enabled)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      if [ "${2:-}" != "--confirm" ]; then
+        printf "  %s$(pokemon_t arena.privacy_notice)%s\n\n" "$DIM" "$RESET"
+        printf "  %s$(pokemon_t arena.confirm_hint)%s\n\n" "$BOLD" "$RESET"
+        return
+      fi
+      local team_payload
+      if ! team_payload=$(_arena_build_team "$anon_id" "$display_name"); then
+        printf "  %s$(pokemon_t arena.no_active)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local resp
+      resp=$(curl -s -X POST "$endpoint/v1/arena/enable" \
+        -H "content-type: application/json" \
+        --data "$team_payload" 2>/dev/null)
+      local secret
+      secret=$(jq -r '.arena_secret // ""' <<<"$resp" 2>/dev/null)
+      if [ -z "$secret" ]; then
+        printf "  %s$(pokemon_t arena.enable_failed "$resp")%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      _arena_save_secret "$secret"
+      local now_iso
+      now_iso=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      jq --arg now "$now_iso" '
+        .arena.enabled = true | .arena.enabled_at = $now
+      ' "$POKEMON_DATA" > "$POKEMON_DATA.tmp" && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      printf "  %s$(pokemon_t arena.enabled "$anon_id")%s\n\n" "$GOLD" "$RESET"
+      ;;
+
+    disable|off)
+      if [ "$enabled" != "true" ]; then
+        printf "  %s$(pokemon_t arena.already_disabled)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local secret
+      if ! secret=$(_arena_load_secret); then
+        printf "  %s$(pokemon_t arena.no_secret)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      curl -s -X DELETE "$endpoint/v1/arena/disable?anon_id=$anon_id" \
+        -H "authorization: Bearer $secret" >/dev/null 2>&1
+      _arena_clear_secret
+      jq '.arena.enabled = false' "$POKEMON_DATA" > "$POKEMON_DATA.tmp" \
+        && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      printf "  %s$(pokemon_t arena.disabled)%s\n\n" "$DIM" "$RESET"
+      ;;
+
+    regenerate|rotate)
+      if [ "$enabled" != "true" ]; then
+        printf "  %s$(pokemon_t arena.not_enabled)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local old_secret
+      if ! old_secret=$(_arena_load_secret); then
+        printf "  %s$(pokemon_t arena.no_secret)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local team_payload
+      if ! team_payload=$(_arena_build_team "$anon_id" "$display_name"); then
+        printf "  %s$(pokemon_t arena.no_active)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local resp
+      resp=$(curl -s -X POST "$endpoint/v1/arena/regenerate" \
+        -H "content-type: application/json" \
+        -H "authorization: Bearer $old_secret" \
+        --data "$team_payload" 2>/dev/null)
+      local new_secret
+      new_secret=$(jq -r '.arena_secret // ""' <<<"$resp" 2>/dev/null)
+      if [ -z "$new_secret" ]; then
+        printf "  %s$(pokemon_t arena.regen_failed "$resp")%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      _arena_save_secret "$new_secret"
+      printf "  %s$(pokemon_t arena.regen_ok)%s\n\n" "$GOLD" "$RESET"
+      ;;
+
+    opponents|list)
+      local limit="${2:-10}"
+      local resp
+      resp=$(curl -sf "$endpoint/v1/arena/opponents?limit=$limit" 2>/dev/null)
+      if [ -z "$resp" ]; then
+        printf "  %s$(pokemon_t arena.fetch_failed)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local total
+      total=$(jq -r '.total // 0' <<<"$resp")
+      printf "  %s$(pokemon_t arena.opponents_count "$total")%s\n\n" "$DIM" "$RESET"
+      jq -r '.opponents[]? | "\(.anon_id)|\(.display_name // .anon_id)|\(.lineage)|\(.level)|\(.is_shiny)"' <<<"$resp" | \
+      while IFS='|' read -r oid name lin lvl shiny; do
+        local emoji shiny_mark
+        emoji=$(_lineage_emoji "$lin")
+        shiny_mark=""
+        [ "$shiny" = "true" ] && shiny_mark=" ★"
+        printf "  %s#%s%s  %s  Lv.%s  %s%s\n" "$DIM" "$oid" "$RESET" "$emoji" "$lvl" "$name" "$shiny_mark"
+      done
+      printf "\n  %s$(pokemon_t arena.opponents_hint)%s\n\n" "$DIM" "$RESET"
+      ;;
+
+    challenge|fight)
+      local target="${2:-}"
+      if [ -z "$target" ]; then
+        printf "  %s$(pokemon_t arena.challenge_usage)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      if [ "$enabled" != "true" ]; then
+        printf "  %s$(pokemon_t arena.not_enabled)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local secret
+      if ! secret=$(_arena_load_secret); then
+        printf "  %s$(pokemon_t arena.no_secret)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local payload
+      payload=$(jq -n --arg c "$anon_id" --arg d "$target" \
+        '{challenger_anon_id:$c, defender_anon_id:$d}')
+      local resp
+      resp=$(curl -s -X POST "$endpoint/v1/arena/challenge" \
+        -H "content-type: application/json" \
+        -H "authorization: Bearer $secret" \
+        --data "$payload" 2>/dev/null)
+      local battle_id
+      battle_id=$(jq -r '.battle.battle_id // ""' <<<"$resp" 2>/dev/null)
+      if [ -z "$battle_id" ]; then
+        printf "  %s$(pokemon_t arena.challenge_failed "$resp")%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      jq --arg id "$battle_id" '.arena.last_battle_id = $id' "$POKEMON_DATA" \
+        > "$POKEMON_DATA.tmp" && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      _arena_render_battle "$resp"
+      printf "  %s$(pokemon_t arena.replay "$web_url" "$battle_id")%s\n\n" "$DIM" "$RESET"
+      ;;
+
+    battle|view)
+      local id="${2:-}"
+      [ -z "$id" ] && id=$(jq -r '.arena.last_battle_id // ""' "$POKEMON_DATA")
+      if [ -z "$id" ]; then
+        printf "  %s$(pokemon_t arena.battle_usage)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local resp
+      resp=$(curl -sf "$endpoint/v1/arena/battle/$id" 2>/dev/null)
+      if [ -z "$resp" ]; then
+        printf "  %s$(pokemon_t arena.battle_not_found "$id")%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      _arena_render_battle "$resp"
+      printf "  %s$(pokemon_t arena.replay "$web_url" "$id")%s\n\n" "$DIM" "$RESET"
+      ;;
+
+    status|"")
+      if [ "$enabled" = "true" ]; then
+        printf "  %s$(pokemon_t arena.status_enabled "$anon_id")%s\n" "$GOLD" "$RESET"
+      else
+        printf "  %s$(pokemon_t arena.status_disabled)%s\n" "$DIM" "$RESET"
+      fi
+      printf "  %s$(pokemon_t arena.status_endpoint "$endpoint")%s\n\n" "$DIM" "$RESET"
+      printf "  %s$(pokemon_t arena.usage)%s\n\n" "$DIM" "$RESET"
+      ;;
+
+    *)
+      printf "  %s$(pokemon_t arena.unknown_subcmd "$sub")%s\n\n" "$DIM" "$RESET"
+      ;;
+  esac
+}
+
 # Map a lineage id to its iconic emoji (used in leaderboard render + trainer-card).
 # Kept synced with api/src/index.js LINEAGE_EMOJI constant.
 _lineage_emoji() {
@@ -1772,6 +2063,7 @@ case "${1:-}" in
   recap|summary)      view_recap "${2:-}" ;;
   trainer-card|card)  view_trainer_card ;;
   stats-share|share)  view_stats_share "${2:-}" "${3:-}" ;;
+  arena)              view_arena "${2:-status}" "${3:-}" ;;
   leaderboard|lb)     view_leaderboard "${2:-total_tokens}" "${3:-10}" ;;
   aggregate|global)   view_aggregate ;;
   *)                  view_main ;;
