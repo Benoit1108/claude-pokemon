@@ -117,3 +117,77 @@ export interface LeaderboardEntry {
   is_shiny: boolean
   submitted_at: string
 }
+
+// ---------------------------------------------------------------------------
+// Arena (Sprint 2.3) — async PvP battles
+// ---------------------------------------------------------------------------
+//
+// A trainer must opt-in (POST /v1/arena/enable) to receive an arena_secret
+// (returned ONCE, hashed server-side). The secret is required to spend their
+// roster in a challenge. Defenders are passive snapshots — battles resolve
+// deterministically from a seed.
+
+export const ARENA_SECRET_RE = /^[a-f0-9]{32,64}$/
+export const BATTLE_ID_RE = /^[a-f0-9]{16,32}$/
+export const ARENA_MAX_TURNS = 50
+
+// Effective combat type derived from lineage.
+export type CombatType = 'fire' | 'water' | 'grass' | 'electric' | 'normal'
+
+export const LINEAGE_TO_TYPE: Record<Lineage, CombatType> = {
+  fire: 'fire',
+  cyndaquil: 'fire',
+  water: 'water',
+  totodile: 'water',
+  grass: 'grass',
+  chikorita: 'grass',
+  electric: 'electric',
+  eevee: 'normal',
+}
+
+export interface BattleParticipant {
+  anon_id: string
+  display_name: string | null
+  lineage: Lineage
+  level: number
+  is_shiny: boolean
+}
+
+export type BattleSide = 'challenger' | 'defender'
+
+export interface BattleTurn {
+  turn: number
+  actor: BattleSide
+  damage: number
+  effectiveness: number // 0.5 / 1 / 2
+  critical: boolean
+  defender_hp_after: number
+}
+
+export interface BattleResult {
+  battle_id: string | null // assigned by handler when persisted
+  challenger: BattleParticipant
+  defender: BattleParticipant
+  seed: number
+  turns: BattleTurn[]
+  winner: BattleSide | 'draw'
+  reason: 'ko' | 'turn_limit'
+  created_at: string
+}
+
+export interface ArenaRecord {
+  anon_id: string
+  secret_hash: string // sha256(arena_secret) hex
+  team_snapshot: BattleParticipant
+  enabled_at: string
+  updated_at: string
+}
+
+export interface ArenaOpponent {
+  anon_id: string
+  display_name: string | null
+  lineage: Lineage
+  level: number
+  is_shiny: boolean
+  updated_at: string
+}
