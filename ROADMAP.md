@@ -19,7 +19,7 @@ Shared stack : Cloudflare Workers + KV (API), Nuxt 4 on Pages (web), free tier p
 
 - ✅ Pokédex Gen 1+2 (251 wild Pokémon)
 - ✅ 8 starter lineages (Gen 1 + Johto starters with Hisuian Typhlosion)
-- ✅ Egg → Lv.100 progression with canonical XP curve (300K hatch threshold)
+- ✅ Egg → Lv.100 progression with two-phase geometric XP curve (300K hatch ~1d, 5M Reptincel ~1 week, 300M champion ~1.5 year for normal devs)
 - ✅ Evolutions including friendship-gated (Eevee → Espeon/Umbreon canonical Gen 2)
 - ✅ Team management (6 max) + unlimited PC storage
 - ✅ Switch / hatch / deposit / withdraw / release / give / take / trade

@@ -9,7 +9,7 @@ A persistent **Pokémon companion** for [Claude Code](https://claude.com/claude-
 ## Features
 
 - 🥚 **Hatch your starter** : Bulbasaur, Charmander, Squirtle, Pikachu, Eevee — and Gen 2 Johto starters (Chikorita, Cyndaquil, Totodile)
-- 🌟 **Pokémon-canonical XP curve** (Medium Slow, Lv.0 → Lv.100). Hatch threshold rebalanced to 300K (achievable in first day of real use)
+- 🌟 **Per-tick XP curve** (smoothed geometric, Lv.0 → Lv.100). Egg hatches in ~1 day, first evolution Reptincel ~1 week, Lv.100 ~2 years of regular use
 - ✨ **Shiny system** : 1/100 chance, +25% with Shiny Charm after first
 - 🐊 **Mega evolutions & Gigamax** at Lv.55 / Lv.100 (Hisuian Typhlosion for Gen 2 Fire)
 - 🏆 **15 Achievement badges** including Master badges per lineage
@@ -195,19 +195,37 @@ Browser-friendly — no CLI needed to consult the leaderboard or trainer cards.
 
 ### XP Curve
 
-Medium Slow formula (Pokémon canonical) :
+Two-phase geometric curve, anchored on three milestones to keep
+"egg = 1 day" + "Reptincel = ~1 week for normal devs" + a multi-year
+endgame :
 ```
-XP(L) = 1.2·L³ – 15·L² + 100·L – 140
-threshold[L] = 500_000 + max(0, XP(L)) · 300
+Lv.1  → Lv.16  : ratio 1.205  (300K → 5M)
+Lv.16 → Lv.100 : ratio 1.05   (5M → 300M)
 ```
 
-| Level | Tokens needed |
-|---|---|
-| Lv.1 (hatch) | 500K (~30 min chat) |
-| Lv.16 (Reptincel) | 1.26M |
-| Lv.36 (Dracaufeu) | 12.5M |
-| Lv.55 (Mega) | 48M |
-| Lv.100 | 318M |
+| Level | XP needed | Normal dev (~400K tokens/day = 600K XP/day) |
+|---|---|---|
+| Lv.1 (hatch) | 300K | ~0.5 day |
+| Lv.5 | 635K | ~1.3 days |
+| Lv.16 (Reptincel) | 5M | ~8 days |
+| Lv.36 (Dracaufeu) | 13.2M | ~3 weeks |
+| Lv.55 (Mega) | 33.5M | ~2 months |
+| Lv.100 (champion) | 300M | ~1.5 years |
+
+Heavy devs (500K+ tokens/day) reach milestones faster, casual users
+slower — the curve scales naturally with each user's intensity, no cap.
+
+### XP Per Tick
+
+Each statusline tick computes `delta = current_context − last_tick_context`,
+clamped to 10K tokens per tick (anti-spike cap so a single huge turn —
+reading many large files at once — can't clear multiple levels in one
+go). Negative deltas (auto-compaction) yield 0 XP but reset `last_tick`
+to the new floor, so XP keeps flowing afterwards.
+
+The raw delta still accrues to `lifetime_stats.total_tokens` uncapped, so
+the centurion badge (100M tokens) is earnable on lifetime token
+consumption alone.
 
 ### XP Multipliers (compounded per tick)
 

@@ -8,10 +8,32 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 ### Added
 
 - **🌐 Web arena live** : la première page du site compagnon est en ligne sur [claude-pokemon-arena.pages.dev](https://claude-pokemon-arena.pages.dev/) (Sprint 1 de Phase 2). Affiche le leaderboard live, les stats globales et la distribution des lignées actives, le tout fetché en SSR depuis le Worker API existant. Stack Nuxt 4 + Vue 3 + UnoCSS sur Cloudflare Pages free tier. Repo séparé : [Benoit1108/claude-pokemon-arena](https://github.com/Benoit1108/claude-pokemon-arena). Browser-friendly = ouvre la porte aux utilisateurs Windows / mobile pour le côté social sans installer la CLI. Sprint 2.2/2.3/2.4 (trainer pages, battle replay, animations) à venir.
+- **⚔️ Arena async PvP** (Sprint 2.3) : 6 endpoints Worker `/v1/arena/*` (enable, disable, regenerate, challenge, opponents, battle/:id) avec auth Bearer (arena_secret 128 bits, sha256 stocké, comparaison constant-time, cooldown 1h challenge). Moteur de combat pur déterministe (PRNG mulberry32 seeded → battles rejouables) avec table de types (fire>grass>water>fire, electric>water, eevee neutre), dérivation HP/Atk depuis level, ±15% variance, 6.25% crit, 50 tours max. CLI `/pokemon arena {enable,disable,regenerate,challenge,opponents,battle,status}` avec arena_secret en chmod 600 dans `~/.claude/pokemon/.arena-secret`. Web `/arena` (liste publique du pool) et `/battle/[id]` (replay tour-par-tour avec scene + log + winner banner). 80 tests Vitest sur le Worker (153 total, 93% coverage), 16 tests sur l'arena Nuxt (75 total).
 
 ### Changed
 
 - **Windows UX guidance** : retrait de la whitelist `os: ["linux", "darwin"]` dans package.json (l'install npm passe maintenant sur Windows). À l'exécution, `bin/claude-pokemon` détecte Windows pure (non-WSL) et affiche un message friendly guidant vers WSL au lieu de l'`EBADPLATFORM` cryptique de npm. Section `## Windows users` ajoutée au README. Native Windows reste non-supporté (besoin de bash + chafa + flock + paths POSIX), WSL fonctionne parfaitement.
+
+### Fixed
+
+- **Système XP refondu** (3 bugs corrigés + recalibration courbe).
+  (1) **Per-tick delta** remplace le high-water mark cassé : `pokemon_tick` calculait `delta = current − max_ever_for_session`, donc une fois le pic de contexte atteint, plus aucune XP ne tombait tant qu'on ne le dépassait pas — et l'auto-compaction de Claude Code rendait ça quasi-impossible. Nouveau : `delta = current − last_tick_tokens`. Chaque interaction qui fait croître le contexte donne du XP, et l'auto-compaction ne bloque plus le flux. Migration douce : `last_tick_tokens` se seed depuis l'ancien `max_context_tokens`, pas de windfall.
+  (2) **Détection 1M context** : `statusline.sh` fallback hardcodé à 200K plafonnait les users Opus 4.7 / Sonnet 4.6 1M. Détection via `model.display_name` ("1M context" / "(1M)") → `default_window=1,000,000`.
+  (3) **Anti-spike cap 10K tokens/tick** : empêche un seul gros message (lecture de N fichiers volumineux) de clearer plusieurs niveaux. `raw_delta` reste non-capé pour le badge centurion 100M tokens.
+
+- **Courbe XP recalibrée** (anchors `1 jour = 1 éclosion` + `1 semaine = Reptincel pour devs normaux`). Two-phase géométrique : ratio 1.205 Lv.1→16, puis 1.05 Lv.16→100. Ancres :
+
+  | Niveau | XP | Dev normal (600K XP/j) |
+  |---|---|---|
+  | Lv.1 (œuf éclos) | 300K | ~0.5 jour |
+  | Lv.5 | 635K | ~1.3 jours |
+  | Lv.16 (Reptincel) | 5M | ~8 jours ≈ 1 semaine |
+  | Lv.36 (Dracaufeu) | 13.2M | ~3 semaines |
+  | Lv.100 (champion) | 300M | ~1.5 an |
+
+  Pas de daily cap : la difficulté est gérée par la courbe seule. Heavy devs (500K+ tokens/j) progressent naturellement plus vite, casual users plus lentement — pas de plafond artificiel qui frustre les sessions intenses. Force-propagée via update.sh.
+
+- **Affichage statusline relatif au niveau** : la barre XP affichait `Lv.13 904.4K/983.6K 24%` (cumulé absolu) — peu lisible et différent de la convention des jeux Pokémon. Maintenant `Lv.13 26K/79K 24%` : XP **dans** le niveau / XP nécessaire pour le niveau suivant. Total cumulé reste visible via `/pokemon` (vue principale) et la trainer card.
 
 ## [1.0.0-beta.5] — 2026-05-05
 

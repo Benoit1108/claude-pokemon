@@ -65,6 +65,20 @@ bash ~/.claude/pokemon-status.sh stats         # Stats
 bash bin/uninstall.sh --confirm                # Cleanup
 ```
 
+## Mécaniques XP (`pokemon_tick`)
+
+Source de vérité : `lib/lib.sh` `pokemon_tick()`. Logique :
+
+1. **Per-tick delta** : `delta = max(0, current_tokens − last_tick_tokens)`. Pas de high-water mark — chaque tick mesure la croissance depuis le précédent. Auto-compaction → delta=0 mais `last_tick_tokens` redescend au floor courant, donc XP redémarre dès la prochaine croissance.
+2. **Per-tick cap 10K tokens** (variable `tick_cap`) sur `delta` uniquement, max ~15K XP/tick après multiplicateurs. Anti-spike : empêche un seul gros message (lecture de N fichiers volumineux) de clear plusieurs niveaux. PAS de daily cap : la difficulté est gérée par la courbe des thresholds (cf. point 4) plutôt que par un plafond artificiel. `raw_delta` reste non-capé pour `lifetime_stats.total_tokens` (badge centurion).
+3. **Multiplicateurs** (compoundés) : context (0.5×-2× selon used_pct), type_match (1.0×-1.2× par lignée), daily_bonus (×1.5 premier tick du jour UTC), status (×0.75 si tired = 5+ ticks ≥90% ctx), held_item, injured (×0.75 pendant 5 ticks après défaite combat), season.
+4. **Threshold curve** (`lib/data/thresholds.json`, force-propagée via update.sh) : géométrique 1.205× Lv.1→16, puis 1.05× jusqu'à Lv.100. Ancres : Lv.1=300K (~0.5j normal dev), Lv.5=635K (~1.3j), Lv.16=5M (~1 sem normal dev), Lv.36=13.2M (~3 sem), Lv.100=300M (~1.5 an normal dev). Sans daily cap, la courbe seule gère la difficulté — heavy devs progressent naturellement plus vite, casual plus lentement.
+5. **Détection 1M context** dans `statusline.sh` : si `model.display_name` contient "1M context" ou "(1M)", `default_window=1_000_000` (au lieu de 200K) pour le calcul fallback `tokens = used_pct × window_size`.
+
+State fields (per-session) : `last_tick_tokens` (nouveau, source du delta), `max_context_tokens` (legacy, conservé pour stats). Migration douce : `last_tick_tokens // max_context_tokens // 0` au premier tick post-upgrade → pas de windfall.
+
+Display statusline : `pokemon_render_inline` affiche **XP dans le niveau courant** (`X/Y`), pas le cumul absolu. Total cumulé visible via `/pokemon` (vue principale) et trainer-card.
+
 ## Mécaniques d'évolution Eevee (Lv.30)
 
 Décision dans `lib.sh:840` (block dans `pokemon_tick`). Ordre :
