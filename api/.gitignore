@@ -1,5 +1,4 @@
-# Wrangler dev/build artifacts (local only, regenerated on `wrangler dev`)
 .wrangler/
-
-# Node deps if ever added
 node_modules/
+dist/
+*.log

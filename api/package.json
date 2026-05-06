@@ -1,0 +1,25 @@
+{
+  "name": "claude-pokemon-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloudflare Worker for claude-pokemon shared anonymous stats",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write 'src/**/*.{ts,json}'",
+    "format:check": "prettier --check 'src/**/*.{ts,json}'"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.3.0",
+    "typescript": "^5.5.0",
+    "wrangler": "^4.87.0"
+  }
+}

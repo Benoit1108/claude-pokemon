@@ -14,3 +14,6 @@ sprites-mini-anim/
 # Demo recording intermediates (the final GIF lives in assets/)
 .demo/*.cast
 .demo/*-raw.gif
+
+# Claude Code local settings (per-machine, not for sharing)
+.claude/

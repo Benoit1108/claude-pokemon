@@ -92,3 +92,25 @@ jobs:
           node-version: '20'
       - name: npm pack dry run
         run: npm pack --dry-run
+
+  worker-typecheck:
+    name: Worker — TypeScript + ESLint + Prettier
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: TypeScript typecheck
+        run: npm run typecheck
+      - name: ESLint
+        run: npm run lint
+      - name: Prettier check
+        run: npm run format:check
