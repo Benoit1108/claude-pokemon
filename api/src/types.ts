@@ -95,6 +95,10 @@ export interface SubmitPayload {
   display_name?: string | null
   /** Free-form trainer quote, ≤80 chars, single line. Public-facing. */
   quote?: string | null
+  /** Free-form trainer bio, ≤160 chars, multi-line allowed (Sprint 2.9). */
+  bio?: string | null
+  /** Up to 3 badge keys to pin on the public profile (Sprint 2.9). */
+  pinned_badges?: string[] | null
   schema_version: number
   client_version: string
   submitted_at: string
@@ -105,6 +109,10 @@ export interface KVRecord {
   anon_id: string
   display_name: string | null
   quote: string | null
+  /** Trainer bio (Sprint 2.9). May be null on pre-2.9 records. */
+  bio: string | null
+  /** Pinned badges (Sprint 2.9). Always ≤PINNED_BADGES_MAX, dedup'd. */
+  pinned_badges: string[]
   schema_version: number
   client_version: string
   submitted_at: string
@@ -113,6 +121,10 @@ export interface KVRecord {
 
 /** Max length of a trainer quote in chars. Validated server-side. */
 export const QUOTE_MAX_LENGTH = 80
+/** Max length of a trainer bio in chars (Sprint 2.9). */
+export const BIO_MAX_LENGTH = 160
+/** Max number of pinned badges shown on the public profile (Sprint 2.9). */
+export const PINNED_BADGES_MAX = 3
 
 export interface LeaderboardEntry {
   anon_id: string

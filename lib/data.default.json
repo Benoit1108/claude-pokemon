@@ -855,9 +855,11 @@
   "starter_pick": "random",
   "stats_share": {
     "anon_id": null,
+    "bio": null,
     "display_name": null,
     "enabled": false,
     "endpoint": "https://claude-pokemon-api.benoit-dev.workers.dev",
+    "pinned_badges": [],
     "quote": null
   },
   "theme": "default",

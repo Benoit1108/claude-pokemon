@@ -1448,13 +1448,21 @@ view_trainer_card() {
 # Build minimal payload from state.json + config (whitelist strict)
 _share_build_payload() {
   local anon_id="$1" client_ver="$2" display_name="${3:-}"
-  local now quote
+  local now quote bio
   now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
   quote=$(jq -r '.stats_share.quote // ""' "$POKEMON_DATA")
+  bio=$(jq -r '.stats_share.bio // ""' "$POKEMON_DATA")
+  # Pinned badges array : pull as a JSON literal so jq can splice it directly.
+  # Filter on the worker side intersects with owned badges anyway, but trim
+  # locally too (fewer round-trips on a bad submit).
+  local pinned_json
+  pinned_json=$(jq -c '.stats_share.pinned_badges // []' "$POKEMON_DATA")
   jq -n \
     --arg id "$anon_id" \
     --arg name "$display_name" \
     --arg quote "$quote" \
+    --arg bio "$bio" \
+    --argjson pinned "$pinned_json" \
     --arg ver "$client_ver" \
     --arg at "$now" \
     --slurpfile state "$POKEMON_STATE" \
@@ -1462,6 +1470,8 @@ _share_build_payload() {
       anon_id: $id,
       display_name: (if $name == "" then null else $name end),
       quote:        (if $quote == "" then null else $quote end),
+      bio:          (if $bio == "" then null else $bio end),
+      pinned_badges: $pinned,
       schema_version: 1,
       client_version: $ver,
       submitted_at: $at,
@@ -1679,6 +1689,143 @@ view_quote() {
         > "$POKEMON_DATA.tmp" && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
       printf "  %s$(pokemon_t quote.set "$new_quote")%s\\n\\n" "$GOLD" "$RESET"
       printf "  %s$(pokemon_t quote.set_hint)%s\\n\\n" "$DIM" "$RESET"
+      ;;
+  esac
+}
+
+# ── Trainer bio (Sprint 2.9) — longer description, ≤160 chars, ≤4 lines.
+# Quote is the one-liner / flair ; bio is the full presentation paragraph.
+view_bio() {
+  local sub="${1:-}"
+  printf "\\n  %s%s$(pokemon_t bio.title)%s\\n\\n" "$BOLD" "$GOLD" "$RESET"
+
+  local current
+  current=$(jq -r '.stats_share.bio // ""' "$POKEMON_DATA")
+
+  case "$sub" in
+    "")
+      if [ -n "$current" ]; then
+        # Indent each line for the box-style display.
+        printf '%s\n' "$current" | while IFS= read -r line; do
+          printf "  %s%s%s\\n" "$GOLD" "$line" "$RESET"
+        done
+        printf '\n'
+      else
+        printf "  %s$(pokemon_t bio.unset)%s\\n\\n" "$DIM" "$RESET"
+      fi
+      printf "  %s$(pokemon_t bio.usage)%s\\n\\n" "$DIM" "$RESET"
+      ;;
+
+    clear|remove|reset)
+      jq '.stats_share.bio = null' "$POKEMON_DATA" > "$POKEMON_DATA.tmp" \
+        && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      printf "  %s$(pokemon_t bio.cleared)%s\\n\\n" "$DIM" "$RESET"
+      ;;
+
+    *)
+      # All args (including $1) joined with newlines : `pokemon bio "L1" "L2"`
+      # → "L1\nL2". Single-arg bios with embedded \n still work because we
+      # don't strip them. The quote-style "$*" join would space-separate, so
+      # we iterate explicitly here.
+      local new_bio=""
+      local arg
+      for arg in "$@"; do
+        if [ -z "$new_bio" ]; then
+          new_bio="$arg"
+        else
+          new_bio="$new_bio
+$arg"
+        fi
+      done
+      local len
+      len=$(printf '%s' "$new_bio" | LC_ALL=C.UTF-8 wc -m | tr -d ' \n')
+      if [ "$len" -gt 160 ]; then
+        printf "  %s$(pokemon_t bio.too_long "$len")%s\\n\\n" "$DIM" "$RESET"
+        return
+      fi
+      local lines
+      lines=$(printf '%s\n' "$new_bio" | wc -l | tr -d ' ')
+      if [ "$lines" -gt 4 ]; then
+        printf "  %s$(pokemon_t bio.too_many_lines "$lines")%s\\n\\n" "$DIM" "$RESET"
+        return
+      fi
+      jq --arg b "$new_bio" '.stats_share.bio = $b' "$POKEMON_DATA" \
+        > "$POKEMON_DATA.tmp" && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      printf "  %s$(pokemon_t bio.set)%s\\n\\n" "$GOLD" "$RESET"
+      printf "  %s$(pokemon_t bio.set_hint)%s\\n\\n" "$DIM" "$RESET"
+      ;;
+  esac
+}
+
+# ── Pinned badges (Sprint 2.9) — up to 3 displayed prominently on the public
+# trainer profile. User picks from their owned badges only ; unknown / unowned
+# badges are rejected locally (and again on the worker for defense in depth).
+view_pins() {
+  local sub="${1:-}"
+  printf "\\n  %s%s$(pokemon_t pins.title)%s\\n\\n" "$BOLD" "$GOLD" "$RESET"
+
+  local owned_json current_json
+  owned_json=$(jq -c '.badges // [] | map(.id)' "$POKEMON_STATE")
+  current_json=$(jq -c '.stats_share.pinned_badges // []' "$POKEMON_DATA")
+
+  case "$sub" in
+    "")
+      local n
+      n=$(printf '%s' "$current_json" | jq 'length')
+      if [ "$n" -gt 0 ]; then
+        printf '%s' "$current_json" | jq -r '.[]' | while IFS= read -r pin; do
+          printf "  %s★ %s%s\\n" "$GOLD" "$pin" "$RESET"
+        done
+        printf '\n'
+      else
+        printf "  %s$(pokemon_t pins.unset)%s\\n\\n" "$DIM" "$RESET"
+      fi
+      printf "  %s$(pokemon_t pins.usage)%s\\n" "$DIM" "$RESET"
+      printf "  %s$(pokemon_t pins.owned)%s %s\\n\\n" "$DIM" "$RESET" \
+        "$(printf '%s' "$owned_json" | jq -r 'join(", ")')"
+      ;;
+
+    clear|remove|reset)
+      jq '.stats_share.pinned_badges = []' "$POKEMON_DATA" \
+        > "$POKEMON_DATA.tmp" && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      printf "  %s$(pokemon_t pins.cleared)%s\\n\\n" "$DIM" "$RESET"
+      ;;
+
+    set)
+      shift
+      # Accept either comma-separated single arg or multiple args.
+      local raw="$*"
+      raw="${raw//,/ }"
+      # shellcheck disable=SC2206  # intentional word splitting
+      local pins=($raw)
+      if [ "${#pins[@]}" -eq 0 ]; then
+        printf "  %s$(pokemon_t pins.empty)%s\\n\\n" "$DIM" "$RESET"
+        return
+      fi
+      if [ "${#pins[@]}" -gt 3 ]; then
+        printf "  %s$(pokemon_t pins.too_many "${#pins[@]}")%s\\n\\n" "$DIM" "$RESET"
+        return
+      fi
+      # Validate each pin is owned ; reject the first one that isn't so the
+      # user gets a precise error.
+      local p
+      for p in "${pins[@]}"; do
+        if ! printf '%s' "$owned_json" | jq -e --arg id "$p" 'index($id)' >/dev/null 2>&1; then
+          printf "  %s$(pokemon_t pins.not_owned "$p")%s\\n\\n" "$DIM" "$RESET"
+          return
+        fi
+      done
+      # Build JSON array literal and persist.
+      local pins_json
+      pins_json=$(printf '%s\n' "${pins[@]}" | jq -R . | jq -s .)
+      jq --argjson pins "$pins_json" '.stats_share.pinned_badges = $pins' "$POKEMON_DATA" \
+        > "$POKEMON_DATA.tmp" && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      printf "  %s$(pokemon_t pins.set)%s\\n\\n" "$GOLD" "$RESET"
+      printf "  %s$(pokemon_t pins.set_hint)%s\\n\\n" "$DIM" "$RESET"
+      ;;
+
+    *)
+      printf "  %s$(pokemon_t pins.usage)%s\\n\\n" "$DIM" "$RESET"
       ;;
   esac
 }
@@ -2117,6 +2264,8 @@ case "${1:-}" in
   trainer-card|card)  view_trainer_card ;;
   stats-share|share)  view_stats_share "${2:-}" "${3:-}" ;;
   quote)              view_quote "${@:2}" ;;
+  bio)                view_bio "${@:2}" ;;
+  pins|pinned)        view_pins "${@:2}" ;;
   arena)              view_arena "${2:-status}" "${3:-}" ;;
   leaderboard|lb)     view_leaderboard "${2:-total_tokens}" "${3:-10}" ;;
   aggregate|global)   view_aggregate ;;

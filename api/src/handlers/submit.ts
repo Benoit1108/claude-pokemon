@@ -32,11 +32,20 @@ export async function handleSubmit(request: Request, env: Env): Promise<Response
     )
   }
 
+  // Pinned badges are intersected with the user's actual badges — you can't
+  // pin a badge you don't own (defense in depth even though the CLI checks).
+  const ownedBadges = new Set(payload.stats.badges)
+  const pinned = (payload.pinned_badges ?? [])
+    .filter(b => ownedBadges.has(b))
+    .slice(0, 3)
+
   // Persist (overwrite by anon_id — pseudo-idempotent)
   const record: KVRecord = {
     anon_id: payload.anon_id,
     display_name: payload.display_name || null,
     quote: payload.quote || null,
+    bio: payload.bio || null,
+    pinned_badges: pinned,
     schema_version: payload.schema_version,
     client_version: payload.client_version,
     submitted_at: payload.submitted_at,

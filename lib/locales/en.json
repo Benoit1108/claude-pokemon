@@ -275,6 +275,28 @@
     "too_long": "Too long (%s chars, max 80). Trim and retry.",
     "no_newline": "Single line only (no newlines allowed)."
   },
+  "bio": {
+    "title": "📜 TRAINER BIO",
+    "unset": "No bio set yet.",
+    "usage": "Set: /pokemon bio <text> [<line 2>...]   Clear: /pokemon bio clear",
+    "set": "✓ Bio saved.",
+    "set_hint": "Shown on your public arena page. Propagated on the next submit (auto ≤24h or /pokemon stats-share submit).",
+    "cleared": "✓ Bio cleared. Will be removed from the server on the next submit.",
+    "too_long": "Too long (%s chars, max 160).",
+    "too_many_lines": "Too many lines (%s, max 4)."
+  },
+  "pins": {
+    "title": "📌 PINNED BADGES",
+    "unset": "No pinned badges yet.",
+    "usage": "Set: /pokemon pins set <id1>,<id2>,<id3>   Clear: /pokemon pins clear",
+    "owned": "Your badges:",
+    "set": "✓ Pinned badges updated.",
+    "set_hint": "Displayed prominently on your arena page after the next submit.",
+    "cleared": "✓ Pins removed.",
+    "empty": "No badges provided. Example: /pokemon pins set hatch,first_evolution,champion",
+    "too_many": "Too many badges (%s, max 3).",
+    "not_owned": "Badge not owned: %s. You can only pin badges you've earned."
+  },
   "arena": {
     "title": "⚔️  ARENA — async PvP",
     "status_enabled": "✓ Enabled — anon_id: %s",

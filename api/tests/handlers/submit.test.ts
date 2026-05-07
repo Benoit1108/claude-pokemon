@@ -114,6 +114,51 @@ describe('handleSubmit', () => {
     expect(res.status).toBe(400)
   })
 
+  // ---------------------------------------------------------------------------
+  // Sprint 2.9 — bio + pinned_badges persistence
+  // ---------------------------------------------------------------------------
+
+  it('persists bio when provided', async () => {
+    await handleSubmit(
+      makeRequest({ ...validBody, bio: 'A trainer from Lavender Town.' }),
+      env,
+    )
+    const stored = await getStats(env, 'abc12345')
+    expect(stored?.bio).toBe('A trainer from Lavender Town.')
+  })
+
+  it('stores null bio + empty pinned_badges by default', async () => {
+    await handleSubmit(makeRequest(validBody), env)
+    const stored = await getStats(env, 'abc12345')
+    expect(stored?.bio).toBeNull()
+    expect(stored?.pinned_badges).toEqual([])
+  })
+
+  it('persists pinned_badges (intersected with owned badges)', async () => {
+    const body = {
+      ...validBody,
+      stats: { ...validBody.stats, badges: ['hatch', 'first_evolution', 'champion'] },
+      // 'centurion' is not owned, must be filtered out by submit handler.
+      pinned_badges: ['hatch', 'centurion', 'first_evolution'],
+    }
+    await handleSubmit(makeRequest(body), env)
+    const stored = await getStats(env, 'abc12345')
+    expect(stored?.pinned_badges).toEqual(['hatch', 'first_evolution'])
+  })
+
+  it('caps pinned_badges to 3 even if validation accepted them', async () => {
+    // Extra defense in depth — if validation slipped, handler still slices.
+    // This sends exactly 3, all owned, and confirms order is preserved.
+    const body = {
+      ...validBody,
+      stats: { ...validBody.stats, badges: ['hatch', 'first_evolution', 'champion'] },
+      pinned_badges: ['champion', 'hatch', 'first_evolution'],
+    }
+    await handleSubmit(makeRequest(body), env)
+    const stored = await getStats(env, 'abc12345')
+    expect(stored?.pinned_badges).toEqual(['champion', 'hatch', 'first_evolution'])
+  })
+
   it('overwrites previous record (idempotent re-submit after cooldown)', async () => {
     await handleSubmit(makeRequest(validBody), env)
     // Clear cooldown to allow second submit

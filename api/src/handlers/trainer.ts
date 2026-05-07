@@ -20,6 +20,9 @@ export async function handleTrainer(pathname: string, env: Env): Promise<Respons
       display_name: record.display_name || null,
       // `quote` was added in v1.0.0-beta.7 — older KV entries may not have it.
       quote: record.quote || null,
+      // `bio` + `pinned_badges` added in Sprint 2.9 — fall back to null/[].
+      bio: record.bio || null,
+      pinned_badges: Array.isArray(record.pinned_badges) ? record.pinned_badges : [],
       submitted_at: record.submitted_at,
       client_version: record.client_version,
       stats: record.stats,

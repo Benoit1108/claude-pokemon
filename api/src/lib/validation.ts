@@ -5,6 +5,8 @@ import {
   ANON_ID_RE,
   DISPLAY_NAME_RE,
   QUOTE_MAX_LENGTH,
+  BIO_MAX_LENGTH,
+  PINNED_BADGES_MAX,
   SCHEMA_VERSION,
   ALLOWED_LINEAGES,
   ALLOWED_BADGES,
@@ -46,6 +48,45 @@ export function validateSubmit(body: unknown): string[] {
       }
       if (/[\r\n]/.test(b.quote)) {
         errs.push('quote must be a single line (no newlines)')
+      }
+    }
+  }
+
+  // bio : optional, ≤BIO_MAX_LENGTH chars, multi-line allowed but capped at
+  // 4 lines (the public TrainerHero only renders ~4 lines worth of space).
+  if (b.bio !== undefined && b.bio !== null && b.bio !== '') {
+    if (typeof b.bio !== 'string') {
+      errs.push('bio must be a string')
+    } else {
+      if (b.bio.length > BIO_MAX_LENGTH) {
+        errs.push(`bio must be ≤${BIO_MAX_LENGTH} chars (got ${b.bio.length})`)
+      }
+      const lineCount = b.bio.split('\n').length
+      if (lineCount > 4) {
+        errs.push(`bio must be ≤4 lines (got ${lineCount})`)
+      }
+    }
+  }
+
+  // pinned_badges : optional array of badge keys. Must be ≤PINNED_BADGES_MAX,
+  // each must be in the allowed badge set, no duplicates. Empty array is
+  // valid and means "no pins".
+  if (b.pinned_badges !== undefined && b.pinned_badges !== null) {
+    if (!Array.isArray(b.pinned_badges)) {
+      errs.push('pinned_badges must be an array')
+    } else {
+      if (b.pinned_badges.length > PINNED_BADGES_MAX) {
+        errs.push(`pinned_badges must be ≤${PINNED_BADGES_MAX} entries`)
+      }
+      const seen = new Set<string>()
+      for (const pin of b.pinned_badges) {
+        if (typeof pin !== 'string' || !ALLOWED_BADGES.has(pin)) {
+          errs.push(`unknown pinned badge: ${pin}`)
+        } else if (seen.has(pin)) {
+          errs.push(`duplicate pinned badge: ${pin}`)
+        } else {
+          seen.add(pin)
+        }
       }
     }
   }

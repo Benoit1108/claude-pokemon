@@ -97,6 +97,82 @@ describe('validateSubmit', () => {
     expect(errs.some(e => e.includes('quote'))).toBe(true)
   })
 
+  // -------------------------------------------------------------------------
+  // bio (Sprint 2.9)
+  // -------------------------------------------------------------------------
+
+  it('accepts optional null/empty/undefined bio', () => {
+    expect(validateSubmit({ ...validPayload, bio: null })).toEqual([])
+    expect(validateSubmit({ ...validPayload, bio: '' })).toEqual([])
+    expect(validateSubmit({ ...validPayload, bio: undefined })).toEqual([])
+  })
+
+  it('accepts a valid bio (≤160 chars, ≤4 lines)', () => {
+    expect(validateSubmit({ ...validPayload, bio: 'A simple bio.' })).toEqual([])
+    expect(validateSubmit({ ...validPayload, bio: 'a'.repeat(160) })).toEqual([])
+    expect(validateSubmit({ ...validPayload, bio: 'L1\nL2\nL3\nL4' })).toEqual([])
+  })
+
+  it('rejects a bio longer than 160 chars', () => {
+    const errs = validateSubmit({ ...validPayload, bio: 'a'.repeat(161) })
+    expect(errs.some(e => e.includes('bio'))).toBe(true)
+  })
+
+  it('rejects a bio with more than 4 lines', () => {
+    const errs = validateSubmit({ ...validPayload, bio: '1\n2\n3\n4\n5' })
+    expect(errs.some(e => e.includes('4 lines'))).toBe(true)
+  })
+
+  it('rejects a non-string bio', () => {
+    const errs = validateSubmit({ ...validPayload, bio: 42 })
+    expect(errs.some(e => e.includes('bio'))).toBe(true)
+  })
+
+  // -------------------------------------------------------------------------
+  // pinned_badges (Sprint 2.9)
+  // -------------------------------------------------------------------------
+
+  it('accepts null/empty/undefined pinned_badges', () => {
+    expect(validateSubmit({ ...validPayload, pinned_badges: null })).toEqual([])
+    expect(validateSubmit({ ...validPayload, pinned_badges: [] })).toEqual([])
+    expect(validateSubmit({ ...validPayload, pinned_badges: undefined })).toEqual([])
+  })
+
+  it('accepts up to 3 valid pinned badges', () => {
+    expect(
+      validateSubmit({
+        ...validPayload,
+        pinned_badges: ['hatch', 'first_evolution', 'champion'],
+      }),
+    ).toEqual([])
+  })
+
+  it('rejects more than 3 pinned badges', () => {
+    const errs = validateSubmit({
+      ...validPayload,
+      pinned_badges: ['hatch', 'first_evolution', 'champion', 'centurion'],
+    })
+    expect(errs.some(e => e.includes('pinned_badges'))).toBe(true)
+  })
+
+  it('rejects unknown pinned badge keys', () => {
+    const errs = validateSubmit({ ...validPayload, pinned_badges: ['mystery_badge'] })
+    expect(errs.some(e => e.includes('unknown pinned badge'))).toBe(true)
+  })
+
+  it('rejects duplicate pinned badges', () => {
+    const errs = validateSubmit({
+      ...validPayload,
+      pinned_badges: ['hatch', 'hatch'],
+    })
+    expect(errs.some(e => e.includes('duplicate'))).toBe(true)
+  })
+
+  it('rejects non-array pinned_badges', () => {
+    const errs = validateSubmit({ ...validPayload, pinned_badges: 'hatch' })
+    expect(errs.some(e => e.includes('pinned_badges'))).toBe(true)
+  })
+
   it('rejects display_name shorter than 2 chars', () => {
     const errs = validateSubmit({ ...validPayload, display_name: 'a' })
     expect(errs.some(e => e.includes('display_name'))).toBe(true)

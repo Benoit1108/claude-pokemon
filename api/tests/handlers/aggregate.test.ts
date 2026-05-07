@@ -8,6 +8,9 @@ function record(overrides: Partial<KVRecord> & { anon_id: string }): KVRecord {
   return {
     anon_id: overrides.anon_id,
     display_name: overrides.display_name ?? null,
+    quote: null,
+    bio: null,
+    pinned_badges: [],
     schema_version: 1,
     client_version: '1.0.0',
     submitted_at: '2026-05-06T10:00:00Z',

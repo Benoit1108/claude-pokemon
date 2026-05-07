@@ -8,6 +8,8 @@ const sampleRecord: KVRecord = {
   anon_id: 'c5bbdea6',
   display_name: 'benoit1108',
   quote: null,
+  bio: null,
+  pinned_badges: [],
   schema_version: 1,
   client_version: '1.0.0',
   submitted_at: '2026-05-06T10:00:00Z',
@@ -57,6 +59,31 @@ describe('handleTrainer', () => {
     const res = await handleTrainer('/v1/trainer/c5bbdea6', env)
     const body = (await res.json()) as { quote: string | null }
     expect(body.quote).toBeNull()
+  })
+
+  it('returns bio + pinned_badges (Sprint 2.9)', async () => {
+    await putStats(env, {
+      ...sampleRecord,
+      bio: 'Caught all my Eevees in Goldenrod City.',
+      pinned_badges: ['hatch', 'first_shiny'],
+    })
+    const res = await handleTrainer('/v1/trainer/c5bbdea6', env)
+    const body = (await res.json()) as { bio: string | null; pinned_badges: string[] }
+    expect(body.bio).toBe('Caught all my Eevees in Goldenrod City.')
+    expect(body.pinned_badges).toEqual(['hatch', 'first_shiny'])
+  })
+
+  it('falls back to null bio + [] pinned_badges on legacy records', async () => {
+    // Simulate a pre-2.9 KV record by stripping the new fields. The handler
+    // must still respond with safe defaults rather than crashing.
+    const legacy = { ...sampleRecord } as Partial<KVRecord> & { anon_id: string }
+    delete (legacy as { bio?: unknown }).bio
+    delete (legacy as { pinned_badges?: unknown }).pinned_badges
+    await putStats(env, legacy as KVRecord)
+    const res = await handleTrainer('/v1/trainer/c5bbdea6', env)
+    const body = (await res.json()) as { bio: string | null; pinned_badges: string[] }
+    expect(body.bio).toBeNull()
+    expect(body.pinned_badges).toEqual([])
   })
 
   it('returns 404 for unknown anon_id', async () => {

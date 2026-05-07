@@ -275,6 +275,28 @@
     "too_long": "Trop long (%s caractères, max 80). Raccourcis et réessaie.",
     "no_newline": "Une seule ligne autorisée (pas de retour à la ligne)."
   },
+  "bio": {
+    "title": "📜 BIO DRESSEUR",
+    "unset": "Aucune bio définie pour le moment.",
+    "usage": "Définir : /pokemon bio <texte> [<ligne 2>...]   Effacer : /pokemon bio clear",
+    "set": "✓ Bio enregistrée.",
+    "set_hint": "Affichée sur ta page publique arena. Propagée au prochain submit (auto ≤24h ou /pokemon stats-share submit).",
+    "cleared": "✓ Bio effacée. Sera supprimée du serveur au prochain submit.",
+    "too_long": "Trop long (%s caractères, max 160).",
+    "too_many_lines": "Trop de lignes (%s, max 4)."
+  },
+  "pins": {
+    "title": "📌 BADGES ÉPINGLÉS",
+    "unset": "Aucun badge épinglé pour le moment.",
+    "usage": "Définir : /pokemon pins set <id1>,<id2>,<id3>   Effacer : /pokemon pins clear",
+    "owned": "Tes badges :",
+    "set": "✓ Badges épinglés mis à jour.",
+    "set_hint": "Affichés en gros sur ta page arena après le prochain submit.",
+    "cleared": "✓ Épingles retirées.",
+    "empty": "Aucun badge fourni. Exemple : /pokemon pins set hatch,first_evolution,champion",
+    "too_many": "Trop de badges (%s, max 3).",
+    "not_owned": "Badge non possédé : %s. Tu ne peux épingler que tes propres badges."
+  },
   "arena": {
     "title": "⚔️  ARENA — combats async",
     "status_enabled": "✓ Activée — anon_id : %s",
