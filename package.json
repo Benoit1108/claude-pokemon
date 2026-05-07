@@ -29,7 +29,7 @@
   },
   "scripts": {
     "build:data": "bash lib/build-data.sh",
-    "test": "echo 'No automated tests yet — verify install via: bash bin/install.sh && bash bin/status.sh'"
+    "test": "bats tests/cli/"
   },
   "files": [
     "bin/",
@@ -37,5 +37,8 @@
     "skills/",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "devDependencies": {
+    "bats": "^1.13.0"
+  }
 }

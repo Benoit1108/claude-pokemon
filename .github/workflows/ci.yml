@@ -93,6 +93,19 @@ jobs:
       - name: npm pack dry run
         run: npm pack --dry-run
 
+  cli-tests:
+    name: CLI smoke tests (Bats)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+      - name: Install jq + bats
+        run: sudo apt-get install -y jq && npm ci
+      - name: Run Bats
+        run: npm test
+
   worker-typecheck:
     name: Worker — TypeScript + ESLint + Prettier
     runs-on: ubuntu-latest
