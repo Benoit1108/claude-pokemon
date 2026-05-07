@@ -1,9 +1,10 @@
-// GET /v1/arena/battle/:id — public read of a persisted battle record.
+// GET /v1/arena/battle/:id — public read of a persisted battle record
+// + its aggregated reaction counts (Sprint 2.8b).
 
 import type { Env } from '../../env.d'
 import { jsonResp } from '../../lib/http'
 import { BATTLE_ID_RE } from '../../types'
-import { getBattle } from '../../lib/kv'
+import { getBattle, getBattleReactions } from '../../lib/kv'
 
 export async function handleArenaBattle(pathname: string, env: Env): Promise<Response> {
   const id = pathname.replace('/v1/arena/battle/', '')
@@ -12,5 +13,6 @@ export async function handleArenaBattle(pathname: string, env: Env): Promise<Res
   }
   const battle = await getBattle(env, id)
   if (!battle) return jsonResp({ error: 'not_found' }, 404)
-  return jsonResp({ battle })
+  const reactions = await getBattleReactions(env, id)
+  return jsonResp({ battle, reactions: reactions.counts })
 }

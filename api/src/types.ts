@@ -197,3 +197,22 @@ export interface ArenaOpponent {
   is_shiny: boolean
   updated_at: string
 }
+
+// Battle reactions (Sprint 2.8b) — bounded emoji set, rate-limited at
+// 1 vote per anon_id per battle. Users can change their vote ; the old
+// count is decremented and the new one incremented.
+export const REACTION_KEYS = ['clap', 'fire', 'party', 'lol', 'tear', 'love'] as const
+export type ReactionKey = (typeof REACTION_KEYS)[number]
+
+export interface BattleReactions {
+  counts: Record<ReactionKey, number>
+  /** Map anon_id → the reaction they currently hold (for change-vote support). */
+  voters: Record<string, ReactionKey>
+}
+
+export function emptyReactions(): BattleReactions {
+  return {
+    counts: { clap: 0, fire: 0, party: 0, lol: 0, tear: 0, love: 0 },
+    voters: {},
+  }
+}

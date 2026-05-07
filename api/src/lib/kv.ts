@@ -2,7 +2,8 @@
 // in tests + change storage backend later if needed.
 
 import type { Env } from '../env.d'
-import type { ArenaRecord, BattleResult, KVRecord } from '../types'
+import type { ArenaRecord, BattleReactions, BattleResult, KVRecord } from '../types'
+import { emptyReactions } from '../types'
 
 export async function getStats(env: Env, anonId: string): Promise<KVRecord | null> {
   const raw = await env.STATS.get(`stats:${anonId}`)
@@ -93,6 +94,31 @@ export async function getBattle(env: Env, battleId: string): Promise<BattleResul
 export async function putBattle(env: Env, battle: BattleResult): Promise<void> {
   if (!battle.battle_id) throw new Error('putBattle requires battle_id set')
   await env.STATS.put(`battle:${battle.battle_id}`, JSON.stringify(battle), {
+    expirationTtl: BATTLE_TTL_S,
+  })
+}
+
+// ── Battle reactions (Sprint 2.8b) ────────────────────────────────────────
+export async function getBattleReactions(env: Env, battleId: string): Promise<BattleReactions> {
+  const raw = await env.STATS.get(`react:${battleId}`)
+  if (!raw) return emptyReactions()
+  try {
+    const parsed = JSON.parse(raw) as Partial<BattleReactions>
+    return {
+      counts: { ...emptyReactions().counts, ...(parsed.counts ?? {}) },
+      voters: parsed.voters ?? {},
+    }
+  } catch {
+    return emptyReactions()
+  }
+}
+
+export async function putBattleReactions(
+  env: Env,
+  battleId: string,
+  reactions: BattleReactions,
+): Promise<void> {
+  await env.STATS.put(`react:${battleId}`, JSON.stringify(reactions), {
     expirationTtl: BATTLE_TTL_S,
   })
 }

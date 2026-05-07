@@ -27,6 +27,7 @@ import { handleArenaRegenerate } from './handlers/arena/regenerate'
 import { handleArenaChallenge } from './handlers/arena/challenge'
 import { handleArenaBattle } from './handlers/arena/battle'
 import { handleArenaOpponents } from './handlers/arena/opponents'
+import { handleArenaReact } from './handlers/arena/react'
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -72,6 +73,13 @@ export default {
       }
       if (url.pathname === '/v1/arena/opponents' && request.method === 'GET') {
         return await handleArenaOpponents(url, env)
+      }
+      if (
+        url.pathname.startsWith('/v1/arena/battle/') &&
+        url.pathname.endsWith('/react') &&
+        request.method === 'POST'
+      ) {
+        return await handleArenaReact(request, url.pathname, env)
       }
       if (url.pathname.startsWith('/v1/arena/battle/') && request.method === 'GET') {
         return await handleArenaBattle(url.pathname, env)
