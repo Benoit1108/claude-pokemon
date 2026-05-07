@@ -7,6 +7,7 @@ import type { KVRecord } from '../../src/types'
 const sampleRecord: KVRecord = {
   anon_id: 'c5bbdea6',
   display_name: 'benoit1108',
+  quote: null,
   schema_version: 1,
   client_version: '1.0.0',
   submitted_at: '2026-05-06T10:00:00Z',
@@ -42,6 +43,20 @@ describe('handleTrainer', () => {
     expect(body.anon_id).toBe('c5bbdea6')
     expect(body.display_name).toBe('benoit1108')
     expect(body.stats).toBeDefined()
+  })
+
+  it('returns the quote when set', async () => {
+    await putStats(env, { ...sampleRecord, quote: "Catch 'em all!" })
+    const res = await handleTrainer('/v1/trainer/c5bbdea6', env)
+    const body = (await res.json()) as { quote: string | null }
+    expect(body.quote).toBe("Catch 'em all!")
+  })
+
+  it('returns null quote when not set', async () => {
+    await putStats(env, { ...sampleRecord, quote: null })
+    const res = await handleTrainer('/v1/trainer/c5bbdea6', env)
+    const body = (await res.json()) as { quote: string | null }
+    expect(body.quote).toBeNull()
   })
 
   it('returns 404 for unknown anon_id', async () => {

@@ -4,6 +4,7 @@
 import {
   ANON_ID_RE,
   DISPLAY_NAME_RE,
+  QUOTE_MAX_LENGTH,
   SCHEMA_VERSION,
   ALLOWED_LINEAGES,
   ALLOWED_BADGES,
@@ -30,6 +31,22 @@ export function validateSubmit(body: unknown): string[] {
   if (b.display_name !== undefined && b.display_name !== null && b.display_name !== '') {
     if (typeof b.display_name !== 'string' || !DISPLAY_NAME_RE.test(b.display_name)) {
       errs.push('display_name must match /^[a-zA-Z0-9_-]{2,24}$/ (or be null/empty)')
+    }
+  }
+
+  // quote : optional, ≤QUOTE_MAX_LENGTH chars, no newlines (single line). The
+  // intent is a small trash-talk/flair tag visible on the public profile —
+  // not a chat surface.
+  if (b.quote !== undefined && b.quote !== null && b.quote !== '') {
+    if (typeof b.quote !== 'string') {
+      errs.push('quote must be a string')
+    } else {
+      if (b.quote.length > QUOTE_MAX_LENGTH) {
+        errs.push(`quote must be ≤${QUOTE_MAX_LENGTH} chars (got ${b.quote.length})`)
+      }
+      if (/[\r\n]/.test(b.quote)) {
+        errs.push('quote must be a single line (no newlines)')
+      }
     }
   }
 

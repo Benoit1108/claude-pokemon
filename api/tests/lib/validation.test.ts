@@ -69,6 +69,34 @@ describe('validateSubmit', () => {
     expect(errs2.some(e => e.includes('display_name'))).toBe(true)
   })
 
+  it('accepts optional null/empty/undefined quote', () => {
+    expect(validateSubmit({ ...validPayload, quote: null })).toEqual([])
+    expect(validateSubmit({ ...validPayload, quote: '' })).toEqual([])
+    expect(validateSubmit({ ...validPayload, quote: undefined })).toEqual([])
+  })
+
+  it('accepts a valid quote (≤80 chars, single line)', () => {
+    expect(validateSubmit({ ...validPayload, quote: "Catch 'em all!" })).toEqual([])
+    expect(validateSubmit({ ...validPayload, quote: 'a'.repeat(80) })).toEqual([])
+  })
+
+  it('rejects a quote longer than 80 chars', () => {
+    const errs = validateSubmit({ ...validPayload, quote: 'a'.repeat(81) })
+    expect(errs.some(e => e.includes('quote'))).toBe(true)
+  })
+
+  it('rejects a quote with newlines (single-line only)', () => {
+    const errs = validateSubmit({ ...validPayload, quote: 'first\nsecond' })
+    expect(errs.some(e => e.includes('single line'))).toBe(true)
+    const errs2 = validateSubmit({ ...validPayload, quote: 'first\rsecond' })
+    expect(errs2.some(e => e.includes('single line'))).toBe(true)
+  })
+
+  it('rejects a non-string quote', () => {
+    const errs = validateSubmit({ ...validPayload, quote: 123 })
+    expect(errs.some(e => e.includes('quote'))).toBe(true)
+  })
+
   it('rejects display_name shorter than 2 chars', () => {
     const errs = validateSubmit({ ...validPayload, display_name: 'a' })
     expect(errs.some(e => e.includes('display_name'))).toBe(true)

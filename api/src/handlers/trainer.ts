@@ -18,6 +18,8 @@ export async function handleTrainer(pathname: string, env: Env): Promise<Respons
     {
       anon_id: record.anon_id,
       display_name: record.display_name || null,
+      // `quote` was added in v1.0.0-beta.7 — older KV entries may not have it.
+      quote: record.quote || null,
       submitted_at: record.submitted_at,
       client_version: record.client_version,
       stats: record.stats,

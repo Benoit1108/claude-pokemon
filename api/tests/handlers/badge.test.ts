@@ -7,6 +7,7 @@ import type { ArenaRecord, KVRecord } from '../../src/types'
 const sampleRecord: KVRecord = {
   anon_id: 'c5bbdea6',
   display_name: 'benoit1108',
+  quote: null,
   schema_version: 1,
   client_version: '1.0.0',
   submitted_at: '2026-05-06T10:00:00Z',

@@ -265,6 +265,16 @@
     "submit_failed": "Submit failed (HTTP %s). Check connection or retry later.",
     "unknown_subcmd": "Unknown subcommand: %s. See /pokemon stats-share status."
   },
+  "quote": {
+    "title": "💬 TRAINER QUOTE",
+    "unset": "No quote set yet.",
+    "usage": "Set: /pokemon quote <text>     Clear: /pokemon quote clear",
+    "set": "✓ Quote saved: \"%s\"",
+    "set_hint": "Visible on your trainer card and the arena list after the next submit (auto every 24h, or manual via /pokemon stats-share submit).",
+    "cleared": "✓ Quote cleared. Will be removed from the server on next submit.",
+    "too_long": "Too long (%s chars, max 80). Trim and retry.",
+    "no_newline": "Single line only (no newlines allowed)."
+  },
   "arena": {
     "title": "⚔️  ARENA — async PvP",
     "status_enabled": "✓ Enabled — anon_id: %s",

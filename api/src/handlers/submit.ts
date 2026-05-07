@@ -36,6 +36,7 @@ export async function handleSubmit(request: Request, env: Env): Promise<Response
   const record: KVRecord = {
     anon_id: payload.anon_id,
     display_name: payload.display_name || null,
+    quote: payload.quote || null,
     schema_version: payload.schema_version,
     client_version: payload.client_version,
     submitted_at: payload.submitted_at,

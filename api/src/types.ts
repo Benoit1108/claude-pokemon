@@ -93,6 +93,8 @@ export interface PlayerStats {
 export interface SubmitPayload {
   anon_id: string
   display_name?: string | null
+  /** Free-form trainer quote, ≤80 chars, single line. Public-facing. */
+  quote?: string | null
   schema_version: number
   client_version: string
   submitted_at: string
@@ -102,11 +104,15 @@ export interface SubmitPayload {
 export interface KVRecord {
   anon_id: string
   display_name: string | null
+  quote: string | null
   schema_version: number
   client_version: string
   submitted_at: string
   stats: PlayerStats
 }
+
+/** Max length of a trainer quote in chars. Validated server-side. */
+export const QUOTE_MAX_LENGTH = 80
 
 export interface LeaderboardEntry {
   anon_id: string

@@ -1448,17 +1448,20 @@ view_trainer_card() {
 # Build minimal payload from state.json + config (whitelist strict)
 _share_build_payload() {
   local anon_id="$1" client_ver="$2" display_name="${3:-}"
-  local now
+  local now quote
   now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  quote=$(jq -r '.stats_share.quote // ""' "$POKEMON_DATA")
   jq -n \
     --arg id "$anon_id" \
     --arg name "$display_name" \
+    --arg quote "$quote" \
     --arg ver "$client_ver" \
     --arg at "$now" \
     --slurpfile state "$POKEMON_STATE" \
     '{
       anon_id: $id,
       display_name: (if $name == "" then null else $name end),
+      quote:        (if $quote == "" then null else $quote end),
       schema_version: 1,
       client_version: $ver,
       submitted_at: $at,
@@ -1626,6 +1629,56 @@ view_stats_share() {
 
     *)
       printf "  %s$(pokemon_t share.unknown_subcmd "$sub")%s\n\n" "$DIM" "$RESET"
+      ;;
+  esac
+}
+
+# ── Trainer quote (Sprint 2.8a) — public flair on trainer card / arena pool
+# Single line, ≤80 chars. Stored in data.json.stats_share.quote and propagated
+# via the next auto-submit hook (or `/pokemon stats-share submit` for instant
+# push). Matches the worker's validation: no newlines, ≤80 chars.
+view_quote() {
+  local sub="${1:-}"
+  printf "\\n  %s%s$(pokemon_t quote.title)%s\\n\\n" "$BOLD" "$GOLD" "$RESET"
+
+  local current
+  current=$(jq -r '.stats_share.quote // ""' "$POKEMON_DATA")
+
+  case "$sub" in
+    "")
+      if [ -n "$current" ]; then
+        printf "  %s\"%s\"%s\\n\\n" "$GOLD" "$current" "$RESET"
+      else
+        printf "  %s$(pokemon_t quote.unset)%s\\n\\n" "$DIM" "$RESET"
+      fi
+      printf "  %s$(pokemon_t quote.usage)%s\\n\\n" "$DIM" "$RESET"
+      ;;
+
+    clear|remove|reset)
+      jq '.stats_share.quote = null' "$POKEMON_DATA" > "$POKEMON_DATA.tmp" \
+        && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      printf "  %s$(pokemon_t quote.cleared)%s\\n\\n" "$DIM" "$RESET"
+      ;;
+
+    *)
+      # Concat all remaining args as the quote (so unquoted multi-word works).
+      local new_quote="$*"
+      # Length check (chars, not bytes — wc -m is unicode-aware in C.UTF-8).
+      local len
+      len=$(printf '%s' "$new_quote" | LC_ALL=C.UTF-8 wc -m | tr -d ' \n')
+      if [ "$len" -gt 80 ]; then
+        printf "  %s$(pokemon_t quote.too_long "$len")%s\\n\\n" "$DIM" "$RESET"
+        return
+      fi
+      # Single-line check (no \n / \r — they'd break the SVG / submit payload).
+      if printf '%s' "$new_quote" | grep -q $'[\r\n]'; then
+        printf "  %s$(pokemon_t quote.no_newline)%s\\n\\n" "$DIM" "$RESET"
+        return
+      fi
+      jq --arg q "$new_quote" '.stats_share.quote = $q' "$POKEMON_DATA" \
+        > "$POKEMON_DATA.tmp" && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      printf "  %s$(pokemon_t quote.set "$new_quote")%s\\n\\n" "$GOLD" "$RESET"
+      printf "  %s$(pokemon_t quote.set_hint)%s\\n\\n" "$DIM" "$RESET"
       ;;
   esac
 }
@@ -2063,6 +2116,7 @@ case "${1:-}" in
   recap|summary)      view_recap "${2:-}" ;;
   trainer-card|card)  view_trainer_card ;;
   stats-share|share)  view_stats_share "${2:-}" "${3:-}" ;;
+  quote)              view_quote "${@:2}" ;;
   arena)              view_arena "${2:-status}" "${3:-}" ;;
   leaderboard|lb)     view_leaderboard "${2:-total_tokens}" "${3:-10}" ;;
   aggregate|global)   view_aggregate ;;

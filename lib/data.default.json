@@ -857,7 +857,8 @@
     "anon_id": null,
     "display_name": null,
     "enabled": false,
-    "endpoint": "https://claude-pokemon-api.benoit-dev.workers.dev"
+    "endpoint": "https://claude-pokemon-api.benoit-dev.workers.dev",
+    "quote": null
   },
   "theme": "default",
   "thresholds": [

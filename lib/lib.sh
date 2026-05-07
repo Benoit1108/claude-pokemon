@@ -1036,10 +1036,11 @@ pokemon_tick() {
     local share_enabled
     share_enabled=$(jq -r '.stats_share.enabled // false' "$POKEMON_DATA" 2>/dev/null || echo "false")
     if [ "$share_enabled" = "true" ] && [ -n "$lineage" ] && [ "$lineage" != "null" ]; then
-      local share_anon_id share_endpoint share_display_name last_share
+      local share_anon_id share_endpoint share_display_name share_quote last_share
       share_anon_id=$(jq -r '.stats_share.anon_id // ""' "$POKEMON_DATA")
       share_endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
       share_display_name=$(jq -r '.stats_share.display_name // ""' "$POKEMON_DATA")
+      share_quote=$(jq -r '.stats_share.quote // ""' "$POKEMON_DATA")
       last_share=$(jq -r '.last_stats_submit_at // ""' <<<"$state")
 
       if [ -n "$share_anon_id" ] && [ -n "$share_endpoint" ]; then
@@ -1061,12 +1062,14 @@ pokemon_tick() {
           auto_payload=$(jq -n \
             --arg id "$share_anon_id" \
             --arg name "$share_display_name" \
+            --arg quote "$share_quote" \
             --arg ver "$pkg_ver" \
             --arg at "$now" \
             --argjson st "$state" '
             {
               anon_id: $id,
               display_name: (if $name == "" then null else $name end),
+              quote:        (if $quote == "" then null else $quote end),
               schema_version: 1,
               client_version: $ver,
               submitted_at: $at,

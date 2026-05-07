@@ -96,6 +96,24 @@ describe('handleSubmit', () => {
     expect(stored?.display_name).toBeNull()
   })
 
+  it('persists quote when provided', async () => {
+    await handleSubmit(makeRequest({ ...validBody, quote: "Catch 'em all!" }), env)
+    const stored = await getStats(env, 'abc12345')
+    expect(stored?.quote).toBe("Catch 'em all!")
+  })
+
+  it('stores null quote when omitted', async () => {
+    await handleSubmit(makeRequest(validBody), env)
+    const stored = await getStats(env, 'abc12345')
+    expect(stored?.quote).toBeNull()
+  })
+
+  it('rejects oversized quote with 400', async () => {
+    const oversized = { ...validBody, quote: 'a'.repeat(81) }
+    const res = await handleSubmit(makeRequest(oversized), env)
+    expect(res.status).toBe(400)
+  })
+
   it('overwrites previous record (idempotent re-submit after cooldown)', async () => {
     await handleSubmit(makeRequest(validBody), env)
     // Clear cooldown to allow second submit

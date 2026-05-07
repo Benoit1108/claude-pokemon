@@ -22,7 +22,8 @@
     "enabled": false,
     "endpoint": "https://claude-pokemon-api.benoit-dev.workers.dev",
     "anon_id": null,
-    "display_name": null
+    "display_name": null,
+    "quote": null
   },
   "arena": {
     "enabled": false,

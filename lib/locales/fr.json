@@ -265,6 +265,16 @@
     "submit_failed": "Échec submit (HTTP %s). Vérifie ta connexion ou réessaie plus tard.",
     "unknown_subcmd": "Sous-commande inconnue : %s. Voir /pokemon stats-share status."
   },
+  "quote": {
+    "title": "💬 CITATION DRESSEUR",
+    "unset": "Aucune citation définie pour le moment.",
+    "usage": "Définir : /pokemon quote <texte>     Effacer : /pokemon quote clear",
+    "set": "✓ Citation enregistrée : \"%s\"",
+    "set_hint": "Visible sur ta trainer card et la liste arena après le prochain submit (auto ≤24h, ou manuel via /pokemon stats-share submit).",
+    "cleared": "✓ Citation effacée. Sera supprimée du serveur au prochain submit.",
+    "too_long": "Trop long (%s caractères, max 80). Raccourcis et réessaie.",
+    "no_newline": "Une seule ligne autorisée (pas de retour à la ligne)."
+  },
   "arena": {
     "title": "⚔️  ARENA — combats async",
     "status_enabled": "✓ Activée — anon_id : %s",
