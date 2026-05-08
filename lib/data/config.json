@@ -31,6 +31,7 @@
     "enabled": false,
     "enabled_at": null,
     "last_battle_id": null,
+    "last_live_battle_id": null,
     "web_url": "https://claude-pokemon-arena.pages.dev"
   }
 }

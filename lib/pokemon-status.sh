@@ -2115,9 +2115,313 @@ view_arena() {
       printf "  %s$(pokemon_t arena.usage)%s\n\n" "$DIM" "$RESET"
       ;;
 
+    live)
+      view_arena_live "${@:2}"
+      ;;
+
     *)
       printf "  %s$(pokemon_t arena.unknown_subcmd "$sub")%s\n\n" "$DIM" "$RESET"
       ;;
+  esac
+}
+
+# ── Live PvP (Sprint 2.10) — polling-based realtime battles ────────────────
+# Subcommands : invite <opp> | accept [<id>] | status [<id>] | move <name>
+#               | forfeit [<id>]
+# Each one needs the arena_secret loaded ; commits + invites use Bearer auth.
+view_arena_live() {
+  local sub="${1:-status}"
+
+  local endpoint web_url anon_id enabled
+  endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
+  web_url=$(jq -r '.arena.web_url // "https://claude-pokemon-arena.pages.dev"' "$POKEMON_DATA")
+  anon_id=$(jq -r '.stats_share.anon_id // ""' "$POKEMON_DATA")
+  enabled=$(jq -r '.arena.enabled // false' "$POKEMON_DATA")
+
+  if [ "$enabled" != "true" ] || [ -z "$anon_id" ]; then
+    printf "\n  %s$(pokemon_t live.not_enabled)%s\n\n" "$DIM" "$RESET"
+    return
+  fi
+  local secret
+  if ! secret=$(_arena_load_secret); then
+    printf "\n  %s$(pokemon_t arena.no_secret)%s\n\n" "$DIM" "$RESET"
+    return
+  fi
+
+  case "$sub" in
+    invite)
+      local opp="${2:-}"
+      if [ -z "$opp" ]; then
+        printf "\n  %s$(pokemon_t live.invite_usage)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local payload resp battle_id
+      payload=$(jq -n --arg c "$anon_id" --arg d "$opp" \
+        '{challenger_anon_id: $c, defender_anon_id: $d}')
+      resp=$(curl -s -X POST "$endpoint/v1/arena/live/invite" \
+        -H "content-type: application/json" \
+        -H "authorization: Bearer $secret" \
+        --data "$payload" 2>/dev/null)
+      battle_id=$(jq -r '.battle_id // ""' <<<"$resp")
+      if [ -z "$battle_id" ]; then
+        printf "\n  %s$(pokemon_t live.invite_failed "$resp")%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      jq --arg id "$battle_id" '.arena.last_live_battle_id = $id' "$POKEMON_DATA" \
+        > "$POKEMON_DATA.tmp" && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      printf "\n  %s$(pokemon_t live.invite_sent "$opp" "$battle_id")%s\n" "$GOLD" "$RESET"
+      printf "  %s$(pokemon_t live.spectator_url "$web_url" "$battle_id")%s\n\n" "$DIM" "$RESET"
+      ;;
+
+    accept)
+      local id="${2:-}"
+      [ -z "$id" ] && id=$(jq -r '.arena.last_live_battle_id // ""' "$POKEMON_DATA")
+      if [ -z "$id" ]; then
+        printf "\n  %s$(pokemon_t live.accept_usage)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local resp
+      resp=$(curl -s -X POST "$endpoint/v1/arena/live/$id/accept" \
+        -H "authorization: Bearer $secret" 2>/dev/null)
+      local state
+      state=$(jq -r '.state // ""' <<<"$resp")
+      if [ "$state" != "active" ]; then
+        printf "\n  %s$(pokemon_t live.accept_failed "$resp")%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      jq --arg id "$id" '.arena.last_live_battle_id = $id' "$POKEMON_DATA" \
+        > "$POKEMON_DATA.tmp" && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+      printf "\n  %s$(pokemon_t live.accepted "$id")%s\n\n" "$GOLD" "$RESET"
+      view_arena_live status "$id"
+      ;;
+
+    status|"")
+      local id="${2:-}"
+      [ -z "$id" ] && id=$(jq -r '.arena.last_live_battle_id // ""' "$POKEMON_DATA")
+      if [ -z "$id" ]; then
+        printf "\n  %s$(pokemon_t live.status_usage)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local resp
+      resp=$(curl -sf "$endpoint/v1/arena/live/$id" 2>/dev/null)
+      if [ -z "$resp" ]; then
+        printf "\n  %s$(pokemon_t live.not_found "$id")%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      _live_render_status "$resp" "$anon_id"
+      printf "  %s$(pokemon_t live.spectator_url "$web_url" "$id")%s\n\n" "$DIM" "$RESET"
+      ;;
+
+    move|attack)
+      local name="${2:-}"
+      local id
+      id=$(jq -r '.arena.last_live_battle_id // ""' "$POKEMON_DATA")
+      if [ -z "$id" ]; then
+        printf "\n  %s$(pokemon_t live.move_no_battle)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      if [ -z "$name" ]; then
+        printf "\n  %s$(pokemon_t live.move_usage)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local payload resp
+      payload=$(jq -n --arg id "$anon_id" --arg m "$name" \
+        '{anon_id: $id, move_id: $m}')
+      resp=$(curl -s -X POST "$endpoint/v1/arena/live/$id/commit" \
+        -H "content-type: application/json" \
+        -H "authorization: Bearer $secret" \
+        --data "$payload" 2>/dev/null)
+      local err
+      err=$(jq -r '.error // ""' <<<"$resp")
+      if [ -n "$err" ]; then
+        printf "\n  %s$(pokemon_t live.move_failed "$err")%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      printf "\n  %s$(pokemon_t live.move_committed "$name")%s\n\n" "$GOLD" "$RESET"
+      _live_render_status "$resp" "$anon_id"
+      printf "  %s$(pokemon_t live.spectator_url "$web_url" "$id")%s\n\n" "$DIM" "$RESET"
+      ;;
+
+    forfeit|abandon)
+      local id="${2:-}"
+      [ -z "$id" ] && id=$(jq -r '.arena.last_live_battle_id // ""' "$POKEMON_DATA")
+      if [ -z "$id" ]; then
+        printf "\n  %s$(pokemon_t live.forfeit_usage)%s\n\n" "$DIM" "$RESET"
+        return
+      fi
+      local resp
+      resp=$(curl -s -X POST "$endpoint/v1/arena/live/$id/forfeit" \
+        -H "authorization: Bearer $secret" 2>/dev/null)
+      local state
+      state=$(jq -r '.state // ""' <<<"$resp")
+      printf "\n  %s$(pokemon_t live.forfeited "$state")%s\n\n" "$DIM" "$RESET"
+      ;;
+
+    *)
+      printf "\n  %s$(pokemon_t live.unknown_subcmd "$sub")%s\n\n" "$DIM" "$RESET"
+      ;;
+  esac
+}
+
+# Render HP bars + state + the local player's available moves.
+_live_render_status() {
+  local resp="$1"
+  local me="$2"
+
+  local state turn_no winner reason
+  state=$(jq -r '.state // ""' <<<"$resp")
+  turn_no=$(jq -r '.turn_no // 0' <<<"$resp")
+  winner=$(jq -r '.winner // ""' <<<"$resp")
+  reason=$(jq -r '.reason // ""' <<<"$resp")
+
+  local c_id c_lin c_lvl c_hp c_pending d_id d_lin d_lvl d_hp d_pending
+  c_id=$(jq -r '.challenger.anon_id' <<<"$resp")
+  c_lin=$(jq -r '.challenger.snapshot.lineage // "?"' <<<"$resp")
+  c_lvl=$(jq -r '.challenger.snapshot.level // 0' <<<"$resp")
+  c_hp=$(jq -r '.challenger.hp // 0' <<<"$resp")
+  c_pending=$(jq -r '.challenger.has_pending_action // false' <<<"$resp")
+  d_id=$(jq -r '.defender.anon_id' <<<"$resp")
+  d_lin=$(jq -r '.defender.snapshot.lineage // "?"' <<<"$resp")
+  d_lvl=$(jq -r '.defender.snapshot.level // 0' <<<"$resp")
+  d_hp=$(jq -r '.defender.hp // null' <<<"$resp")
+  d_pending=$(jq -r '.defender.has_pending_action // false' <<<"$resp")
+
+  printf "  %s── Live PvP — état: %s%s · tour %s%s\n" "$BOLD" "$GOLD" "$state" "$turn_no" "$RESET"
+
+  local c_emoji d_emoji
+  c_emoji=$(_lineage_emoji "$c_lin")
+  d_emoji=$(_lineage_emoji "$d_lin")
+  printf "  %s%s %s Lv.%s · HP %s · %s%s\n" \
+    "$DIM" "$c_emoji" "$c_id" "$c_lvl" "$c_hp" \
+    "$([ "$c_pending" = "true" ] && printf 'commit ✓' || printf '... en attente')" "$RESET"
+  if [ "$d_hp" = "null" ]; then
+    printf "  %s%s %s · en attente d'acceptation%s\n\n" "$DIM" "$d_emoji" "$d_id" "$RESET"
+  else
+    printf "  %s%s %s Lv.%s · HP %s · %s%s\n\n" \
+      "$DIM" "$d_emoji" "$d_id" "$d_lvl" "$d_hp" \
+      "$([ "$d_pending" = "true" ] && printf 'commit ✓' || printf '... en attente')" "$RESET"
+  fi
+
+  if [ "$state" = "finished" ] || [ "$state" = "abandoned" ]; then
+    printf "  %s🏁 Combat terminé · winner=%s · reason=%s%s\n\n" "$GOLD" "$winner" "$reason" "$RESET"
+    return
+  fi
+
+  # Local move list — derived from the player's lineage + level. Reused
+  # client-side as a hint ; the worker will reject invalid moves.
+  if [ "$state" = "active" ] && [ "$me" = "$c_id" ] && [ "$c_pending" != "true" ]; then
+    _live_print_moves "$c_lin" "$c_lvl"
+  elif [ "$state" = "active" ] && [ "$me" = "$d_id" ] && [ "$d_pending" != "true" ]; then
+    _live_print_moves "$d_lin" "$d_lvl"
+  fi
+}
+
+# Print the 4 moves available to the local player at their current stage.
+# Source of truth on the worker (api/src/lib/moves.ts) — we keep a minimal
+# per-stage list here for display only ; the worker will reject anything
+# that's not in the actual pool.
+_live_print_moves() {
+  local lin="$1" lvl="$2" stage moves
+  stage=$(_live_stage_for "$lin" "$lvl")
+  moves=$(_live_moves_for_stage "$stage")
+  if [ -z "$moves" ]; then
+    printf "  %sAucun moveset connu pour ce stade.%s\n\n" "$DIM" "$RESET"
+    return
+  fi
+  printf "  %sTes attaques :%s\n" "$BOLD" "$RESET"
+  printf '%s\n' "$moves" | while IFS= read -r m; do
+    [ -n "$m" ] && printf "    %s• %s%s\n" "$GOLD" "$m" "$RESET"
+  done
+  printf "\n  %s/pokemon arena live move \"<nom>\"%s\n\n" "$DIM" "$RESET"
+}
+
+# Lineage + level → showdown_id, mirror of api/src/lib/moves.ts stageFor.
+_live_stage_for() {
+  local lin="$1" lvl="$2"
+  case "$lin" in
+    fire)
+      if [ "$lvl" -ge 55 ]; then printf 'charizard-megax'
+      elif [ "$lvl" -ge 36 ]; then printf 'charizard'
+      elif [ "$lvl" -ge 16 ]; then printf 'charmeleon'
+      elif [ "$lvl" -ge 1 ]; then printf 'charmander'
+      else printf 'egg'; fi ;;
+    water)
+      if [ "$lvl" -ge 55 ]; then printf 'blastoise-mega'
+      elif [ "$lvl" -ge 36 ]; then printf 'blastoise'
+      elif [ "$lvl" -ge 16 ]; then printf 'wartortle'
+      elif [ "$lvl" -ge 1 ]; then printf 'squirtle'
+      else printf 'egg'; fi ;;
+    grass)
+      if [ "$lvl" -ge 55 ]; then printf 'venusaur-mega'
+      elif [ "$lvl" -ge 32 ]; then printf 'venusaur'
+      elif [ "$lvl" -ge 16 ]; then printf 'ivysaur'
+      elif [ "$lvl" -ge 1 ]; then printf 'bulbasaur'
+      else printf 'egg'; fi ;;
+    electric)
+      if [ "$lvl" -ge 55 ]; then printf 'raichu-alola'
+      elif [ "$lvl" -ge 30 ]; then printf 'raichu'
+      elif [ "$lvl" -ge 10 ]; then printf 'pikachu'
+      elif [ "$lvl" -ge 1 ]; then printf 'pichu'
+      else printf 'egg'; fi ;;
+    eevee)
+      if [ "$lvl" -ge 30 ]; then printf 'vaporeon'
+      elif [ "$lvl" -ge 1 ]; then printf 'eevee'
+      else printf 'egg'; fi ;;
+    chikorita)
+      if [ "$lvl" -ge 32 ]; then printf 'meganium'
+      elif [ "$lvl" -ge 16 ]; then printf 'bayleef'
+      elif [ "$lvl" -ge 1 ]; then printf 'chikorita'
+      else printf 'egg'; fi ;;
+    cyndaquil)
+      if [ "$lvl" -ge 55 ]; then printf 'typhlosion-hisui'
+      elif [ "$lvl" -ge 32 ]; then printf 'typhlosion'
+      elif [ "$lvl" -ge 16 ]; then printf 'quilava'
+      elif [ "$lvl" -ge 1 ]; then printf 'cyndaquil'
+      else printf 'egg'; fi ;;
+    totodile)
+      if [ "$lvl" -ge 32 ]; then printf 'feraligatr'
+      elif [ "$lvl" -ge 16 ]; then printf 'croconaw'
+      elif [ "$lvl" -ge 1 ]; then printf 'totodile'
+      else printf 'egg'; fi ;;
+    *) printf 'egg' ;;
+  esac
+}
+
+# Per-stage move list — basic one-line-per-move output, used as a hint only.
+# Source of truth lives in the worker (STAGE_MOVES). Order matches.
+_live_moves_for_stage() {
+  case "$1" in
+    egg) printf 'Charge\nMimi-Queue\nRepli\nGrondement' ;;
+    charmander) printf 'Charge\nGriffe\nFlammèche\nGrondement' ;;
+    charmeleon) printf 'Tranche\nFlammèche\nBrouillard\nBrûlure' ;;
+    charizard) printf 'Lance-Flammes\nCru-Aile\nTranche\nMorsure' ;;
+    charizard-megax) printf 'Dracosouffle\nDamoclès\nLance-Flammes\nTranche' ;;
+    charizard-megay) printf 'Lance-Soleil\nDéflagration\nCru-Aile\nBélier' ;;
+    squirtle) printf 'Charge\nMimi-Queue\nPistolet à O\nRepli' ;;
+    wartortle) printf 'Pistolet à O\nRepli\nMorsure\nTranche' ;;
+    blastoise) printf "Hydrocanon\nBulles d'O\nTranche\nBélier" ;;
+    blastoise-mega) printf 'Hydroblast\nVibraqua\nBélier\nDamoclès' ;;
+    bulbasaur) printf "Charge\nRugissement\nVampigraine\nTranch'Herbe" ;;
+    ivysaur) printf "Tranch'Herbe\nVampigraine\nPoudre Dodo\nBélier" ;;
+    venusaur) printf "Lance-Soleil\nTranch'Herbe\nVampigraine\nBélier" ;;
+    venusaur-mega) printf 'Lance-Soleil\nVampigraine\nBélier\nSynthèse' ;;
+    pichu) printf 'Charge\nÉclair\nMimi-Queue\nVive-Attaque' ;;
+    pikachu) printf 'Tonnerre\nVive-Attaque\nÉclair\nCharge' ;;
+    raichu) printf "Fatal-Foudre\nCoup d'Jus\nTonnerre\nVive-Attaque" ;;
+    raichu-alola) printf "Psyko\nTonnerre\nVive-Attaque\nCoup d'Jus" ;;
+    eevee) printf 'Charge\nMimi-Queue\nMorsure\nVive-Attaque' ;;
+    vaporeon) printf "Hydrocanon\nVibraqua\nBulles d'O\nMorsure" ;;
+    chikorita) printf "Charge\nRugissement\nTranch'Herbe\nMimi-Queue" ;;
+    bayleef) printf "Tranch'Herbe\nSynthèse\nVampigraine\nBélier" ;;
+    meganium) printf "Lance-Soleil\nBélier\nSynthèse\nTranch'Herbe" ;;
+    cyndaquil) printf "Charge\nGroz'Yeux\nFlammèche\nBrouillard" ;;
+    quilava) printf 'Roue de Feu\nBrouillard\nFlammèche\nVive-Attaque' ;;
+    typhlosion) printf 'Lance-Flammes\nSurchauffe\nRoue de Feu\nTranche' ;;
+    typhlosion-hisui) printf "Vortex Infernal\nBall'Ombre\nLance-Flammes\nReflet Magik" ;;
+    totodile) printf 'Charge\nRugissement\nPistolet à O\nMorsure' ;;
+    croconaw) printf 'Morsure\nPistolet à O\nTranche\nVive-Attaque' ;;
+    feraligatr) printf 'Hydrocanon\nMâchouille\nTranche\nBélier' ;;
+    *) printf 'Charge\nMimi-Queue\nMorsure\nTranche' ;;
   esac
 }
 

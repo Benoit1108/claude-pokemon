@@ -297,6 +297,25 @@
     "too_many": "Too many badges (%s, max 3).",
     "not_owned": "Badge not owned: %s. You can only pin badges you've earned."
   },
+  "live": {
+    "not_enabled": "Arena not enabled. Run /pokemon arena enable --confirm first.",
+    "invite_usage": "Usage: /pokemon arena live invite <opponent_anon_id>",
+    "invite_failed": "Invite failed: %s",
+    "invite_sent": "✓ Invite sent to %s. Battle id: %s",
+    "spectator_url": "🌐 Spectator: %s/live/%s",
+    "accept_usage": "Usage: /pokemon arena live accept <battle_id> (or pre-filled after receiving an invite)",
+    "accept_failed": "Accept failed: %s",
+    "accepted": "✓ Battle accepted (%s). Your move.",
+    "status_usage": "Usage: /pokemon arena live status <battle_id>",
+    "not_found": "Battle not found: %s",
+    "move_no_battle": "No active battle. Run /pokemon arena live invite or accept first.",
+    "move_usage": "Usage: /pokemon arena live move \"<move name>\"",
+    "move_failed": "Move rejected: %s",
+    "move_committed": "✓ Move locked: %s. Waiting on the opponent.",
+    "forfeit_usage": "Usage: /pokemon arena live forfeit [<battle_id>]",
+    "forfeited": "Battle forfeited (state: %s).",
+    "unknown_subcmd": "Unknown subcommand: %s. invite | accept | status | move | forfeit"
+  },
   "arena": {
     "title": "⚔️  ARENA — async PvP",
     "status_enabled": "✓ Enabled — anon_id: %s",

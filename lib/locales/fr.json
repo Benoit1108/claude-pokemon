@@ -297,6 +297,25 @@
     "too_many": "Trop de badges (%s, max 3).",
     "not_owned": "Badge non possédé : %s. Tu ne peux épingler que tes propres badges."
   },
+  "live": {
+    "not_enabled": "L'arena n'est pas activée. Lancez /pokemon arena enable --confirm.",
+    "invite_usage": "Usage : /pokemon arena live invite <opponent_anon_id>",
+    "invite_failed": "Échec de l'invitation : %s",
+    "invite_sent": "✓ Invitation envoyée à %s. Battle id : %s",
+    "spectator_url": "🌐 Spectateur : %s/live/%s",
+    "accept_usage": "Usage : /pokemon arena live accept <battle_id> (ou pré-rempli après une invitation reçue)",
+    "accept_failed": "Échec de l'acceptation : %s",
+    "accepted": "✓ Combat accepté (%s). À toi de jouer.",
+    "status_usage": "Usage : /pokemon arena live status <battle_id>",
+    "not_found": "Combat introuvable : %s",
+    "move_no_battle": "Aucun combat en cours. Lance /pokemon arena live invite ou accept d'abord.",
+    "move_usage": "Usage : /pokemon arena live move \"<nom du move>\"",
+    "move_failed": "Coup refusé : %s",
+    "move_committed": "✓ Coup verrouillé : %s. En attente de l'adversaire.",
+    "forfeit_usage": "Usage : /pokemon arena live forfeit [<battle_id>]",
+    "forfeited": "Combat abandonné (état : %s).",
+    "unknown_subcmd": "Sous-commande inconnue : %s. invite | accept | status | move | forfeit"
+  },
   "arena": {
     "title": "⚔️  ARENA — combats async",
     "status_enabled": "✓ Activée — anon_id : %s",
