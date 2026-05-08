@@ -34,6 +34,29 @@ export function generateBattleId(): string {
   return out
 }
 
+/** Generate a 6-char human-friendly pairing code from the safe alphabet
+ * (Sprint 2.12). Uses crypto.getRandomValues so codes aren't predictable. */
+export function generatePairCode(): string {
+  // PAIR_CODE_ALPHABET has 31 chars ; rejection-sample to avoid modulo bias.
+  const ALPHABET = 'ABCDEFGHJKLMNPQRSTVWXYZ23456789'
+  const len = 6
+  const bytes = new Uint8Array(len * 2) // oversample so we rarely need a re-roll
+  crypto.getRandomValues(bytes)
+  let out = ''
+  let idx = 0
+  while (out.length < len) {
+    if (idx >= bytes.length) {
+      crypto.getRandomValues(bytes)
+      idx = 0
+    }
+    const b = bytes[idx++]!
+    if (b < 31 * 8) {
+      out += ALPHABET[b % 31]
+    }
+  }
+  return out
+}
+
 /** Random uint32 seed for the battle PRNG. */
 export function randomSeed(): number {
   const arr = new Uint32Array(1)

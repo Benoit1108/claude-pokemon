@@ -33,6 +33,8 @@ import { handleLiveAccept } from './handlers/arena/live-accept'
 import { handleLiveStatus } from './handlers/arena/live-status'
 import { handleLiveForfeit } from './handlers/arena/live-forfeit'
 import { handleLiveCommit } from './handlers/arena/live-commit'
+import { handlePairInit } from './handlers/arena/pair-init'
+import { handlePairRedeem } from './handlers/arena/pair-redeem'
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -88,6 +90,14 @@ export default {
       }
       if (url.pathname.startsWith('/v1/arena/battle/') && request.method === 'GET') {
         return await handleArenaBattle(url.pathname, env)
+      }
+      // Pair codes (Sprint 2.12) — /init must match before the live router
+      // (paths share the /v1/arena/ prefix but have stable suffixes).
+      if (url.pathname === '/v1/arena/pair/init' && request.method === 'POST') {
+        return await handlePairInit(request, env)
+      }
+      if (url.pathname === '/v1/arena/pair/redeem' && request.method === 'POST') {
+        return await handlePairRedeem(request, env)
       }
       // Live PvP (Sprint 2.10) — order matters : the more-specific
       // /accept|/forfeit suffixes must match before the generic GET status.

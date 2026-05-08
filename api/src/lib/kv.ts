@@ -8,8 +8,14 @@ import type {
   BattleResult,
   KVRecord,
   LiveBattleRecord,
+  PairRecord,
 } from '../types'
-import { emptyReactions, LIVE_BATTLE_TTL_S, LIVE_BATTLE_INVITE_COOLDOWN_S } from '../types'
+import {
+  emptyReactions,
+  LIVE_BATTLE_TTL_S,
+  LIVE_BATTLE_INVITE_COOLDOWN_S,
+  PAIR_CODE_TTL_S,
+} from '../types'
 
 export async function getStats(env: Env, anonId: string): Promise<KVRecord | null> {
   const raw = await env.STATS.get(`stats:${anonId}`)
@@ -185,6 +191,30 @@ export async function setLiveInviteCooldown(env: Env, anonId: string): Promise<v
 }
 
 export { LIVE_BATTLE_INVITE_COOLDOWN_S }
+
+// ---------------------------------------------------------------------------
+// Pair codes (Sprint 2.12) — one-shot CLI ↔ web secret handoff.
+// ---------------------------------------------------------------------------
+
+export async function getPairRecord(env: Env, code: string): Promise<PairRecord | null> {
+  const raw = await env.STATS.get(`pair:${code}`)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as PairRecord
+  } catch {
+    return null
+  }
+}
+
+export async function putPairRecord(env: Env, code: string, record: PairRecord): Promise<void> {
+  await env.STATS.put(`pair:${code}`, JSON.stringify(record), {
+    expirationTtl: PAIR_CODE_TTL_S,
+  })
+}
+
+export async function deletePairRecord(env: Env, code: string): Promise<void> {
+  await env.STATS.delete(`pair:${code}`)
+}
 
 export async function listAllStats(env: Env): Promise<KVRecord[]> {
   // KV list paginated. For MVP: assume <1000 records, single page suffices.

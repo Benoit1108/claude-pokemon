@@ -223,6 +223,37 @@ export interface ArenaOpponent {
   updated_at: string
 }
 
+// CLI ↔ web pairing (Sprint 2.12) — short-lived one-shot codes that hand off
+// the arena_secret from the CLI install to a browser localStorage so the web
+// can issue Bearer-authed requests (live PvP move picker, future features).
+//
+// Flow :
+//   1. CLI calls /v1/arena/pair/init with Bearer auth → worker stores
+//      `pair:<code>` (short TTL) and returns the code.
+//   2. CLI shows the code (and a /pair?code=… URL) to the user.
+//   3. Web calls /v1/arena/pair/redeem with { code }. Worker reads, DELETES
+//      the entry, returns the secret. Web stores in localStorage.
+//
+// Trade-off : the secret leaves the CLI's local file. We bound the risk with
+// (a) short TTL (5 min), (b) one-shot redeem, (c) explicit user opt-in (must
+// run /pokemon arena pair). Acceptable for the UX win — without this the web
+// is read-only.
+
+export const PAIR_CODE_TTL_S = 5 * 60
+export const PAIR_CODE_LENGTH = 6
+/** Crockford-ish alphabet : no 0/O, 1/I, U (avoid offensive 4-letter codes). */
+export const PAIR_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTVWXYZ23456789'
+export const PAIR_CODE_RE = /^[A-HJ-NP-TV-Z2-9]{6}$/
+
+export interface PairRecord {
+  anon_id: string
+  /** Plaintext arena_secret. Lives in KV at most PAIR_CODE_TTL_S seconds and
+   * is consumed (deleted) on first redeem. */
+  arena_secret: string
+  created_at: string
+  expires_at: string
+}
+
 // Battle reactions (Sprint 2.8b) — bounded emoji set, rate-limited at
 // 1 vote per anon_id per battle. Users can change their vote ; the old
 // count is decremented and the new one incremented.
