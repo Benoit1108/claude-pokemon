@@ -228,3 +228,84 @@ export function emptyReactions(): BattleReactions {
     voters: {},
   }
 }
+
+// ---------------------------------------------------------------------------
+// Live PvP (Sprint 2.10) — turn-by-turn 1v1 with polling
+// ---------------------------------------------------------------------------
+//
+// A live battle starts when a challenger invites a defender (must both be
+// arena-enabled). The defender accepts to flip state from 'pending' → 'active'.
+// Once active, both sides commit one move per turn ; when both have committed,
+// the worker resolves the turn server-side (move selection requires server
+// trust — clients can't be allowed to fake damage).
+//
+// State machine :
+//   pending → active → finished
+//                   → expired (last_activity_at > LIVE_BATTLE_INACTIVITY_S)
+//                   → abandoned (someone forfeit)
+//
+// KV TTL : 1h from last activity. Battles auto-expire ; no need for sweeps.
+
+export const LIVE_BATTLE_TTL_S = 60 * 60 // 1 hour
+export const LIVE_BATTLE_INACTIVITY_S = 5 * 60 // forfeit if no activity for 5 min
+export const LIVE_BATTLE_INVITE_COOLDOWN_S = 30 // 30s between invites per challenger
+
+export type LiveBattleState =
+  | 'pending'   // challenger created it, waiting for defender accept
+  | 'active'    // both joined, exchanging turns
+  | 'finished'  // resolved (KO or turn limit)
+  | 'expired'   // inactivity timeout
+  | 'abandoned' // someone forfeit
+
+export interface LiveBattleSide {
+  anon_id: string
+  /** sha256(arena_secret) hex — matches the persisted ArenaRecord. */
+  secret_hash: string
+  snapshot: BattleParticipant
+  hp: number
+  /** ID of the move committed for the current turn, null until commit. */
+  pending_action: string | null
+}
+
+export interface LiveBattleRecord {
+  battle_id: string
+  state: LiveBattleState
+  challenger: LiveBattleSide
+  /** Defender side is filled at /accept time. Pre-accept, only anon_id is set. */
+  defender: LiveBattleSide | { anon_id: string }
+  turn_no: number
+  turn_log: BattleTurn[]
+  winner: BattleSide | 'draw' | null
+  reason: 'ko' | 'turn_limit' | 'forfeit' | 'expired' | null
+  created_at: string
+  last_activity_at: string
+  /** Set by /forfeit so the public status can show who quit. */
+  forfeit_by: BattleSide | null
+}
+
+/** Wire format for GET /v1/arena/live/:id — strips secret_hash from sides. */
+export interface LiveBattleView {
+  battle_id: string
+  state: LiveBattleState
+  challenger: {
+    anon_id: string
+    snapshot: BattleParticipant
+    hp: number
+    /** Whether they've committed an action for the current turn (boolean only,
+     * actual move id is hidden until both reveal). */
+    has_pending_action: boolean
+  }
+  defender: {
+    anon_id: string
+    snapshot: BattleParticipant | null
+    hp: number | null
+    has_pending_action: boolean
+  }
+  turn_no: number
+  turn_log: BattleTurn[]
+  winner: BattleSide | 'draw' | null
+  reason: 'ko' | 'turn_limit' | 'forfeit' | 'expired' | null
+  created_at: string
+  last_activity_at: string
+  forfeit_by: BattleSide | null
+}

@@ -28,6 +28,10 @@ import { handleArenaChallenge } from './handlers/arena/challenge'
 import { handleArenaBattle } from './handlers/arena/battle'
 import { handleArenaOpponents } from './handlers/arena/opponents'
 import { handleArenaReact } from './handlers/arena/react'
+import { handleLiveInvite } from './handlers/arena/live-invite'
+import { handleLiveAccept } from './handlers/arena/live-accept'
+import { handleLiveStatus } from './handlers/arena/live-status'
+import { handleLiveForfeit } from './handlers/arena/live-forfeit'
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -83,6 +87,28 @@ export default {
       }
       if (url.pathname.startsWith('/v1/arena/battle/') && request.method === 'GET') {
         return await handleArenaBattle(url.pathname, env)
+      }
+      // Live PvP (Sprint 2.10) — order matters : the more-specific
+      // /accept|/forfeit suffixes must match before the generic GET status.
+      if (url.pathname === '/v1/arena/live/invite' && request.method === 'POST') {
+        return await handleLiveInvite(request, env)
+      }
+      if (
+        url.pathname.startsWith('/v1/arena/live/') &&
+        url.pathname.endsWith('/accept') &&
+        request.method === 'POST'
+      ) {
+        return await handleLiveAccept(request, url.pathname, env)
+      }
+      if (
+        url.pathname.startsWith('/v1/arena/live/') &&
+        url.pathname.endsWith('/forfeit') &&
+        request.method === 'POST'
+      ) {
+        return await handleLiveForfeit(request, url.pathname, env)
+      }
+      if (url.pathname.startsWith('/v1/arena/live/') && request.method === 'GET') {
+        return await handleLiveStatus(url.pathname, env)
       }
       return jsonResp({ error: 'not_found', path: url.pathname }, 404)
     } catch (err) {

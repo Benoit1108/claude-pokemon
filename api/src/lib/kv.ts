@@ -2,8 +2,14 @@
 // in tests + change storage backend later if needed.
 
 import type { Env } from '../env.d'
-import type { ArenaRecord, BattleReactions, BattleResult, KVRecord } from '../types'
-import { emptyReactions } from '../types'
+import type {
+  ArenaRecord,
+  BattleReactions,
+  BattleResult,
+  KVRecord,
+  LiveBattleRecord,
+} from '../types'
+import { emptyReactions, LIVE_BATTLE_TTL_S, LIVE_BATTLE_INVITE_COOLDOWN_S } from '../types'
 
 export async function getStats(env: Env, anonId: string): Promise<KVRecord | null> {
   const raw = await env.STATS.get(`stats:${anonId}`)
@@ -137,6 +143,48 @@ export async function setArenaChallengeCooldown(env: Env, anonId: string): Promi
 }
 
 export { ARENA_CHALLENGE_COOLDOWN_S }
+
+// ---------------------------------------------------------------------------
+// Live PvP (Sprint 2.10) — polling-based realtime battles
+// ---------------------------------------------------------------------------
+
+export async function getLiveBattle(
+  env: Env,
+  battleId: string,
+): Promise<LiveBattleRecord | null> {
+  const raw = await env.STATS.get(`live:${battleId}`)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as LiveBattleRecord
+  } catch {
+    return null
+  }
+}
+
+export async function putLiveBattle(env: Env, record: LiveBattleRecord): Promise<void> {
+  await env.STATS.put(`live:${record.battle_id}`, JSON.stringify(record), {
+    expirationTtl: LIVE_BATTLE_TTL_S,
+  })
+}
+
+export async function deleteLiveBattle(env: Env, battleId: string): Promise<void> {
+  await env.STATS.delete(`live:${battleId}`)
+}
+
+export async function getLiveInviteCooldown(env: Env, anonId: string): Promise<number | null> {
+  const raw = await env.STATS.get(`live_cd:${anonId}`)
+  if (!raw) return null
+  const n = parseInt(raw, 10)
+  return isNaN(n) ? null : n
+}
+
+export async function setLiveInviteCooldown(env: Env, anonId: string): Promise<void> {
+  await env.STATS.put(`live_cd:${anonId}`, String(Math.floor(Date.now() / 1000)), {
+    expirationTtl: LIVE_BATTLE_INVITE_COOLDOWN_S,
+  })
+}
+
+export { LIVE_BATTLE_INVITE_COOLDOWN_S }
 
 export async function listAllStats(env: Env): Promise<KVRecord[]> {
   // KV list paginated. For MVP: assume <1000 records, single page suffices.
