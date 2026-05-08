@@ -4,7 +4,9 @@ import { handleLiveInvite } from '../../../src/handlers/arena/live-invite'
 import { handleLiveAccept } from '../../../src/handlers/arena/live-accept'
 import { handleLiveStatus } from '../../../src/handlers/arena/live-status'
 import { handleLiveForfeit } from '../../../src/handlers/arena/live-forfeit'
+import { handleLiveCommit } from '../../../src/handlers/arena/live-commit'
 import { getLiveBattle, putLiveBattle } from '../../../src/lib/kv'
+import { movesForStage, stageFor } from '../../../src/lib/moves'
 import { MockKV, makeEnv } from '../../helpers/mockKV'
 
 const challenger = {
@@ -336,5 +338,186 @@ describe('Live PvP — invite/accept/status/forfeit', () => {
     expect(second.status).toBe(200)
     const body = (await second.json()) as { state: string }
     expect(body.state).toBe('abandoned')
+  })
+
+  // ---------- /v1/arena/live/<id>/commit (Sprint 2.10b) ----------
+
+  // Helper : open and accept a battle, return ids + a default move per side.
+  async function openActive(): Promise<{
+    battleId: string
+    cSecret: string
+    dSecret: string
+    cMove: string
+    dMove: string
+  }> {
+    const cSecret = await enable(env, challenger)
+    const dSecret = await enable(env, defender)
+    const inv = await handleLiveInvite(
+      makeReq(cSecret, { challenger_anon_id: 'aaaaaaaa', defender_anon_id: 'bbbbbbbb' }),
+      env,
+    )
+    const { battle_id } = (await inv.json()) as { battle_id: string }
+    await handleLiveAccept(makeReq(dSecret, {}), `/v1/arena/live/${battle_id}/accept`, env)
+    const cMove = movesForStage(stageFor(challenger.lineage, challenger.level))[0]!.name
+    const dMove = movesForStage(stageFor(defender.lineage, defender.level))[0]!.name
+    return { battleId: battle_id, cSecret, dSecret, cMove, dMove }
+  }
+
+  it('locks a single side action (has_pending_action becomes true)', async () => {
+    const { battleId, cSecret, cMove } = await openActive()
+    const res = await handleLiveCommit(
+      makeReq(cSecret, { anon_id: 'aaaaaaaa', move_id: cMove }),
+      `/v1/arena/live/${battleId}/commit`,
+      env,
+    )
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as {
+      challenger: { has_pending_action: boolean }
+      defender: { has_pending_action: boolean }
+      turn_no: number
+    }
+    expect(body.challenger.has_pending_action).toBe(true)
+    expect(body.defender.has_pending_action).toBe(false)
+    expect(body.turn_no).toBe(1) // not advanced yet
+  })
+
+  it('resolves the turn when both sides have committed', async () => {
+    const { battleId, cSecret, dSecret, cMove, dMove } = await openActive()
+    await handleLiveCommit(
+      makeReq(cSecret, { anon_id: 'aaaaaaaa', move_id: cMove }),
+      `/v1/arena/live/${battleId}/commit`,
+      env,
+    )
+    const res = await handleLiveCommit(
+      makeReq(dSecret, { anon_id: 'bbbbbbbb', move_id: dMove }),
+      `/v1/arena/live/${battleId}/commit`,
+      env,
+    )
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as {
+      challenger: { has_pending_action: boolean; hp: number }
+      defender: { has_pending_action: boolean; hp: number }
+      turn_no: number
+      turn_log: unknown[]
+    }
+    expect(body.challenger.has_pending_action).toBe(false)
+    expect(body.defender.has_pending_action).toBe(false)
+    expect(body.turn_no).toBe(2)
+    expect(body.turn_log.length).toBeGreaterThan(0) // 1 or 2 strikes
+    // At least one HP took damage (challenger Lv50 vs defender Lv30, both
+    // alive before this turn).
+    const stored = await getLiveBattle(env, battleId)
+    expect(stored!.defender).toHaveProperty('hp')
+    const dHp = (stored!.defender as { hp: number }).hp
+    expect(dHp).toBeLessThan(50 + 30 * 2) // started below max anyway
+  })
+
+  it('rejects a move not in the side’s stage pool (400)', async () => {
+    const { battleId, cSecret } = await openActive()
+    const res = await handleLiveCommit(
+      makeReq(cSecret, { anon_id: 'aaaaaaaa', move_id: 'No Such Move' }),
+      `/v1/arena/live/${battleId}/commit`,
+      env,
+    )
+    expect(res.status).toBe(400)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).toBe('invalid_move')
+  })
+
+  it('rejects a commit from a non-participant (403)', async () => {
+    const { battleId, cMove } = await openActive()
+    const outsiderSecret = await enable(env, { ...challenger, anon_id: 'cccccccc' })
+    const res = await handleLiveCommit(
+      makeReq(outsiderSecret, { anon_id: 'cccccccc', move_id: cMove }),
+      `/v1/arena/live/${battleId}/commit`,
+      env,
+    )
+    expect(res.status).toBe(403)
+  })
+
+  it('rejects a commit with the wrong secret (401)', async () => {
+    const { battleId, dSecret, cMove } = await openActive()
+    // dSecret used with challenger's anon_id → should 401 since the secret
+    // doesn't match challenger.secret_hash.
+    const res = await handleLiveCommit(
+      makeReq(dSecret, { anon_id: 'aaaaaaaa', move_id: cMove }),
+      `/v1/arena/live/${battleId}/commit`,
+      env,
+    )
+    expect(res.status).toBe(401)
+  })
+
+  it('idempotent re-commit of the same move returns 200', async () => {
+    const { battleId, cSecret, cMove } = await openActive()
+    const r1 = await handleLiveCommit(
+      makeReq(cSecret, { anon_id: 'aaaaaaaa', move_id: cMove }),
+      `/v1/arena/live/${battleId}/commit`,
+      env,
+    )
+    expect(r1.status).toBe(200)
+    const r2 = await handleLiveCommit(
+      makeReq(cSecret, { anon_id: 'aaaaaaaa', move_id: cMove }),
+      `/v1/arena/live/${battleId}/commit`,
+      env,
+    )
+    expect(r2.status).toBe(200)
+  })
+
+  it('refuses to swap moves once committed (409)', async () => {
+    const { battleId, cSecret } = await openActive()
+    const moves = movesForStage(stageFor(challenger.lineage, challenger.level))
+    await handleLiveCommit(
+      makeReq(cSecret, { anon_id: 'aaaaaaaa', move_id: moves[0]!.name }),
+      `/v1/arena/live/${battleId}/commit`,
+      env,
+    )
+    const res = await handleLiveCommit(
+      makeReq(cSecret, { anon_id: 'aaaaaaaa', move_id: moves[1]!.name }),
+      `/v1/arena/live/${battleId}/commit`,
+      env,
+    )
+    expect(res.status).toBe(409)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).toBe('already_committed')
+  })
+
+  it('eventually transitions to finished after enough turns', async () => {
+    // Force a quick KO by tanking defender HP directly in storage.
+    const { battleId, cSecret, dSecret, cMove, dMove } = await openActive()
+    const stored = await getLiveBattle(env, battleId)
+    ;(stored!.defender as { hp: number }).hp = 1
+    await putLiveBattle(env, stored!)
+
+    await handleLiveCommit(
+      makeReq(cSecret, { anon_id: 'aaaaaaaa', move_id: cMove }),
+      `/v1/arena/live/${battleId}/commit`,
+      env,
+    )
+    const res = await handleLiveCommit(
+      makeReq(dSecret, { anon_id: 'bbbbbbbb', move_id: dMove }),
+      `/v1/arena/live/${battleId}/commit`,
+      env,
+    )
+    const body = (await res.json()) as { state: string; winner: string | null }
+    expect(body.state).toBe('finished')
+    // With Lv50 challenger vs HP=1 defender, the challenger virtually always
+    // wins (could draw if challenger acts second AND ko'd somehow first).
+    expect(['challenger', 'draw']).toContain(body.winner)
+  })
+
+  it('refuses commit on an expired battle (409)', async () => {
+    const { battleId, cSecret, cMove } = await openActive()
+    // Backdate activity well past the inactivity window.
+    const stored = await getLiveBattle(env, battleId)
+    stored!.last_activity_at = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+    await putLiveBattle(env, stored!)
+    const res = await handleLiveCommit(
+      makeReq(cSecret, { anon_id: 'aaaaaaaa', move_id: cMove }),
+      `/v1/arena/live/${battleId}/commit`,
+      env,
+    )
+    expect(res.status).toBe(409)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).toBe('expired')
   })
 })

@@ -32,6 +32,7 @@ import { handleLiveInvite } from './handlers/arena/live-invite'
 import { handleLiveAccept } from './handlers/arena/live-accept'
 import { handleLiveStatus } from './handlers/arena/live-status'
 import { handleLiveForfeit } from './handlers/arena/live-forfeit'
+import { handleLiveCommit } from './handlers/arena/live-commit'
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -106,6 +107,13 @@ export default {
         request.method === 'POST'
       ) {
         return await handleLiveForfeit(request, url.pathname, env)
+      }
+      if (
+        url.pathname.startsWith('/v1/arena/live/') &&
+        url.pathname.endsWith('/commit') &&
+        request.method === 'POST'
+      ) {
+        return await handleLiveCommit(request, url.pathname, env)
       }
       if (url.pathname.startsWith('/v1/arena/live/') && request.method === 'GET') {
         return await handleLiveStatus(url.pathname, env)
