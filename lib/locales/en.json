@@ -313,6 +313,14 @@
     "too_many": "Too many badges (%s, max 3).",
     "not_owned": "Badge not owned: %s. You can only pin badges you've earned."
   },
+  "pair": {
+    "title": "🔗 WEB PAIRING",
+    "code_label": "Code (6 chars):",
+    "url_label": "Open this URL in your browser:",
+    "expires": "⏱  Expires at %s (5 min after issue). One-shot code.",
+    "warning": "⚠️  Don't share this code — it transfers your arena secret to the browser.",
+    "failed": "Pairing failed: %s"
+  },
   "live": {
     "not_enabled": "Arena not enabled. Run /pokemon arena enable --confirm first.",
     "invite_usage": "Usage: /pokemon arena live invite <opponent_anon_id>",

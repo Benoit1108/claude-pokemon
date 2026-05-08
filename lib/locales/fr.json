@@ -313,6 +313,14 @@
     "too_many": "Trop de badges (%s, max 3).",
     "not_owned": "Badge non possédé : %s. Tu ne peux épingler que tes propres badges."
   },
+  "pair": {
+    "title": "🔗 PAIRING WEB",
+    "code_label": "Code (6 caractères) :",
+    "url_label": "Ouvre cette URL dans ton navigateur :",
+    "expires": "⏱  Expire à %s (5 min après émission). Code à usage unique.",
+    "warning": "⚠️  Ne partage pas ce code — il transfère ton secret arena vers le navigateur.",
+    "failed": "Pairing impossible : %s"
+  },
   "live": {
     "not_enabled": "L'arena n'est pas activée. Lancez /pokemon arena enable --confirm.",
     "invite_usage": "Usage : /pokemon arena live invite <opponent_anon_id>",

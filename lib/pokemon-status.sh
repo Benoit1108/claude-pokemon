@@ -2120,10 +2120,57 @@ view_arena() {
       view_arena_live "${@:2}"
       ;;
 
+    pair)
+      view_arena_pair
+      ;;
+
     *)
       printf "  %s$(pokemon_t arena.unknown_subcmd "$sub")%s\n\n" "$DIM" "$RESET"
       ;;
   esac
+}
+
+# Pair this CLI install with the web (Sprint 2.12). Prints a 6-char code +
+# a one-click URL. The web /pair?code=XXX page redeems the code and stores
+# the arena_secret in localStorage so the user can commit live PvP moves
+# from the browser.
+view_arena_pair() {
+  printf "\n  %s%s$(pokemon_t pair.title)%s\n\n" "$BOLD" "$GOLD" "$RESET"
+
+  local endpoint web_url anon_id enabled
+  endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
+  web_url=$(jq -r '.arena.web_url // "https://claude-pokemon-arena.pages.dev"' "$POKEMON_DATA")
+  anon_id=$(jq -r '.stats_share.anon_id // ""' "$POKEMON_DATA")
+  enabled=$(jq -r '.arena.enabled // false' "$POKEMON_DATA")
+
+  if [ "$enabled" != "true" ] || [ -z "$anon_id" ]; then
+    printf "  %s$(pokemon_t live.not_enabled)%s\n\n" "$DIM" "$RESET"
+    return
+  fi
+  local secret
+  if ! secret=$(_arena_load_secret); then
+    printf "  %s$(pokemon_t arena.no_secret)%s\n\n" "$DIM" "$RESET"
+    return
+  fi
+
+  local payload resp code expires_at
+  payload=$(jq -n --arg id "$anon_id" '{anon_id: $id}')
+  resp=$(curl -s -X POST "$endpoint/v1/arena/pair/init" \
+    -H "content-type: application/json" \
+    -H "authorization: Bearer $secret" \
+    --data "$payload" 2>/dev/null)
+  code=$(jq -r '.code // ""' <<<"$resp")
+  expires_at=$(jq -r '.expires_at // ""' <<<"$resp")
+  if [ -z "$code" ]; then
+    printf "  %s$(pokemon_t pair.failed "$resp")%s\n\n" "$DIM" "$RESET"
+    return
+  fi
+
+  printf "  %s$(pokemon_t pair.code_label)%s   %s%s%s\n\n" "$DIM" "$RESET" "$BOLD$GOLD" "$code" "$RESET"
+  printf "  %s$(pokemon_t pair.url_label)%s\n" "$DIM" "$RESET"
+  printf "  %s%s/pair?code=%s%s\n\n" "$BOLD" "$web_url" "$code" "$RESET"
+  printf "  %s$(pokemon_t pair.expires "$expires_at")%s\n\n" "$DIM" "$RESET"
+  printf "  %s$(pokemon_t pair.warning)%s\n\n" "$DIM" "$RESET"
 }
 
 # ── Live PvP (Sprint 2.10) — polling-based realtime battles ────────────────

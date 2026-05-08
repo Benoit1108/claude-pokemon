@@ -82,3 +82,18 @@ teardown() {
   # Either "not enabled" or the no_secret branch — both are valid early-exits.
   [[ "$out" == *"non activée"* ]] || [[ "$out" == *"not enabled"* ]] || [[ "$out" == *"secret"* ]]
 }
+
+@test "arena pair without arena enabled shows the not-enabled prompt (Sprint 2.12)" {
+  run bash "$POKEMON_STATUS_SH" arena pair
+  [ "$status" -eq 0 ]
+  out=$(strip_ansi "$output")
+  [[ "$out" == *"PAIRING"* ]]
+  [[ "$out" == *"pas activée"* ]] || [[ "$out" == *"not enabled"* ]]
+}
+
+@test "arena live without arena enabled shows the not-enabled prompt" {
+  run bash "$POKEMON_STATUS_SH" arena live
+  [ "$status" -eq 0 ]
+  out=$(strip_ansi "$output")
+  [[ "$out" == *"pas activée"* ]] || [[ "$out" == *"not enabled"* ]]
+}
