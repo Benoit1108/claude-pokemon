@@ -2436,7 +2436,11 @@ _live_stage_for() {
 }
 
 # Per-stage move list — basic one-line-per-move output, used as a hint only.
-# Source of truth lives in the worker (STAGE_MOVES). Order matches.
+# Source of truth lives in the worker (api/src/lib/moves.ts STAGE_MOVES).
+# Sprint 2.13 (A1) — must be kept in sync. The worker re-validates the move
+# server-side via lookupMoveForSide, so a drift here is a UX bug (stale
+# hint) not a correctness bug. Until A4 (npm package) lands, sync manually
+# whenever moves.ts changes.
 _live_moves_for_stage() {
   case "$1" in
     egg) printf 'Charge\nMimi-Queue\nRepli\nGrondement' ;;
@@ -2449,16 +2453,23 @@ _live_moves_for_stage() {
     wartortle) printf 'Pistolet à O\nRepli\nMorsure\nTranche' ;;
     blastoise) printf "Hydrocanon\nBulles d'O\nTranche\nBélier" ;;
     blastoise-mega) printf 'Hydroblast\nVibraqua\nBélier\nDamoclès' ;;
+    blastoise-gmax) printf 'Hydroblast\nVibraqua\nHydrocanon\nDamoclès' ;;
     bulbasaur) printf "Charge\nRugissement\nVampigraine\nTranch'Herbe" ;;
     ivysaur) printf "Tranch'Herbe\nVampigraine\nPoudre Dodo\nBélier" ;;
     venusaur) printf "Lance-Soleil\nTranch'Herbe\nVampigraine\nBélier" ;;
     venusaur-mega) printf 'Lance-Soleil\nVampigraine\nBélier\nSynthèse' ;;
+    venusaur-gmax) printf "G-Max Vine Lash\nLance-Soleil\nSynthèse\nVampigraine" ;;
     pichu) printf 'Charge\nÉclair\nMimi-Queue\nVive-Attaque' ;;
     pikachu) printf 'Tonnerre\nVive-Attaque\nÉclair\nCharge' ;;
     raichu) printf "Fatal-Foudre\nCoup d'Jus\nTonnerre\nVive-Attaque" ;;
     raichu-alola) printf "Psyko\nTonnerre\nVive-Attaque\nCoup d'Jus" ;;
+    pikachu-gmax) printf "G-Max Volt Crash\nCataclectric\nTonnerre\nVive-Attaque" ;;
     eevee) printf 'Charge\nMimi-Queue\nMorsure\nVive-Attaque' ;;
     vaporeon) printf "Hydrocanon\nVibraqua\nBulles d'O\nMorsure" ;;
+    jolteon) printf "Tonnerre\nVive-Attaque\nCoup d'Jus\nÉclair" ;;
+    flareon) printf 'Lance-Flammes\nCrocs Feu\nRoue de Feu\nMorsure' ;;
+    espeon) printf 'Psyko\nVœu Soin\nVive-Attaque\nMimi-Queue' ;;
+    umbreon) printf "Ball'Ombre\nReflet Magik\nMorsure\nVive-Attaque" ;;
     chikorita) printf "Charge\nRugissement\nTranch'Herbe\nMimi-Queue" ;;
     bayleef) printf "Tranch'Herbe\nSynthèse\nVampigraine\nBélier" ;;
     meganium) printf "Lance-Soleil\nBélier\nSynthèse\nTranch'Herbe" ;;

@@ -1,8 +1,18 @@
 // Move dictionary + per-stage 4-move sets, server-side mirror of the arena
-// frontend's app/data/moves.ts. Kept in sync manually — when adding a move on
-// one side, copy it here too. The shared list is enforced server-side : the
-// /commit endpoint validates that the move id exists in the player's stage
-// pool, so a malicious client can't fabricate moves.
+// frontend's app/data/moves.ts.
+//
+// !!! SYNC CONTRACT !!!
+// This file MUST stay byte-equivalent (modulo comments + import path) with
+// app/data/moves.ts in claude-pokemon-arena. A drift breaks the worker's
+// stage-pool validation — the CLI hint shows a move that the worker will
+// reject as invalid_move.
+//
+// Until A4 (npm package extraction, post-Sprint 2), check after every edit :
+//   diff <(grep -E "^\\s*['A-ZÀ-Ÿ\"][^:]*:" api/src/lib/moves.ts | sort) \
+//        <(grep -E "^\\s*['A-ZÀ-Ÿ\"][^:]*:" \
+//          ~/repositories/perso/claude-pokemon-arena/app/data/moves.ts | sort)
+// The bash _live_moves_for_stage in lib/pokemon-status.sh is a separate
+// display-only mirror flagged in Sprint 2.13 review (Q10) — same contract.
 //
 // Power coefficient feeds into the existing attack × effectiveness × variance
 // pipeline in live-battle.ts. Range :
