@@ -124,3 +124,52 @@ upgrade to Workers Paid (5$/month → 50M req, 100M KV ops).
 
 Bump `SCHEMA_VERSION` in `src/index.js` and accept previous versions during
 a deprecation window. The CLI passes its `schema_version` in every submit.
+
+## Threat model — known trade-offs (Sprint 2.13)
+
+### `arena_secret` plaintext in KV during the pair window
+
+`POST /v1/arena/pair/init` stores the **plaintext** `arena_secret` in KV
+under `pair:<code>` for at most 5 minutes (`PAIR_CODE_TTL_S`). The browser
+needs the plaintext to authenticate Bearer requests, so we can't store a
+hash here.
+
+**Bounded by** :
+- 5-min TTL (auto-expires)
+- One-shot redeem (consumed on first successful `/redeem`)
+- Explicit user opt-in (must run `/pokemon arena pair`)
+
+**Residual risk** : if Cloudflare KV logs or replicates entries with retention
+beyond TTL, the secret could sit at rest. Acceptable given (a) the secret
+only authorizes arena actions on this trainer's own snapshot, no PII, (b)
+trivial rotation via `/pokemon arena regenerate`.
+
+### KV concurrency — live commits + pair redeem
+
+KV has no compare-and-swap. Two paths needed mitigation :
+
+- **`/v1/arena/live/<id>/commit`** : naive read-modify-write under
+  simultaneous commits from both sides could lose one player's pending
+  action and hang the battle. Mitigated with a bounded retry-after-write
+  loop (3 attempts → 503). `resolveLiveTurn` is deterministic so a duplicate
+  parallel resolve produces identical content.
+- **`/v1/arena/pair/redeem`** : naive `get → delete` let two concurrent
+  redeemers both return the secret. Mitigated with a claim-and-verify dance
+  using a `consumed_by` randomUUID token. Loser 404s on re-read.
+
+Both are documented in their handler files.
+
+### Information disclosure — anon_id enumeration
+
+Code review (Q1) flagged a `403 vs 404` distinction in `live-invite.ts` and
+`challenge.ts` that let an authed challenger probe arbitrary anon_ids and
+learn enabled-status. Fixed : both endpoints now return
+`404 defender_not_found` whether the trainer doesn't exist or just isn't
+arena-enabled.
+
+### Privacy guarantees (unchanged from Sprint 1)
+
+- No IP logging server-side (`cf-connecting-ip` never read).
+- `[observability]` disabled in `wrangler.toml` (Workers Logs off).
+- `anon_id` is client-generated 8–16 hex, no link to identity.
+- Strict whitelist on submit payload — extra fields silently dropped.
