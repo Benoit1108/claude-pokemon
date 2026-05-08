@@ -25,6 +25,11 @@ export const ALLOWED_BADGES = new Set([
   'centurion',
   'constellation',
   'master_pokedex',
+  // Sprint 2.11 — wild pokédex milestones
+  'dex_50',
+  'dex_100',
+  'regional_kanto',
+  'regional_johto',
   'master_fire',
   'master_water',
   'master_grass',
@@ -88,7 +93,15 @@ export interface PlayerStats {
   active: ActiveStats
   badges: string[]
   pokedex_seen_count: number
+  /** List of wild species ids the trainer has encountered (Sprint 2.11).
+   * Capped at POKEDEX_MAX_IDS server-side ; pre-2.11 records may omit this. */
+  pokedex_seen_ids?: string[]
 }
+
+/** Max number of pokédex ids accepted in the submit payload. Generous bound
+ * (Gen 1 + Gen 2 = 251) with headroom for future generations. */
+export const POKEDEX_MAX_IDS = 1000
+export const POKEDEX_ID_RE = /^[a-z][a-z0-9-]{1,32}$/
 
 export interface SubmitPayload {
   anon_id: string

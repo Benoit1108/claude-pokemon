@@ -173,6 +173,67 @@ describe('validateSubmit', () => {
     expect(errs.some(e => e.includes('pinned_badges'))).toBe(true)
   })
 
+  // -------------------------------------------------------------------------
+  // pokedex_seen_ids (Sprint 2.11)
+  // -------------------------------------------------------------------------
+
+  it('accepts pokedex_seen_ids when omitted, null, or empty', () => {
+    const base = { ...validPayload }
+    expect(validateSubmit(base)).toEqual([])
+    expect(
+      validateSubmit({
+        ...base,
+        stats: { ...base.stats, pokedex_seen_ids: null },
+      }),
+    ).toEqual([])
+    expect(
+      validateSubmit({
+        ...base,
+        stats: { ...base.stats, pokedex_seen_ids: [] },
+      }),
+    ).toEqual([])
+  })
+
+  it('accepts a valid pokedex_seen_ids list', () => {
+    expect(
+      validateSubmit({
+        ...validPayload,
+        stats: {
+          ...validPayload.stats,
+          pokedex_seen_ids: ['bulbasaur', 'pikachu', 'mr-mime', 'nidoran-f'],
+        },
+      }),
+    ).toEqual([])
+  })
+
+  it('rejects non-array pokedex_seen_ids', () => {
+    const errs = validateSubmit({
+      ...validPayload,
+      stats: { ...validPayload.stats, pokedex_seen_ids: 'pikachu' },
+    })
+    expect(errs.some(e => e.includes('pokedex_seen_ids'))).toBe(true)
+  })
+
+  it('rejects pokedex ids that violate the regex', () => {
+    const errs = validateSubmit({
+      ...validPayload,
+      stats: {
+        ...validPayload.stats,
+        pokedex_seen_ids: ['Pikachu'], // uppercase forbidden
+      },
+    })
+    expect(errs.some(e => e.includes('invalid id'))).toBe(true)
+  })
+
+  it('rejects pokedex_seen_ids longer than the cap', () => {
+    const huge = Array.from({ length: 1001 }, (_, i) => `species-${i}`)
+    const errs = validateSubmit({
+      ...validPayload,
+      stats: { ...validPayload.stats, pokedex_seen_ids: huge },
+    })
+    expect(errs.some(e => e.includes('exceeds max length'))).toBe(true)
+  })
+
   it('rejects display_name shorter than 2 chars', () => {
     const errs = validateSubmit({ ...validPayload, display_name: 'a' })
     expect(errs.some(e => e.includes('display_name'))).toBe(true)

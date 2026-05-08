@@ -93,6 +93,22 @@
       "Maître Pokédex",
       "5 lignées rencontrées"
     ],
+    "dex_50": [
+      "Chercheur",
+      "50 espèces sauvages observées"
+    ],
+    "dex_100": [
+      "Bibliothécaire",
+      "100 espèces sauvages observées"
+    ],
+    "regional_kanto": [
+      "Kanto complet",
+      "151 espèces de Kanto rencontrées"
+    ],
+    "regional_johto": [
+      "Johto complet",
+      "100 espèces de Johto rencontrées"
+    ],
     "master_fire": [
       "Maître Feu",
       "Lv.100 sur Lignée Feu"

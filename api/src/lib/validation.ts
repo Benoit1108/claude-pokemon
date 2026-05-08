@@ -7,6 +7,8 @@ import {
   QUOTE_MAX_LENGTH,
   BIO_MAX_LENGTH,
   PINNED_BADGES_MAX,
+  POKEDEX_ID_RE,
+  POKEDEX_MAX_IDS,
   SCHEMA_VERSION,
   ALLOWED_LINEAGES,
   ALLOWED_BADGES,
@@ -165,6 +167,24 @@ export function validateSubmit(body: unknown): string[] {
 
   if (typeof s.pokedex_seen_count !== 'number' || s.pokedex_seen_count < 0) {
     errs.push('stats.pokedex_seen_count must be non-negative number')
+  }
+
+  // Sprint 2.11 — pokedex_seen_ids : optional array of species ids. Validated
+  // strictly against POKEDEX_ID_RE so a malicious client can't smuggle
+  // arbitrary strings through. Capped at POKEDEX_MAX_IDS to bound storage.
+  if (s.pokedex_seen_ids !== undefined && s.pokedex_seen_ids !== null) {
+    if (!Array.isArray(s.pokedex_seen_ids)) {
+      errs.push('stats.pokedex_seen_ids must be an array')
+    } else if (s.pokedex_seen_ids.length > POKEDEX_MAX_IDS) {
+      errs.push(`stats.pokedex_seen_ids exceeds max length (${POKEDEX_MAX_IDS})`)
+    } else {
+      for (const id of s.pokedex_seen_ids) {
+        if (typeof id !== 'string' || !POKEDEX_ID_RE.test(id)) {
+          errs.push(`stats.pokedex_seen_ids: invalid id ${id}`)
+          break // one error message is enough — don't spam
+        }
+      }
+    }
   }
 
   return errs

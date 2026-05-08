@@ -1492,7 +1492,8 @@ _share_build_payload() {
           is_shiny:       ($state[0].is_shiny // false)
         },
         badges:             ($state[0].badges // [] | map(.id)),
-        pokedex_seen_count: (($state[0].pokedex_wild // {}) | keys | length)
+        pokedex_seen_count: (($state[0].pokedex_wild // {}) | keys | length),
+        pokedex_seen_ids:   (($state[0].pokedex_wild // {}) | keys)
       }
     }'
 }

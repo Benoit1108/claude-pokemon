@@ -89,6 +89,22 @@
       "Constellation",
       "5 shinies collection"
     ],
+    "dex_50": [
+      "Researcher",
+      "50 wild species observed"
+    ],
+    "dex_100": [
+      "Librarian",
+      "100 wild species observed"
+    ],
+    "regional_kanto": [
+      "Kanto complete",
+      "All 151 Kanto species seen"
+    ],
+    "regional_johto": [
+      "Johto complete",
+      "All 100 Johto species seen"
+    ],
     "master_pokedex": [
       "Pokédex Master",
       "5 lineages encountered"

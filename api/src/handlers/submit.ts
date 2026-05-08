@@ -4,7 +4,12 @@ import type { Env } from '../env.d'
 import { jsonResp } from '../lib/http'
 import { validateSubmit } from '../lib/validation'
 import { getCooldown, putStats, setCooldown } from '../lib/kv'
-import { SUBMIT_COOLDOWN_S, type SubmitPayload, type KVRecord } from '../types'
+import {
+  POKEDEX_MAX_IDS,
+  SUBMIT_COOLDOWN_S,
+  type SubmitPayload,
+  type KVRecord,
+} from '../types'
 
 export async function handleSubmit(request: Request, env: Env): Promise<Response> {
   let body: unknown
@@ -39,6 +44,17 @@ export async function handleSubmit(request: Request, env: Env): Promise<Response
     .filter(b => ownedBadges.has(b))
     .slice(0, 3)
 
+  // Pokédex ids — dedup + cap at POKEDEX_MAX_IDS as defense in depth even
+  // though validation already enforces the bound. Keeps storage predictable
+  // if the validator ever loosens.
+  const stats = { ...payload.stats }
+  if (stats.pokedex_seen_ids) {
+    stats.pokedex_seen_ids = Array.from(new Set(stats.pokedex_seen_ids)).slice(
+      0,
+      POKEDEX_MAX_IDS,
+    )
+  }
+
   // Persist (overwrite by anon_id — pseudo-idempotent)
   const record: KVRecord = {
     anon_id: payload.anon_id,
@@ -49,7 +65,7 @@ export async function handleSubmit(request: Request, env: Env): Promise<Response
     schema_version: payload.schema_version,
     client_version: payload.client_version,
     submitted_at: payload.submitted_at,
-    stats: payload.stats,
+    stats,
   }
   await putStats(env, record)
   await setCooldown(env, payload.anon_id, SUBMIT_COOLDOWN_S)

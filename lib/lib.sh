@@ -453,12 +453,29 @@ pokemon_release_slot() {
 # Args: $1 = current state JSON, $2 = ISO timestamp
 # Stdout: updated state JSON with new badges appended.
 pokemon_check_badges() {
-  local state="$1" now="$2"
-  jq --arg now "$now" '
+  local state="$1" now="$2" data="${3:-${POKEMON_DATA:-}}"
+
+  # Pre-compute the kanto / johto species lists from the wild_pool. These are
+  # passed in as JSON arrays so the jq pipeline below can intersect against
+  # state.pokedex_wild keys to award the regional dex badges.
+  local kanto_ids='[]' johto_ids='[]'
+  if [ -n "$data" ] && [ -f "$data" ]; then
+    kanto_ids=$(jq -c '[.wild_pool[] | select(.national_dex >= 1 and .national_dex <= 151) | .id]' "$data")
+    johto_ids=$(jq -c '[.wild_pool[] | select(.national_dex >= 152 and .national_dex <= 251) | .id]' "$data")
+  fi
+
+  jq --arg now "$now" --argjson kanto "$kanto_ids" --argjson johto "$johto_ids" '
     def add_badge($id):
       if (.badges | map(.id) | index($id)) == null
       then .badges += [{id: $id, earned_at: $now}]
       else . end;
+
+    # Wild pokédex completeness — keys of state.pokedex_wild are id strings.
+    def wild_seen: (.pokedex_wild // {}) | keys;
+    def wild_seen_count: wild_seen | length;
+    def has_all_of($ids):
+      ($ids | length) > 0
+      and (($ids - wild_seen) | length) == 0;
 
     .
     | (if (.evolution_history | any(.level == 1)) then add_badge("hatch") else . end)
@@ -468,6 +485,11 @@ pokemon_check_badges() {
     | (if (.lifetime_stats.total_tokens >= 100000000) then add_badge("centurion") else . end)
     | (if (.lifetime_stats.total_shinies >= 5) then add_badge("constellation") else . end)
     | (if ([.pokedex | to_entries[] | select(.value.seen)] | length) >= 5 then add_badge("master_pokedex") else . end)
+    # Sprint 2.11 — wild pokédex milestones.
+    | (if wild_seen_count >= 50  then add_badge("dex_50")          else . end)
+    | (if wild_seen_count >= 100 then add_badge("dex_100")         else . end)
+    | (if has_all_of($kanto)     then add_badge("regional_kanto")  else . end)
+    | (if has_all_of($johto)     then add_badge("regional_johto")  else . end)
     | (if (.lifetime_stats.lineages_completed | index("fire"))      != null then add_badge("master_fire")      else . end)
     | (if (.lifetime_stats.lineages_completed | index("water"))     != null then add_badge("master_water")     else . end)
     | (if (.lifetime_stats.lineages_completed | index("grass"))     != null then add_badge("master_grass")     else . end)
@@ -491,6 +513,10 @@ pokemon_badge_meta() {
     centurion)         emoji="💯" ;;
     constellation)     emoji="🌌" ;;
     master_pokedex)    emoji="💎" ;;
+    dex_50)            emoji="🔬" ;;
+    dex_100)            emoji="📚" ;;
+    regional_kanto)    emoji="🏔️" ;;
+    regional_johto)    emoji="🏯" ;;
     master_fire)       emoji="🔥" ;;
     master_water)      emoji="💧" ;;
     master_grass)      emoji="🌿" ;;

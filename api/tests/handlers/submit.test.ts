@@ -146,6 +146,33 @@ describe('handleSubmit', () => {
     expect(stored?.pinned_badges).toEqual(['hatch', 'first_evolution'])
   })
 
+  it('persists pokedex_seen_ids and dedups them (Sprint 2.11)', async () => {
+    const body = {
+      ...validBody,
+      stats: {
+        ...validBody.stats,
+        pokedex_seen_ids: ['pikachu', 'bulbasaur', 'pikachu', 'charmander'],
+      },
+    }
+    await handleSubmit(makeRequest(body), env)
+    const stored = await getStats(env, 'abc12345')
+    // Sort for comparison since Set iteration order is insertion-preserving but
+    // the dedup may shuffle perception. Here insertion order is preserved.
+    expect(stored?.stats.pokedex_seen_ids).toEqual(['pikachu', 'bulbasaur', 'charmander'])
+  })
+
+  it('rejects bad pokedex ids with 400', async () => {
+    const body = {
+      ...validBody,
+      stats: {
+        ...validBody.stats,
+        pokedex_seen_ids: ['Pikachu'], // uppercase forbidden
+      },
+    }
+    const res = await handleSubmit(makeRequest(body), env)
+    expect(res.status).toBe(400)
+  })
+
   it('caps pinned_badges to 3 even if validation accepted them', async () => {
     // Extra defense in depth — if validation slipped, handler still slices.
     // This sends exactly 3, all owned, and confirms order is preserved.
