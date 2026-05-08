@@ -115,4 +115,32 @@ describe('Pair redeem', () => {
     const res = await handlePairRedeem(makeReq(null, { code: fake }), env)
     expect(res.status).toBe(404)
   })
+
+  // Sprint 2.13 (Q10) — only one redeemer wins under concurrent redeem.
+  // MockKV is serial, but Promise.all + the claim-and-verify dance still
+  // exercises both branches : the loser observes consumed_by !== its token
+  // when re-reading.
+  it('only one redeemer wins on concurrent redeem (Sprint 2.13 C2)', async () => {
+    const secret = await enable(env)
+    const init = await handlePairInit(makeReq(secret, { anon_id: 'aaaaaaaa' }), env)
+    const { code } = (await init.json()) as { code: string }
+
+    const [r1, r2] = await Promise.all([
+      handlePairRedeem(makeReq(null, { code }), env),
+      handlePairRedeem(makeReq(null, { code }), env),
+    ])
+    const statuses = [r1.status, r2.status].sort()
+    expect(statuses).toEqual([200, 404])
+  })
+
+  it('redeeming a code already marked consumed_by returns 404', async () => {
+    const secret = await enable(env)
+    const init = await handlePairInit(makeReq(secret, { anon_id: 'aaaaaaaa' }), env)
+    const { code } = (await init.json()) as { code: string }
+    await handlePairRedeem(makeReq(null, { code }), env)
+    // Even though TTL hasn't fired, the delete + the consumed_by check both
+    // turn this into a 404.
+    const second = await handlePairRedeem(makeReq(null, { code }), env)
+    expect(second.status).toBe(404)
+  })
 })

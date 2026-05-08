@@ -21,14 +21,13 @@ export async function handleArenaEnable(request: Request, env: Env): Promise<Res
 
   const team = body as BattleParticipant
 
+  // Sprint 2.13 (Q2) — error response shape unified : `{error: code, ...extras}`.
+  // The human-readable hint moved into the standard response without a free
+  // 'message' field so consumers can switch on `error` reliably.
   const existing = await getArena(env, team.anon_id)
   if (existing) {
     return jsonResp(
-      {
-        error: 'already_enabled',
-        message: 'Arena already enabled. Use /v1/arena/regenerate to rotate the secret.',
-        enabled_at: existing.enabled_at,
-      },
+      { error: 'already_enabled', enabled_at: existing.enabled_at },
       409,
     )
   }

@@ -252,6 +252,10 @@ export interface PairRecord {
   arena_secret: string
   created_at: string
   expires_at: string
+  /** Sprint 2.13 — token of the redeemer that claimed this code. Only one
+   * redeemer wins (last writer's token sticks under KV last-write-wins
+   * semantics). Set by handlePairRedeem during its claim-and-verify dance. */
+  consumed_by?: string
 }
 
 // Battle reactions (Sprint 2.8b) — bounded emoji set, rate-limited at

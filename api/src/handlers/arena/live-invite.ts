@@ -48,8 +48,11 @@ export async function handleLiveInvite(request: Request, env: Env): Promise<Resp
     return jsonResp({ error: 'invalid_secret' }, 401)
   }
 
+  // Sprint 2.13 (Q1) — return 404 (not 403) when the defender doesn't exist
+  // OR isn't arena-enabled. Differentiating would let an authed challenger
+  // probe arbitrary anon_ids and learn which trainers are enabled.
   const defender = await getArena(env, defenderId)
-  if (!defender) return jsonResp({ error: 'defender_not_enabled' }, 404)
+  if (!defender) return jsonResp({ error: 'defender_not_found' }, 404)
 
   // Anti-spam : 30s cooldown between invites per challenger. Stricter cooldowns
   // belong on /commit once we have full turn resolution (Sprint 2.10b).

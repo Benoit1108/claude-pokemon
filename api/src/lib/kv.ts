@@ -135,15 +135,22 @@ export async function putBattleReactions(
   })
 }
 
+// Sprint 2.13 (Q4) — KV key namespace migration. The legacy `arena_cd:`
+// (underscore) is read for back-compat ; new writes use the hierarchical
+// `arena:cd:` shape that matches every other key (`stats:`, `live:`,
+// `pair:`, etc.). Cooldowns have ≤1h TTL so the legacy prefix self-flushes
+// within an hour of deploy and the read-old branch can be removed in a
+// follow-up cleanup commit.
 export async function getArenaChallengeCooldown(env: Env, anonId: string): Promise<number | null> {
-  const raw = await env.STATS.get(`arena_cd:${anonId}`)
+  let raw = await env.STATS.get(`arena:cd:${anonId}`)
+  if (!raw) raw = await env.STATS.get(`arena_cd:${anonId}`)
   if (!raw) return null
   const n = parseInt(raw, 10)
   return isNaN(n) ? null : n
 }
 
 export async function setArenaChallengeCooldown(env: Env, anonId: string): Promise<void> {
-  await env.STATS.put(`arena_cd:${anonId}`, String(Math.floor(Date.now() / 1000)), {
+  await env.STATS.put(`arena:cd:${anonId}`, String(Math.floor(Date.now() / 1000)), {
     expirationTtl: ARENA_CHALLENGE_COOLDOWN_S,
   })
 }
@@ -177,15 +184,17 @@ export async function deleteLiveBattle(env: Env, battleId: string): Promise<void
   await env.STATS.delete(`live:${battleId}`)
 }
 
+// Sprint 2.13 (Q4) — same namespace migration as arena_cd: above.
 export async function getLiveInviteCooldown(env: Env, anonId: string): Promise<number | null> {
-  const raw = await env.STATS.get(`live_cd:${anonId}`)
+  let raw = await env.STATS.get(`live:cd:${anonId}`)
+  if (!raw) raw = await env.STATS.get(`live_cd:${anonId}`)
   if (!raw) return null
   const n = parseInt(raw, 10)
   return isNaN(n) ? null : n
 }
 
 export async function setLiveInviteCooldown(env: Env, anonId: string): Promise<void> {
-  await env.STATS.put(`live_cd:${anonId}`, String(Math.floor(Date.now() / 1000)), {
+  await env.STATS.put(`live:cd:${anonId}`, String(Math.floor(Date.now() / 1000)), {
     expirationTtl: LIVE_BATTLE_INVITE_COOLDOWN_S,
   })
 }

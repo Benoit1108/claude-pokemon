@@ -520,4 +520,77 @@ describe('Live PvP — invite/accept/status/forfeit', () => {
     const body = (await res.json()) as { error: string }
     expect(body.error).toBe('expired')
   })
+
+  // -------- Sprint 2.13 (Q10) extra coverage --------
+
+  it('refuses commit on a pending battle (still awaiting accept)', async () => {
+    const cSecret = await enable(env, challenger)
+    await enable(env, defender)
+    const inv = await handleLiveInvite(
+      makeReq(cSecret, { challenger_anon_id: 'aaaaaaaa', defender_anon_id: 'bbbbbbbb' }),
+      env,
+    )
+    const { battle_id } = (await inv.json()) as { battle_id: string }
+    // Battle is 'pending' — not yet accepted by defender.
+    const cMove = movesForStage(stageFor(challenger.lineage, challenger.level))[0]!.name
+    const res = await handleLiveCommit(
+      makeReq(cSecret, { anon_id: 'aaaaaaaa', move_id: cMove }),
+      `/v1/arena/live/${battle_id}/commit`,
+      env,
+    )
+    expect(res.status).toBe(409)
+    const body = (await res.json()) as { error: string; state: string }
+    expect(body.error).toBe('invalid_state')
+    expect(body.state).toBe('pending')
+  })
+
+  it('refuses accept on an expired battle', async () => {
+    const cSecret = await enable(env, challenger)
+    const dSecret = await enable(env, defender)
+    const inv = await handleLiveInvite(
+      makeReq(cSecret, { challenger_anon_id: 'aaaaaaaa', defender_anon_id: 'bbbbbbbb' }),
+      env,
+    )
+    const { battle_id } = (await inv.json()) as { battle_id: string }
+    // Force expiry by backdating activity. Note: live-status is the lazy
+    // expirer ; calling it transitions state. After that, accept must reject.
+    const stored = await getLiveBattle(env, battle_id)
+    stored!.last_activity_at = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+    await putLiveBattle(env, stored!)
+    await handleLiveStatus(`/v1/arena/live/${battle_id}`, env)
+
+    const res = await handleLiveAccept(
+      makeReq(dSecret, {}),
+      `/v1/arena/live/${battle_id}/accept`,
+      env,
+    )
+    expect(res.status).toBe(409)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).toBe('invalid_state')
+  })
+
+  it('simultaneous commits from both sides resolve the turn (Sprint 2.13 C1)', async () => {
+    const { battleId, cSecret, dSecret, cMove, dMove } = await openActive()
+    // Promise.all fires both ; MockKV is serial but the retry-after-write
+    // verify path lets both observe their commit. The turn must resolve.
+    const [r1, r2] = await Promise.all([
+      handleLiveCommit(
+        makeReq(cSecret, { anon_id: 'aaaaaaaa', move_id: cMove }),
+        `/v1/arena/live/${battleId}/commit`,
+        env,
+      ),
+      handleLiveCommit(
+        makeReq(dSecret, { anon_id: 'bbbbbbbb', move_id: dMove }),
+        `/v1/arena/live/${battleId}/commit`,
+        env,
+      ),
+    ])
+    expect(r1.status).toBe(200)
+    expect(r2.status).toBe(200)
+    const stored = await getLiveBattle(env, battleId)
+    // Either both pending got cleared (turn resolved) and turn_no advanced,
+    // or one race-loser got 503 — the latter shouldn't happen with serial
+    // MockKV, but the contract is "no hang". turn_no should advance.
+    expect(stored!.turn_no).toBeGreaterThan(1)
+  })
 })

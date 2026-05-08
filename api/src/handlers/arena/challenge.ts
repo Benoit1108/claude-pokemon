@@ -31,7 +31,7 @@ export async function handleArenaChallenge(request: Request, env: Env): Promise<
   }
 
   if (!body || typeof body !== 'object') {
-    return jsonResp({ error: 'body must be object' }, 400)
+    return jsonResp({ error: 'body_required' }, 400)
   }
   const b = body as { challenger_anon_id?: string; defender_anon_id?: string }
   const challengerId = b.challenger_anon_id || ''
@@ -57,8 +57,10 @@ export async function handleArenaChallenge(request: Request, env: Env): Promise<
     return jsonResp({ error: 'invalid_secret' }, 401)
   }
 
+  // Sprint 2.13 (Q1) — same 404 whether the defender doesn't exist or isn't
+  // arena-enabled, so an authed challenger can't probe enabled-status.
   const defender = await getArena(env, defenderId)
-  if (!defender) return jsonResp({ error: 'defender_not_enabled' }, 404)
+  if (!defender) return jsonResp({ error: 'defender_not_found' }, 404)
 
   const last = await getArenaChallengeCooldown(env, challengerId)
   if (last !== null) {
