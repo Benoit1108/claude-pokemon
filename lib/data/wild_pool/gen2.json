@@ -98,7 +98,7 @@
     { "id": "pupitar",    "national_dex": 247, "name_fr": "Ymphect",     "name_en": "Pupitar",    "type": "Rock",     "emoji": "🪨", "rarity": "common" },
     { "id": "tyranitar",  "national_dex": 248, "name_fr": "Tyranocif",   "name_en": "Tyranitar",  "type": "Rock",     "emoji": "🦖", "rarity": "rare" },
     { "id": "lugia",      "national_dex": 249, "name_fr": "Lugia",       "name_en": "Lugia",      "type": "Psychic",  "emoji": "🌊", "rarity": "legendary" },
-    { "id": "ho-oh",      "national_dex": 250, "name_fr": "Ho-Oh",       "name_en": "Ho-Oh",      "type": "Fire",     "emoji": "🔥", "rarity": "legendary" },
+    { "id": "hooh",       "national_dex": 250, "name_fr": "Ho-Oh",       "name_en": "Ho-Oh",      "type": "Fire",     "emoji": "🔥", "rarity": "legendary" },
     { "id": "celebi",     "national_dex": 251, "name_fr": "Celebi",      "name_en": "Celebi",     "type": "Psychic",  "emoji": "🌿", "rarity": "legendary" }
   ]
 }
