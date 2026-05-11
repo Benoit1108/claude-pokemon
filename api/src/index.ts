@@ -20,6 +20,7 @@ import { handleLeaderboard } from './handlers/leaderboard'
 import { handleAggregate } from './handlers/aggregate'
 import { handleForget } from './handlers/forget'
 import { handleTrainer } from './handlers/trainer'
+import { handleTrainerProfilePatch } from './handlers/trainer-profile'
 import { handleBadge } from './handlers/badge'
 import { handleArenaEnable } from './handlers/arena/enable'
 import { handleArenaDisable } from './handlers/arena/disable'
@@ -62,6 +63,13 @@ export default {
       }
       if (url.pathname.startsWith('/v1/badge/') && request.method === 'GET') {
         return await handleBadge(url.pathname, env)
+      }
+      if (
+        url.pathname.startsWith('/v1/trainer/') &&
+        url.pathname.endsWith('/profile') &&
+        request.method === 'PATCH'
+      ) {
+        return await handleTrainerProfilePatch(request, url.pathname, env)
       }
       if (url.pathname.startsWith('/v1/trainer/') && request.method === 'GET') {
         return await handleTrainer(url.pathname, env)
