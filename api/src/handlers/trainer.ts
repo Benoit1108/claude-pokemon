@@ -23,6 +23,10 @@ export async function handleTrainer(pathname: string, env: Env): Promise<Respons
       // `bio` + `pinned_badges` added in Sprint 2.9 — fall back to null/[].
       bio: record.bio || null,
       pinned_badges: Array.isArray(record.pinned_badges) ? record.pinned_badges : [],
+      // Sprint 4 — origin tag. Legacy records read as 'cli' via getStats's
+      // lazy migration. Visible publicly so other trainers know the path
+      // a player took (informational, no functional gating).
+      origin: record.origin,
       submitted_at: record.submitted_at,
       client_version: record.client_version,
       stats: record.stats,

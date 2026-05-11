@@ -198,4 +198,60 @@ describe('handleSubmit', () => {
     const stored = await getStats(env, 'abc12345')
     expect(stored?.stats.lifetime.total_tokens).toBe(5000)
   })
+
+  // ---------------------------------------------------------------------------
+  // Sprint 4.1 — origin tracking
+  // ---------------------------------------------------------------------------
+
+  it("defaults origin to 'cli' on a legacy payload (no origin field)", async () => {
+    await handleSubmit(makeRequest(validBody), env)
+    const stored = await getStats(env, 'abc12345')
+    expect(stored?.origin).toBe('cli')
+  })
+
+  it("persists declared origin: 'web'", async () => {
+    await handleSubmit(makeRequest({ ...validBody, origin: 'web' }), env)
+    const stored = await getStats(env, 'abc12345')
+    expect(stored?.origin).toBe('web')
+  })
+
+  it("rejects origin: 'linked' from clients (worker-only state)", async () => {
+    const res = await handleSubmit(
+      makeRequest({ ...validBody, origin: 'linked' }),
+      env,
+    )
+    expect(res.status).toBe(400)
+  })
+
+  it('preserves existing origin across subsequent submits (web → CLI submit keeps web)', async () => {
+    const { deleteCooldown } = await import('../../src/lib/kv')
+    // Bootstrap with origin=web
+    await handleSubmit(makeRequest({ ...validBody, origin: 'web' }), env)
+    // Reset only the cooldown — preserve the stats record so we can verify
+    // origin sticks across submits.
+    await deleteCooldown(env, 'abc12345')
+    // Re-submit without origin (mimics a CLI that doesn't know about the field)
+    await handleSubmit(makeRequest(validBody), env)
+    const stored = await getStats(env, 'abc12345')
+    expect(stored?.origin).toBe('web')
+  })
+
+  it("freezes 'linked' once set — subsequent submits can't downgrade", async () => {
+    const { deleteCooldown, putStats } = await import('../../src/lib/kv')
+    // Bootstrap as web first
+    await handleSubmit(makeRequest({ ...validBody, origin: 'web' }), env)
+    // Manually flip to 'linked' (simulates the pair-redeem flow upgrading
+    // the record server-side).
+    const r = await getStats(env, 'abc12345')
+    expect(r).not.toBeNull()
+    if (r) {
+      r.origin = 'linked'
+      await putStats(env, r)
+    }
+    await deleteCooldown(env, 'abc12345')
+    // Now a CLI submit declares origin=cli — must not flip back
+    await handleSubmit(makeRequest({ ...validBody, origin: 'cli' }), env)
+    const stored = await getStats(env, 'abc12345')
+    expect(stored?.origin).toBe('linked')
+  })
 })

@@ -6,7 +6,12 @@ import { jsonResp } from '../../lib/http'
 import { validateTeamSnapshot } from '../../lib/validation'
 import { getArena, putArena } from '../../lib/kv'
 import { generateArenaSecret, sha256Hex } from '../../lib/arena'
-import type { ArenaRecord, BattleParticipant } from '../../types'
+import {
+  CLIENT_DECLARABLE_ORIGINS,
+  type ArenaRecord,
+  type BattleParticipant,
+  type TrainerOrigin,
+} from '../../types'
 
 export async function handleArenaEnable(request: Request, env: Env): Promise<Response> {
   let body: unknown
@@ -19,17 +24,26 @@ export async function handleArenaEnable(request: Request, env: Env): Promise<Res
   const errs = validateTeamSnapshot(body)
   if (errs.length) return jsonResp({ error: 'validation', details: errs }, 400)
 
-  const team = body as BattleParticipant
+  const team = body as BattleParticipant & { origin?: string }
+
+  // Sprint 4 — optional origin declaration. CLI omits it (legacy) →
+  // default 'cli'. Web /signup will send 'web'. Anything else is rejected
+  // to avoid clients smuggling 'linked' (worker-only state).
+  let origin: TrainerOrigin = 'cli'
+  if (typeof team.origin === 'string') {
+    if (!CLIENT_DECLARABLE_ORIGINS.has(team.origin as TrainerOrigin)) {
+      return jsonResp(
+        { error: 'invalid_origin', allowed: Array.from(CLIENT_DECLARABLE_ORIGINS) },
+        400,
+      )
+    }
+    origin = team.origin as TrainerOrigin
+  }
 
   // Sprint 2.13 (Q2) — error response shape unified : `{error: code, ...extras}`.
-  // The human-readable hint moved into the standard response without a free
-  // 'message' field so consumers can switch on `error` reliably.
   const existing = await getArena(env, team.anon_id)
   if (existing) {
-    return jsonResp(
-      { error: 'already_enabled', enabled_at: existing.enabled_at },
-      409,
-    )
+    return jsonResp({ error: 'already_enabled', enabled_at: existing.enabled_at }, 409)
   }
 
   const secret = generateArenaSecret()
@@ -44,6 +58,7 @@ export async function handleArenaEnable(request: Request, env: Env): Promise<Res
       level: team.level,
       is_shiny: team.is_shiny,
     },
+    origin,
     enabled_at: now,
     updated_at: now,
   }
@@ -53,6 +68,7 @@ export async function handleArenaEnable(request: Request, env: Env): Promise<Res
     ok: true,
     arena_secret: secret, // returned ONCE — client must persist locally
     enabled_at: now,
+    origin,
     team_snapshot: record.team_snapshot,
   })
 }

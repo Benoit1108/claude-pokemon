@@ -43,6 +43,9 @@ export async function handleArenaRegenerate(request: Request, env: Env): Promise
       level: team.level,
       is_shiny: team.is_shiny,
     },
+    // Sprint 4 — preserve the existing origin. Rotating the secret doesn't
+    // change who created the trainer (or whether they're linked).
+    origin: existing.origin,
     enabled_at: existing.enabled_at,
     updated_at: now,
   }

@@ -3,6 +3,7 @@
 
 import {
   ANON_ID_RE,
+  CLIENT_DECLARABLE_ORIGINS,
   DISPLAY_NAME_RE,
   QUOTE_MAX_LENGTH,
   BIO_MAX_LENGTH,
@@ -101,6 +102,13 @@ export function validateSubmit(body: unknown): string[] {
   }
   if (typeof b.submitted_at !== 'string') {
     errs.push('submitted_at must be ISO timestamp string')
+  }
+
+  // Sprint 4 — optional origin. Reject 'linked' from clients (worker-only).
+  if (b.origin !== undefined) {
+    if (typeof b.origin !== 'string' || !CLIENT_DECLARABLE_ORIGINS.has(b.origin)) {
+      errs.push("origin must be 'cli' or 'web'")
+    }
   }
 
   const s = b.stats

@@ -10,6 +10,7 @@ const sampleRecord: KVRecord = {
   quote: null,
   bio: null,
   pinned_badges: [],
+  origin: 'cli',
   schema_version: 1,
   client_version: '1.0.0',
   submitted_at: '2026-05-06T10:00:00Z',

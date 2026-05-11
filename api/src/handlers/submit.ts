@@ -3,7 +3,7 @@
 import type { Env } from '../env.d'
 import { jsonResp } from '../lib/http'
 import { validateSubmit } from '../lib/validation'
-import { getCooldown, putStats, setCooldown } from '../lib/kv'
+import { getCooldown, getStats, putStats, setCooldown } from '../lib/kv'
 import {
   POKEDEX_MAX_IDS,
   SUBMIT_COOLDOWN_S,
@@ -55,6 +55,19 @@ export async function handleSubmit(request: Request, env: Env): Promise<Response
     )
   }
 
+  // Sprint 4 — origin tracking. Defaults :
+  //   - if the payload declares one (CLI submits 'cli', web submits 'web'),
+  //     use it ;
+  //   - otherwise read the existing record's origin (preserves 'web' /
+  //     'linked' across CLI submits that didn't know about the field) ;
+  //   - else fall back to 'cli' (legacy default).
+  // A 'linked' trainer keeps its origin even if a CLI submit lands.
+  const existing = await getStats(env, payload.anon_id)
+  const origin =
+    existing?.origin === 'linked'
+      ? 'linked'
+      : payload.origin || existing?.origin || 'cli'
+
   // Persist (overwrite by anon_id — pseudo-idempotent)
   const record: KVRecord = {
     anon_id: payload.anon_id,
@@ -62,6 +75,7 @@ export async function handleSubmit(request: Request, env: Env): Promise<Response
     quote: payload.quote || null,
     bio: payload.bio || null,
     pinned_badges: pinned,
+    origin,
     schema_version: payload.schema_version,
     client_version: payload.client_version,
     submitted_at: payload.submitted_at,

@@ -21,7 +21,14 @@ export async function getStats(env: Env, anonId: string): Promise<KVRecord | nul
   const raw = await env.STATS.get(`stats:${anonId}`)
   if (!raw) return null
   try {
-    return JSON.parse(raw) as KVRecord
+    const parsed = JSON.parse(raw) as KVRecord
+    // Sprint 4 lazy migration : legacy records have no origin field. Default
+    // to 'cli' since the CLI was the only signup path before Sprint 4. Next
+    // write back stamps the field permanently.
+    if (!parsed.origin) {
+      parsed.origin = 'cli'
+    }
+    return parsed
   } catch {
     return null
   }
@@ -63,7 +70,12 @@ export async function getArena(env: Env, anonId: string): Promise<ArenaRecord | 
   const raw = await env.STATS.get(`arena:${anonId}`)
   if (!raw) return null
   try {
-    return JSON.parse(raw) as ArenaRecord
+    const parsed = JSON.parse(raw) as ArenaRecord
+    // Sprint 4 lazy migration — same as getStats.
+    if (!parsed.origin) {
+      parsed.origin = 'cli'
+    }
+    return parsed
   } catch {
     return null
   }

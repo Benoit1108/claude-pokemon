@@ -107,6 +107,27 @@ export interface PlayerStats {
 export const POKEDEX_MAX_IDS = 1000
 export const POKEDEX_ID_RE = /^[a-z][a-z0-9-]{1,32}$/
 
+/**
+ * Where did this trainer's identity come from (Sprint 4) ?
+ *
+ *  - 'cli'    — created via `/pokemon arena enable --confirm` on the CLI.
+ *  - 'web'    — created via `POST /v1/web/signup` on the arena web (Sprint 4.2).
+ *  - 'linked' — created on one side, then linked to a client on the other
+ *               via the bidirectional pair flow. The trainer record is the
+ *               same ; this just flags "both clients exist".
+ *
+ * Pre-Sprint-4 records have no origin field — readers MUST treat the
+ * missing value as 'cli' (lazy migration). The submit handler stamps 'cli'
+ * on every legacy record the next time it gets touched.
+ */
+export type TrainerOrigin = 'cli' | 'web' | 'linked'
+
+export const TRAINER_ORIGINS: ReadonlySet<TrainerOrigin> = new Set(['cli', 'web', 'linked'])
+
+/** Clients can only declare 'cli' or 'web' — 'linked' is set server-side
+ * during the pair-redeem flow, never from a payload. */
+export const CLIENT_DECLARABLE_ORIGINS: ReadonlySet<TrainerOrigin> = new Set(['cli', 'web'])
+
 export interface SubmitPayload {
   anon_id: string
   display_name?: string | null
@@ -116,6 +137,9 @@ export interface SubmitPayload {
   bio?: string | null
   /** Up to 3 badge keys to pin on the public profile (Sprint 2.9). */
   pinned_badges?: string[] | null
+  /** Sprint 4 — trainer origin declared by the client. Optional ; legacy
+   * CLI submits omit it and default to 'cli'. */
+  origin?: 'cli' | 'web'
   schema_version: number
   client_version: string
   submitted_at: string
@@ -130,6 +154,9 @@ export interface KVRecord {
   bio: string | null
   /** Pinned badges (Sprint 2.9). Always ≤PINNED_BADGES_MAX, dedup'd. */
   pinned_badges: string[]
+  /** Sprint 4 — trainer origin. Always present after migration ; readers
+   * of legacy records fill in 'cli' as the default. */
+  origin: TrainerOrigin
   schema_version: number
   client_version: string
   submitted_at: string
@@ -169,6 +196,10 @@ export interface ArenaRecord {
   anon_id: string
   secret_hash: string // sha256(arena_secret) hex
   team_snapshot: BattleParticipant
+  /** Sprint 4 — origin set at /v1/arena/enable time. Legacy records
+   * default to 'cli' on read. Mutated to 'linked' on a successful pair
+   * redeem from the other client. */
+  origin: TrainerOrigin
   enabled_at: string
   updated_at: string
 }

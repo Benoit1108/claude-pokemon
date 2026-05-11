@@ -120,6 +120,9 @@ export async function handleTrainerProfilePatch(
       quote: null,
       bio: null,
       pinned_badges: [],
+      // Sprint 4 — inherit origin from the ArenaRecord (which is the
+      // canonical signup-time source). Pre-Sprint-4 arenas read as 'cli'.
+      origin: arena.origin,
       schema_version: 1,
       client_version: 'web-profile-patch',
       submitted_at: new Date().toISOString(),
