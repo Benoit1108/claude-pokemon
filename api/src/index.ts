@@ -23,6 +23,8 @@ import { handleTrainer } from './handlers/trainer'
 import { handleTrainerProfilePatch } from './handlers/trainer-profile'
 import { handleZoneDetail } from './handlers/zone/detail'
 import { handleZoneExplore } from './handlers/zone/explore'
+import { handleZoneFight } from './handlers/zone/fight'
+import { handleZoneFlee } from './handlers/zone/flee'
 import { handleZoneList } from './handlers/zone/list'
 import { handleBadge } from './handlers/badge'
 import { handleArenaEnable } from './handlers/arena/enable'
@@ -139,15 +141,28 @@ export default {
       if (url.pathname.startsWith('/v1/arena/live/') && request.method === 'GET') {
         return await handleLiveStatus(url.pathname, env)
       }
-      // Wild zones (Sprint 4.5). Order matters : /v1/zone/<id>/explore must
-      // match before the more generic /v1/zones list (different prefix —
-      // 'zone' singular for action, 'zones' plural for catalog).
+      // Wild zones (Sprint 4.5 + 4.6). Order matters : action endpoints
+      // (singular /zone/<id>/...) before the plural catalog /zones[/<id>].
       if (
         url.pathname.startsWith('/v1/zone/') &&
         url.pathname.endsWith('/explore') &&
         request.method === 'POST'
       ) {
         return await handleZoneExplore(request, url.pathname, env)
+      }
+      if (
+        url.pathname.startsWith('/v1/zone/') &&
+        url.pathname.endsWith('/fight') &&
+        request.method === 'POST'
+      ) {
+        return await handleZoneFight(request, url.pathname, env)
+      }
+      if (
+        url.pathname.startsWith('/v1/zone/') &&
+        url.pathname.endsWith('/flee') &&
+        request.method === 'POST'
+      ) {
+        return await handleZoneFlee(request, url.pathname, env)
       }
       if (url.pathname === '/v1/zones' && request.method === 'GET') {
         return await handleZoneList(env)

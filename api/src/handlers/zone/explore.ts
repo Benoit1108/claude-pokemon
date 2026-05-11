@@ -44,6 +44,7 @@ import {
   ZONE_SHINY_RATE,
   type WildZone,
 } from '../../data/zones'
+import { speciesToCombatType } from '../../data/species-types'
 import {
   ANON_ID_RE,
   POKEDEX_MAX_IDS,
@@ -208,6 +209,9 @@ export async function handleZoneExplore(
       level: rollLevel(zone),
       is_shiny: Math.random() < ZONE_SHINY_RATE,
       pool: sp.pool,
+      // Sprint 4.6 — cache the collapsed combat type now so /fight doesn't
+      // need to look it up server-side later.
+      combat_type: speciesToCombatType(sp.species_id),
       created_at: now.toISOString(),
       expires_at: expires.toISOString(),
     }

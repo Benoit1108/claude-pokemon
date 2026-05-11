@@ -12,7 +12,13 @@
 // them with `import type` for in-file use. The same names are also re-exported
 // so handlers can `import { BattleParticipant } from '../../types'` without
 // reaching into the shared package directly.
-import type { BattleParticipant, BattleSide, BattleTurn, Lineage } from 'claude-pokemon-shared'
+import type {
+  BattleParticipant,
+  BattleSide,
+  BattleTurn,
+  CombatType,
+  Lineage,
+} from 'claude-pokemon-shared'
 
 export {
   ARENA_MAX_TURNS,
@@ -84,12 +90,23 @@ export interface LifetimeStats {
   lineages_completed: Lineage[]
   games_won: number
   games_played: number
+  /** Sprint 4.6 — cumulative XP earned from wild-zone fights on the web.
+   * Independent from total_tokens (which is the CLI's token-based XP).
+   * Optional for back-compat ; missing reads as 0. */
+  total_zone_xp?: number
+  /** Sprint 4.6 — count of wild encounters won (for fun stats + future
+   * achievement badges). */
+  zone_wins?: number
 }
 
 export interface ActiveStats {
   lineage: Lineage | null
   current_level: number
   is_shiny: boolean
+  /** Sprint 4.6 — XP earned toward the next level. Resets to 0 on level-up.
+   * Together with `current_level`, gives the progress bar value. Optional
+   * for back-compat. */
+  current_xp?: number
 }
 
 export interface PlayerStats {
@@ -263,6 +280,9 @@ export interface PendingEncounter {
   is_shiny: boolean
   /** Pool the species was rolled from. Useful for XP modifiers later. */
   pool: 'common' | 'rare' | 'legendary'
+  /** Sprint 4.6 — collapsed combat type for the battle resolver. Cached at
+   * explore time so the fight handler doesn't need to look it up again. */
+  combat_type: CombatType
   created_at: string
   expires_at: string
 }
