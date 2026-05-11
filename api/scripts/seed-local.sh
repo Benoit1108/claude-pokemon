@@ -37,7 +37,7 @@ echo
 PAYLOAD=$(cat <<EOF
 {
   "anon_id": "$ANON_ID",
-  "display_name": "Local Tester",
+  "display_name": "LocalTester",
   "lineage": "$LINEAGE",
   "level": $LEVEL,
   "is_shiny": $SHINY,
