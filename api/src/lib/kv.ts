@@ -1,5 +1,11 @@
 // KV access primitives. All reads/writes go through here so we can mock
 // in tests + change storage backend later if needed.
+//
+// Cloudflare KV constraint : expirationTtl MUST be ≥ 60 seconds. Shorter
+// values cause `400 Invalid expiration_ttl`. We enforce this minimum in
+// every set* helper via clampTtl ; the cooldown logic compares timestamps
+// so a 20 s gameplay cooldown stored with TTL=60 still works correctly —
+// the stale key just gets garbage-collected later.
 
 import type { Env } from '../env.d'
 import type {
@@ -17,6 +23,13 @@ import {
   LIVE_BATTLE_INVITE_COOLDOWN_S,
   PAIR_CODE_TTL_S,
 } from '../types'
+
+/** Cloudflare KV minimum expirationTtl. Any shorter value throws 400. */
+const KV_MIN_TTL_S = 60
+
+function clampTtl(ttlSeconds: number): number {
+  return Math.max(KV_MIN_TTL_S, ttlSeconds)
+}
 
 export async function getStats(env: Env, anonId: string): Promise<KVRecord | null> {
   const raw = await env.STATS.get(`stats:${anonId}`)
@@ -52,7 +65,7 @@ export async function getCooldown(env: Env, anonId: string): Promise<number | nu
 
 export async function setCooldown(env: Env, anonId: string, ttlSeconds: number): Promise<void> {
   await env.STATS.put(`cooldown:${anonId}`, String(Math.floor(Date.now() / 1000)), {
-    expirationTtl: ttlSeconds,
+    expirationTtl: clampTtl(ttlSeconds),
   })
 }
 
@@ -119,7 +132,7 @@ export async function getBattle(env: Env, battleId: string): Promise<BattleResul
 export async function putBattle(env: Env, battle: BattleResult): Promise<void> {
   if (!battle.battle_id) throw new Error('putBattle requires battle_id set')
   await env.STATS.put(`battle:${battle.battle_id}`, JSON.stringify(battle), {
-    expirationTtl: BATTLE_TTL_S,
+    expirationTtl: clampTtl(BATTLE_TTL_S),
   })
 }
 
@@ -144,7 +157,7 @@ export async function putBattleReactions(
   reactions: BattleReactions,
 ): Promise<void> {
   await env.STATS.put(`react:${battleId}`, JSON.stringify(reactions), {
-    expirationTtl: BATTLE_TTL_S,
+    expirationTtl: clampTtl(BATTLE_TTL_S),
   })
 }
 
@@ -164,7 +177,7 @@ export async function getArenaChallengeCooldown(env: Env, anonId: string): Promi
 
 export async function setArenaChallengeCooldown(env: Env, anonId: string): Promise<void> {
   await env.STATS.put(`arena:cd:${anonId}`, String(Math.floor(Date.now() / 1000)), {
-    expirationTtl: ARENA_CHALLENGE_COOLDOWN_S,
+    expirationTtl: clampTtl(ARENA_CHALLENGE_COOLDOWN_S),
   })
 }
 
@@ -189,7 +202,7 @@ export async function getLiveBattle(
 
 export async function putLiveBattle(env: Env, record: LiveBattleRecord): Promise<void> {
   await env.STATS.put(`live:${record.battle_id}`, JSON.stringify(record), {
-    expirationTtl: LIVE_BATTLE_TTL_S,
+    expirationTtl: clampTtl(LIVE_BATTLE_TTL_S),
   })
 }
 
@@ -208,7 +221,7 @@ export async function getLiveInviteCooldown(env: Env, anonId: string): Promise<n
 
 export async function setLiveInviteCooldown(env: Env, anonId: string): Promise<void> {
   await env.STATS.put(`live:cd:${anonId}`, String(Math.floor(Date.now() / 1000)), {
-    expirationTtl: LIVE_BATTLE_INVITE_COOLDOWN_S,
+    expirationTtl: clampTtl(LIVE_BATTLE_INVITE_COOLDOWN_S),
   })
 }
 
@@ -230,7 +243,7 @@ export async function getPairRecord(env: Env, code: string): Promise<PairRecord 
 
 export async function putPairRecord(env: Env, code: string, record: PairRecord): Promise<void> {
   await env.STATS.put(`pair:${code}`, JSON.stringify(record), {
-    expirationTtl: PAIR_CODE_TTL_S,
+    expirationTtl: clampTtl(PAIR_CODE_TTL_S),
   })
 }
 
@@ -264,7 +277,7 @@ export async function setZoneCooldown(
   await env.STATS.put(
     `zone:cd:${anonId}:${zoneId}`,
     String(Math.floor(Date.now() / 1000)),
-    { expirationTtl: ttlSeconds },
+    { expirationTtl: clampTtl(ttlSeconds) },
   )
 }
 
@@ -291,7 +304,7 @@ export async function putPendingEncounter(
   ttlSeconds: number,
 ): Promise<void> {
   await env.STATS.put(`zone:encounter:${anonId}`, JSON.stringify(encounter), {
-    expirationTtl: ttlSeconds,
+    expirationTtl: clampTtl(ttlSeconds),
   })
 }
 
