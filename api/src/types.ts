@@ -1,21 +1,35 @@
 // Shared contracts between handlers + KV layer + the arena frontend.
-// Keep this file dependency-free so it can be imported anywhere.
+//
+// Sprint 3 A4 — the battle-related types (Lineage, BattleParticipant,
+// BattleTurn, BattleResult, BattleSide, CombatType, ARENA_MAX_TURNS,
+// LINEAGE_TO_TYPE, ALLOWED_LINEAGES) now live in `claude-pokemon-shared`
+// and are re-exported below. This file keeps only the worker-specific
+// types : KVRecord, SubmitPayload, leaderboard metrics, regexes, ArenaRecord,
+// LiveBattleRecord, PairRecord, etc.
+
+// Some of the shared types are used INSIDE this file (KVRecord.team_snapshot
+// is a BattleParticipant, LeaderboardEntry has a Lineage, etc.) so we import
+// them with `import type` for in-file use. The same names are also re-exported
+// so handlers can `import { BattleParticipant } from '../../types'` without
+// reaching into the shared package directly.
+import type { BattleParticipant, BattleSide, BattleTurn, Lineage } from 'claude-pokemon-shared'
+
+export {
+  ARENA_MAX_TURNS,
+  ALLOWED_LINEAGES,
+  LINEAGE_TO_TYPE,
+  type BattleParticipant,
+  type BattleResult,
+  type BattleSide,
+  type BattleTurn,
+  type CombatType,
+  type Lineage,
+} from 'claude-pokemon-shared'
 
 export const SCHEMA_VERSION = 1
 export const SUBMIT_COOLDOWN_S = 24 * 60 * 60
 export const ANON_ID_RE = /^[a-f0-9]{8,16}$/
 export const DISPLAY_NAME_RE = /^[a-zA-Z0-9_-]{2,24}$/
-
-export const ALLOWED_LINEAGES = new Set([
-  'fire',
-  'water',
-  'grass',
-  'electric',
-  'eevee',
-  'chikorita',
-  'cyndaquil',
-  'totodile',
-])
 
 export const ALLOWED_BADGES = new Set([
   'hatch',
@@ -60,16 +74,6 @@ export type LeaderboardMetric =
   | 'badges_count'
   | 'games_won'
   | 'pokedex_seen_count'
-
-export type Lineage =
-  | 'fire'
-  | 'water'
-  | 'grass'
-  | 'electric'
-  | 'eevee'
-  | 'chikorita'
-  | 'cyndaquil'
-  | 'totodile'
 
 export interface LifetimeStats {
   total_tokens: number
@@ -160,51 +164,6 @@ export interface LeaderboardEntry {
 
 export const ARENA_SECRET_RE = /^[a-f0-9]{32,64}$/
 export const BATTLE_ID_RE = /^[a-f0-9]{16,32}$/
-export const ARENA_MAX_TURNS = 50
-
-// Effective combat type derived from lineage.
-export type CombatType = 'fire' | 'water' | 'grass' | 'electric' | 'normal'
-
-export const LINEAGE_TO_TYPE: Record<Lineage, CombatType> = {
-  fire: 'fire',
-  cyndaquil: 'fire',
-  water: 'water',
-  totodile: 'water',
-  grass: 'grass',
-  chikorita: 'grass',
-  electric: 'electric',
-  eevee: 'normal',
-}
-
-export interface BattleParticipant {
-  anon_id: string
-  display_name: string | null
-  lineage: Lineage
-  level: number
-  is_shiny: boolean
-}
-
-export type BattleSide = 'challenger' | 'defender'
-
-export interface BattleTurn {
-  turn: number
-  actor: BattleSide
-  damage: number
-  effectiveness: number // 0.5 / 1 / 2
-  critical: boolean
-  defender_hp_after: number
-}
-
-export interface BattleResult {
-  battle_id: string | null // assigned by handler when persisted
-  challenger: BattleParticipant
-  defender: BattleParticipant
-  seed: number
-  turns: BattleTurn[]
-  winner: BattleSide | 'draw'
-  reason: 'ko' | 'turn_limit'
-  created_at: string
-}
 
 export interface ArenaRecord {
   anon_id: string

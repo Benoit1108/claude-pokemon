@@ -100,7 +100,7 @@ function rollStrike(args: {
  * move is not in this side's pool — caller should reject with 400. */
 export function lookupMoveForSide(side: LiveBattleSide, moveId: string): Move | null {
   const stage = stageFor(side.snapshot.lineage, side.snapshot.level)
-  const pool = movesForStage(stage)
+  const pool = movesForStage(stage.showdown_id)
   return pool.find(m => m.name === moveId) ?? null
 }
 

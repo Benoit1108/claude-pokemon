@@ -358,8 +358,8 @@ describe('Live PvP — invite/accept/status/forfeit', () => {
     )
     const { battle_id } = (await inv.json()) as { battle_id: string }
     await handleLiveAccept(makeReq(dSecret, {}), `/v1/arena/live/${battle_id}/accept`, env)
-    const cMove = movesForStage(stageFor(challenger.lineage, challenger.level))[0]!.name
-    const dMove = movesForStage(stageFor(defender.lineage, defender.level))[0]!.name
+    const cMove = movesForStage(stageFor(challenger.lineage, challenger.level).showdown_id)[0]!.name
+    const dMove = movesForStage(stageFor(defender.lineage, defender.level).showdown_id)[0]!.name
     return { battleId: battle_id, cSecret, dSecret, cMove, dMove }
   }
 
@@ -465,7 +465,7 @@ describe('Live PvP — invite/accept/status/forfeit', () => {
 
   it('refuses to swap moves once committed (409)', async () => {
     const { battleId, cSecret } = await openActive()
-    const moves = movesForStage(stageFor(challenger.lineage, challenger.level))
+    const moves = movesForStage(stageFor(challenger.lineage, challenger.level).showdown_id)
     await handleLiveCommit(
       makeReq(cSecret, { anon_id: 'aaaaaaaa', move_id: moves[0]!.name }),
       `/v1/arena/live/${battleId}/commit`,
@@ -532,7 +532,7 @@ describe('Live PvP — invite/accept/status/forfeit', () => {
     )
     const { battle_id } = (await inv.json()) as { battle_id: string }
     // Battle is 'pending' — not yet accepted by defender.
-    const cMove = movesForStage(stageFor(challenger.lineage, challenger.level))[0]!.name
+    const cMove = movesForStage(stageFor(challenger.lineage, challenger.level).showdown_id)[0]!.name
     const res = await handleLiveCommit(
       makeReq(cSecret, { anon_id: 'aaaaaaaa', move_id: cMove }),
       `/v1/arena/live/${battle_id}/commit`,

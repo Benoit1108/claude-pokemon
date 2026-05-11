@@ -38,6 +38,10 @@
     "README.md",
     "LICENSE"
   ],
+  "workspaces": [
+    "api",
+    "shared"
+  ],
   "devDependencies": {
     "bats": "^1.13.0"
   }
