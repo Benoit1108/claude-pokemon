@@ -13,6 +13,7 @@ import type { Env } from '../env.d'
 import { jsonResp } from '../lib/http'
 import { constantTimeEqual, extractBearer, sha256Hex } from '../lib/arena'
 import { getArena, getStats, putStats } from '../lib/kv'
+import { bootstrapStatsFromArena } from '../lib/trainer-bootstrap'
 import {
   ANON_ID_RE,
   BIO_MAX_LENGTH,
@@ -109,44 +110,10 @@ export async function handleTrainerProfilePatch(
 
   // Load the existing record. If missing (trainer enabled but never
   // submitted), bootstrap a minimal one from the arena snapshot — covers
-  // the web-signup case in Sprint 4 where the trainer exists but hasn't
-  // pushed stats yet.
+  // pre-Sprint-4.9 web-signup records that predate the enable-time bootstrap.
   let record = await getStats(env, anonId)
   if (!record) {
-    const t = arena.team_snapshot
-    record = {
-      anon_id: anonId,
-      display_name: t.display_name ?? null,
-      quote: null,
-      bio: null,
-      pinned_badges: [],
-      // Sprint 4 — inherit origin from the ArenaRecord (which is the
-      // canonical signup-time source). Pre-Sprint-4 arenas read as 'cli'.
-      origin: arena.origin,
-      schema_version: 1,
-      client_version: 'web-profile-patch',
-      submitted_at: new Date().toISOString(),
-      stats: {
-        lifetime: {
-          total_tokens: 0,
-          total_evolutions: 0,
-          total_shinies: 0,
-          max_level: t.level,
-          total_compagnons: 1,
-          lineages_completed: [],
-          games_won: 0,
-          games_played: 0,
-        },
-        active: {
-          lineage: t.lineage,
-          current_level: t.level,
-          is_shiny: t.is_shiny,
-        },
-        badges: [],
-        pokedex_seen_count: 0,
-        pokedex_seen_ids: [],
-      },
-    }
+    record = bootstrapStatsFromArena(arena, 'web-profile-patch')
   }
 
   // Apply the patch. Explicit `null` resets to default ; missing keys are

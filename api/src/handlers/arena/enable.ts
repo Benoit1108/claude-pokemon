@@ -4,8 +4,9 @@
 import type { Env } from '../../env.d'
 import { jsonResp } from '../../lib/http'
 import { validateTeamSnapshot } from '../../lib/validation'
-import { getArena, putArena } from '../../lib/kv'
+import { getArena, getStats, putArena, putStats } from '../../lib/kv'
 import { generateArenaSecret, sha256Hex } from '../../lib/arena'
+import { bootstrapStatsFromArena } from '../../lib/trainer-bootstrap'
 import {
   CLIENT_DECLARABLE_ORIGINS,
   type ArenaRecord,
@@ -63,6 +64,19 @@ export async function handleArenaEnable(request: Request, env: Env): Promise<Res
     updated_at: now,
   }
   await putArena(env, record)
+
+  // Sprint 4.9 — also bootstrap a stats record so GET /v1/trainer/<id>
+  // (the profile + trainer-card endpoint) works immediately for web users.
+  // Skipped if a stats record already exists (CLI flow already submitted).
+  // Best-effort : a failure here doesn't undo the enable.
+  const existingStats = await getStats(env, team.anon_id)
+  if (!existingStats) {
+    try {
+      await putStats(env, bootstrapStatsFromArena(record, 'web-signup-bootstrap'))
+    } catch {
+      /* best-effort, profile PATCH path will re-bootstrap on first edit */
+    }
+  }
 
   return jsonResp({
     ok: true,
