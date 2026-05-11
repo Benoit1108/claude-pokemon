@@ -248,6 +248,34 @@ export interface PairRecord {
   consumed_by?: string
 }
 
+// ---------------------------------------------------------------------------
+// Wild zones (Sprint 4.5) — web-native exploration / encounters
+// ---------------------------------------------------------------------------
+
+/** A wild encounter freshly rolled by /v1/zone/<id>/explore. Persisted in
+ * KV under `zone:encounter:<anon_id>` with a 5-min TTL so Sprint 4.6's
+ * /fight handler can verify the species/level/shiny client-side claims
+ * match an actual server-issued encounter (anti-cheat). */
+export interface PendingEncounter {
+  zone_id: string
+  species_id: string
+  level: number
+  is_shiny: boolean
+  /** Pool the species was rolled from. Useful for XP modifiers later. */
+  pool: 'common' | 'rare' | 'legendary'
+  created_at: string
+  expires_at: string
+}
+
+/** Item drops from /explore — kept minimal for the MVP. Sprint 4.6+ wires
+ * these into the trainer's inventory. */
+export type ItemDropKind = 'berry' | 'potion' | 'pokeball' | 'rare-candy'
+
+export interface ItemDrop {
+  kind: ItemDropKind
+  emoji: string
+}
+
 // Battle reactions (Sprint 2.8b) — bounded emoji set, rate-limited at
 // 1 vote per anon_id per battle. Users can change their vote ; the old
 // count is decremented and the new one incremented.

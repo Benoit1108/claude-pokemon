@@ -9,6 +9,7 @@ import type {
   KVRecord,
   LiveBattleRecord,
   PairRecord,
+  PendingEncounter,
 } from '../types'
 import {
   emptyReactions,
@@ -235,6 +236,67 @@ export async function putPairRecord(env: Env, code: string, record: PairRecord):
 
 export async function deletePairRecord(env: Env, code: string): Promise<void> {
   await env.STATS.delete(`pair:${code}`)
+}
+
+// ---------------------------------------------------------------------------
+// Wild zones (Sprint 4.5)
+// ---------------------------------------------------------------------------
+
+/** Per-zone cooldown. Key shape : `zone:cd:<anon_id>:<zone_id>`. TTL set
+ * by the caller (ZONE_EXPLORE_COOLDOWN_S). */
+export async function getZoneCooldown(
+  env: Env,
+  anonId: string,
+  zoneId: string,
+): Promise<number | null> {
+  const raw = await env.STATS.get(`zone:cd:${anonId}:${zoneId}`)
+  if (!raw) return null
+  const n = parseInt(raw, 10)
+  return isNaN(n) ? null : n
+}
+
+export async function setZoneCooldown(
+  env: Env,
+  anonId: string,
+  zoneId: string,
+  ttlSeconds: number,
+): Promise<void> {
+  await env.STATS.put(
+    `zone:cd:${anonId}:${zoneId}`,
+    String(Math.floor(Date.now() / 1000)),
+    { expirationTtl: ttlSeconds },
+  )
+}
+
+/** Pending encounter slot. One per anon_id (newer rolls overwrite older).
+ * Key shape : `zone:encounter:<anon_id>`. TTL set by the caller
+ * (ZONE_ENCOUNTER_TTL_S, default 5 min). */
+export async function getPendingEncounter(
+  env: Env,
+  anonId: string,
+): Promise<PendingEncounter | null> {
+  const raw = await env.STATS.get(`zone:encounter:${anonId}`)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as PendingEncounter
+  } catch {
+    return null
+  }
+}
+
+export async function putPendingEncounter(
+  env: Env,
+  anonId: string,
+  encounter: PendingEncounter,
+  ttlSeconds: number,
+): Promise<void> {
+  await env.STATS.put(`zone:encounter:${anonId}`, JSON.stringify(encounter), {
+    expirationTtl: ttlSeconds,
+  })
+}
+
+export async function deletePendingEncounter(env: Env, anonId: string): Promise<void> {
+  await env.STATS.delete(`zone:encounter:${anonId}`)
 }
 
 export async function listAllStats(env: Env): Promise<KVRecord[]> {

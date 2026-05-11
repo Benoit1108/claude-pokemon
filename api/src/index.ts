@@ -21,6 +21,9 @@ import { handleAggregate } from './handlers/aggregate'
 import { handleForget } from './handlers/forget'
 import { handleTrainer } from './handlers/trainer'
 import { handleTrainerProfilePatch } from './handlers/trainer-profile'
+import { handleZoneDetail } from './handlers/zone/detail'
+import { handleZoneExplore } from './handlers/zone/explore'
+import { handleZoneList } from './handlers/zone/list'
 import { handleBadge } from './handlers/badge'
 import { handleArenaEnable } from './handlers/arena/enable'
 import { handleArenaDisable } from './handlers/arena/disable'
@@ -135,6 +138,22 @@ export default {
       }
       if (url.pathname.startsWith('/v1/arena/live/') && request.method === 'GET') {
         return await handleLiveStatus(url.pathname, env)
+      }
+      // Wild zones (Sprint 4.5). Order matters : /v1/zone/<id>/explore must
+      // match before the more generic /v1/zones list (different prefix —
+      // 'zone' singular for action, 'zones' plural for catalog).
+      if (
+        url.pathname.startsWith('/v1/zone/') &&
+        url.pathname.endsWith('/explore') &&
+        request.method === 'POST'
+      ) {
+        return await handleZoneExplore(request, url.pathname, env)
+      }
+      if (url.pathname === '/v1/zones' && request.method === 'GET') {
+        return await handleZoneList(env)
+      }
+      if (url.pathname.startsWith('/v1/zones/') && request.method === 'GET') {
+        return await handleZoneDetail(url.pathname, env)
       }
       return jsonResp({ error: 'not_found', path: url.pathname }, 404)
     } catch (err) {
