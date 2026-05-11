@@ -321,6 +321,16 @@
     "warning": "⚠️  Ne partage pas ce code — il transfère ton secret arena vers le navigateur.",
     "failed": "Pairing impossible : %s"
   },
+  "link": {
+    "title": "🔗 LINK CLI ↔ COMPTE WEB",
+    "usage": "Usage : /pokemon arena link <code>   (code à 6 caractères généré sur /profile du site)",
+    "invalid_code": "Code invalide. Format attendu : 6 caractères [A-HJ-NP-TV-Z2-9] (sans 0/O/1/I/U).",
+    "warn_existing": "⚠️  Tu as déjà un compte CLI (%s). Il sera remplacé. L'ancien restera en orphelin côté serveur.",
+    "failed": "Échec du link : %s",
+    "state_synced": "✓ state.json synchronisé depuis le compte web (lineage, level, badges, pokédex).",
+    "no_remote_state": "ℹ Compte web nouvellement créé sans submit : state.json local conservé tel quel.",
+    "success": "✓ CLI lié au compte %s. Tu peux maintenant utiliser /pokemon arena depuis les 2 côtés."
+  },
   "live": {
     "not_enabled": "L'arena n'est pas activée. Lancez /pokemon arena enable --confirm.",
     "invite_usage": "Usage : /pokemon arena live invite <opponent_anon_id>",

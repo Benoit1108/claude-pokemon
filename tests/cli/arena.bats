@@ -97,3 +97,33 @@ teardown() {
   out=$(strip_ansi "$output")
   [[ "$out" == *"pas activée"* ]] || [[ "$out" == *"not enabled"* ]]
 }
+
+@test "arena link without code shows the usage prompt (Sprint 4.3)" {
+  run bash "$POKEMON_STATUS_SH" arena link
+  [ "$status" -eq 0 ]
+  out=$(strip_ansi "$output")
+  [[ "$out" == *"LINK"* ]]
+  [[ "$out" == *"Usage"* ]] || [[ "$out" == *"usage"* ]]
+}
+
+@test "arena link with malformed code rejects before hitting the network" {
+  # Invalid code (lowercase, special chars). Must short-circuit on the
+  # client-side regex, NOT hit curl.
+  run bash "$POKEMON_STATUS_SH" arena link "bad!23"
+  [ "$status" -eq 0 ]
+  out=$(strip_ansi "$output")
+  [[ "$out" == *"invalide"* ]] || [[ "$out" == *"Invalid"* ]]
+}
+
+@test "arena link uppercases the code before validation" {
+  # 6 valid chars but lowercase → uppercased internally → regex accepts.
+  # Since the test fixture's endpoint is unreachable / fake, curl will
+  # fail and we'll see "Échec du link" / "Link failed", NOT "invalide".
+  run bash "$POKEMON_STATUS_SH" arena link "abcdef"
+  [ "$status" -eq 0 ]
+  out=$(strip_ansi "$output")
+  # Bats fixture has no internet → expect a link failure (server unreachable)
+  # rather than the format error. Note 'abcdef' contains 'I' is no, 'A'..'F'
+  # are all in the safe alphabet (no 0/O/1/I/U/L conflict).
+  [[ "$out" != *"invalide"* ]] && [[ "$out" != *"Invalid"* ]]
+}

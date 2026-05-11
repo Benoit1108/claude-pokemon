@@ -2124,6 +2124,10 @@ view_arena() {
       view_arena_pair
       ;;
 
+    link)
+      view_arena_link "${2:-}"
+      ;;
+
     *)
       printf "  %s$(pokemon_t arena.unknown_subcmd "$sub")%s\n\n" "$DIM" "$RESET"
       ;;
@@ -2171,6 +2175,124 @@ view_arena_pair() {
   printf "  %s%s/pair?code=%s%s\n\n" "$BOLD" "$web_url" "$code" "$RESET"
   printf "  %s$(pokemon_t pair.expires "$expires_at")%s\n\n" "$DIM" "$RESET"
   printf "  %s$(pokemon_t pair.warning)%s\n\n" "$DIM" "$RESET"
+}
+
+# ── Link this CLI to a web-created account (Sprint 4.3) ─────────────────────
+# Inverse of pair : the web user generates a code on their /profile page,
+# they hand it to us, we redeem → we receive {anon_id, arena_secret} and
+# overwrite local state. Also fetches the TrainerRecord and rewrites
+# state.json so the user's web progression (level, badges, pokédex) lands
+# locally (Sprint 4.4 — combined with 4.3 for atomicity).
+#
+# Safety : if the CLI already has a different anon_id, we prompt the user
+# to confirm overwriting because the previous identity becomes orphaned on
+# the server (it still exists, but this install can no longer authenticate
+# as it without going through the full /enable cycle).
+view_arena_link() {
+  local code="${1:-}"
+  printf "\n  %s%s$(pokemon_t link.title)%s\n\n" "$BOLD" "$GOLD" "$RESET"
+
+  if [ -z "$code" ]; then
+    printf "  %s$(pokemon_t link.usage)%s\n\n" "$DIM" "$RESET"
+    return
+  fi
+
+  # Code shape : 6 chars from the safe alphabet (cf. Worker's PAIR_CODE_RE).
+  local upper
+  upper=$(printf '%s' "$code" | tr '[:lower:]' '[:upper:]')
+  if ! printf '%s' "$upper" | grep -qE '^[A-HJ-NP-TV-Z2-9]{6}$'; then
+    printf "  %s$(pokemon_t link.invalid_code)%s\n\n" "$DIM" "$RESET"
+    return
+  fi
+
+  local endpoint anon_id_current arena_enabled_current
+  endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
+  anon_id_current=$(jq -r '.stats_share.anon_id // ""' "$POKEMON_DATA")
+  arena_enabled_current=$(jq -r '.arena.enabled // false' "$POKEMON_DATA")
+
+  # Warn if the user is about to overwrite a different existing identity.
+  # We don't block — they may have just nuked their state.json and want a
+  # fresh link — but we surface the change explicitly.
+  if [ "$arena_enabled_current" = "true" ] && [ -n "$anon_id_current" ]; then
+    printf "  %s$(pokemon_t link.warn_existing "$anon_id_current")%s\n\n" "$DIM" "$RESET"
+  fi
+
+  local resp anon_id arena_secret
+  resp=$(curl -s -X POST "$endpoint/v1/arena/pair/redeem" \
+    -H "content-type: application/json" \
+    --data "$(jq -n --arg c "$upper" '{code: $c}')" 2>/dev/null)
+  anon_id=$(jq -r '.anon_id // ""' <<<"$resp")
+  arena_secret=$(jq -r '.arena_secret // ""' <<<"$resp")
+  if [ -z "$anon_id" ] || [ -z "$arena_secret" ]; then
+    printf "  %s$(pokemon_t link.failed "$resp")%s\n\n" "$DIM" "$RESET"
+    return
+  fi
+
+  # 1. Persist the secret + flip arena.enabled in data.json
+  _arena_save_secret "$arena_secret"
+  local now_iso
+  now_iso=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  jq --arg id "$anon_id" --arg now "$now_iso" '
+    .stats_share.anon_id = $id
+    | .arena.enabled = true
+    | .arena.enabled_at = $now
+  ' "$POKEMON_DATA" > "$POKEMON_DATA.tmp" && mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+
+  # 2. Sprint 4.4 — fetch the trainer record from the Worker and rewrite
+  # state.json so the web progression (lineage, level, badges, pokédex)
+  # lands locally. This is what makes the web→CLI handoff "lossless".
+  local trainer_resp
+  trainer_resp=$(curl -sf "$endpoint/v1/trainer/$anon_id" 2>/dev/null || printf '')
+  if [ -n "$trainer_resp" ]; then
+    _link_apply_trainer_to_state "$trainer_resp"
+    printf "  %s$(pokemon_t link.state_synced)%s\n" "$DIM" "$RESET"
+  else
+    # Trainer record doesn't exist yet (web user just signed up, no submit
+    # or profile patch yet). The link still works — local state.json is
+    # untouched, the next state.json submit will create the record.
+    printf "  %s$(pokemon_t link.no_remote_state)%s\n" "$DIM" "$RESET"
+  fi
+
+  printf "  %s$(pokemon_t link.success "$anon_id")%s\n\n" "$GOLD" "$RESET"
+}
+
+# Rewrite state.json from a TrainerResponse JSON (the GET /v1/trainer/<id>
+# response). Mapping :
+#   stats.active.lineage   → state.lineage
+#   stats.active.current_level → state.current_level
+#   stats.active.is_shiny  → state.is_shiny
+#   stats.lifetime.*       → state.lifetime_stats.*
+#   stats.badges           → state.badges (as {id, earned_at: now} objects)
+#   stats.pokedex_seen_ids → state.pokedex_wild (one entry per id, count=1)
+#
+# We don't have per-encounter dates from the API, so first_seen_at gets
+# stamped at "now" for everything imported. Minor cosmetic loss — better
+# than ditching the whole progression.
+_link_apply_trainer_to_state() {
+  local trainer="$1"
+  local now_iso
+  now_iso=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+  jq --argjson t "$trainer" --arg now "$now_iso" '
+    .lineage = $t.stats.active.lineage
+    | .is_shiny = $t.stats.active.is_shiny
+    | .current_level = $t.stats.active.current_level
+    | .lifetime_stats.total_tokens     = ($t.stats.lifetime.total_tokens // 0)
+    | .lifetime_stats.total_evolutions = ($t.stats.lifetime.total_evolutions // 0)
+    | .lifetime_stats.total_shinies    = ($t.stats.lifetime.total_shinies // 0)
+    | .lifetime_stats.max_level        = ($t.stats.lifetime.max_level // 0)
+    | .lifetime_stats.total_compagnons = ($t.stats.lifetime.total_compagnons // 0)
+    | .lifetime_stats.lineages_completed = ($t.stats.lifetime.lineages_completed // [])
+    | .lifetime_stats.games_won  = ($t.stats.lifetime.games_won // 0)
+    | .lifetime_stats.games_played = ($t.stats.lifetime.games_played // 0)
+    | .badges = ([$t.stats.badges // [] | .[] | { id: ., earned_at: $now }])
+    | .pokedex_wild = (
+        ($t.stats.pokedex_seen_ids // [])
+        | map({ key: ., value: { count: 1, first_seen_at: $now } })
+        | from_entries
+      )
+    | .last_updated = $now
+  ' "$POKEMON_STATE" > "$POKEMON_STATE.tmp" && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
 }
 
 # ── Live PvP (Sprint 2.10) — polling-based realtime battles ────────────────

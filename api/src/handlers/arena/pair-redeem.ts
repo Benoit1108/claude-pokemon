@@ -20,7 +20,15 @@
 
 import type { Env } from '../../env.d'
 import { jsonResp } from '../../lib/http'
-import { deletePairRecord, getPairRecord, putPairRecord } from '../../lib/kv'
+import {
+  deletePairRecord,
+  getArena,
+  getPairRecord,
+  getStats,
+  putArena,
+  putPairRecord,
+  putStats,
+} from '../../lib/kv'
 import { PAIR_CODE_RE } from '../../types'
 
 export async function handlePairRedeem(request: Request, env: Env): Promise<Response> {
@@ -60,6 +68,31 @@ export async function handlePairRedeem(request: Request, env: Env): Promise<Resp
 
   // We won. Schedule the delete (best-effort — TTL also cleans up).
   await deletePairRecord(env, b.code)
+
+  // Sprint 4.3 — mark the trainer as 'linked' on both the ArenaRecord and
+  // (if it exists) the KVRecord. The pair flow is symmetric : either side
+  // can issue the code, the redeemer becomes the second-side client. After
+  // either direction succeeds, origin freezes at 'linked' forever (submit
+  // handler also refuses to downgrade).
+  //
+  // Failures here are non-fatal : the user already has the secret in their
+  // hands, the linking is just a metadata bump. We swallow errors quietly
+  // and let the next /v1/submit re-evaluate the origin field.
+  try {
+    const arena = await getArena(env, record.anon_id)
+    if (arena && arena.origin !== 'linked') {
+      arena.origin = 'linked'
+      arena.updated_at = new Date().toISOString()
+      await putArena(env, arena)
+    }
+    const stats = await getStats(env, record.anon_id)
+    if (stats && stats.origin !== 'linked') {
+      stats.origin = 'linked'
+      await putStats(env, stats)
+    }
+  } catch {
+    /* best-effort — not blocking the redeem response */
+  }
 
   return jsonResp({
     ok: true,
