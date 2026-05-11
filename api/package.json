@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "seed:local": "bash scripts/seed-local.sh",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write 'src/**/*.{ts,json}' 'tests/**/*.ts'",

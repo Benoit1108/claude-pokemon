@@ -99,6 +99,34 @@ Global aggregate stats (all submitted players).
 ### `DELETE /v1/forget?anon_id=<id>`
 Purge a player's record (RGPD right-to-delete).
 
+## Local development
+
+Two-terminal flow lets you exercise the full stack (worker + arena) without
+touching prod. Wrangler uses Miniflare, which persists local KV in
+`.wrangler/state/` (gitignored — wipe with `rm -rf .wrangler/state` for a
+clean slate).
+
+```bash
+# t1 — worker on http://localhost:8787
+cd api/
+npm run dev
+
+# t2 — arena on http://localhost:3000 (reads .env → talks to localhost:8787)
+cd ../../claude-pokemon-arena/
+npm run dev
+
+# t3 — seed a test trainer (random anon_id, prints arena_secret + a
+#       devtools paste-snippet to teleport the arena into "paired" mode)
+cd api/
+npm run seed:local                          # default : fire Lv.50
+LINEAGE=water LEVEL=80 npm run seed:local   # override
+```
+
+The seed prints a one-line `localStorage.setItem(...)` you paste into the
+browser console at `http://localhost:3000` — refresh and the UserMenu
+flips to "paired", `/zones` becomes interactive, etc. Each run picks a
+fresh anon_id so there's no 409 "already_enabled" collision.
+
 ## Deployment
 
 ```bash
