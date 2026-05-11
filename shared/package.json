@@ -29,12 +29,13 @@
     }
   },
   "files": ["dist", "README.md", "LICENSE"],
+  "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "prepublishOnly": "npm run build && npm test"
+    "prepare": "tsc -p tsconfig.json"
   },
   "keywords": ["pokemon", "battle", "deterministic", "claude-code"],
   "license": "MIT",
@@ -44,9 +45,6 @@
     "type": "git",
     "url": "git+https://github.com/Benoit1108/claude-pokemon.git",
     "directory": "shared"
-  },
-  "publishConfig": {
-    "access": "public"
   },
   "engines": {
     "node": ">=18"
