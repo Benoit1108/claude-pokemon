@@ -47,6 +47,8 @@ L'**état utilisateur** vit dans `~/.claude/pokemon/state.json` (préservé entr
 - **Commits** : Conventional Commits (`feat:` / `fix:` / `chore:` / `ci:` / `docs:` / `refactor:` / `i18n:`)
 - **Pas de Co-Authored-By** dans les commits
 - **Pas de push** sur `main` sans validation explicite
+- **PR workflow** (à partir de 2026-05-12) : feature branches off `main`, squash on merge. `main` branch-protected. Pre-push hook Claude Code lance les CI gates avant chaque push.
+- **CHANGELOG discipline** : chaque PR ajoute une entrée dans `[Unreleased]` du `CHANGELOG.md`. Sections Keep-a-Changelog (`Added` / `Changed` / `Fixed` / `Removed` / `Security`). Au moment de bump une version, on renomme `[Unreleased]` → `[X.Y.Z] — YYYY-MM-DD`.
 - **Strings UI** : toujours via `pokemon_t <key>` (jamais hardcoded en français/anglais)
 - **Data** : éditer **uniquement** `lib/data/**`, jamais `lib/data.default.json` directement. Re-build avec `npm run build:data` (ou `bash lib/build-data.sh`) avant commit. CI échoue si la source diverge du build.
 - **JSON keys** : ASCII uniquement, accents seulement dans les values

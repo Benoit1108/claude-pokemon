@@ -65,7 +65,20 @@ claude-pokemon/
 │   └── architecture.md             ← this file
 ├── assets/                         GIFs + screenshots referenced in README.
 ├── .demo/                          Asciinema scripts to regenerate GIFs.
-├── .github/workflows/ci.yml        Shellcheck + JSON validation + npm pack.
+├── .github/workflows/ci.yml        Layered CI : security (audit ×2) → quality
+│                                    (bash shellcheck/json/drift/parity + api lint/
+│                                    prettier/typecheck) → test (bats + vitest + dry-run)
+│                                    → package (npm pack).
+├── shared/                         Workspace package : pure types + battle resolution.
+│                                    Consumed by api/ AND by claude-pokemon-arena (via
+│                                    a git submodule of this repo).
+├── scripts/ci-pre-push.sh          Local CI mirror — runs every gate before `git push`.
+├── .claude/
+│   ├── settings.json               PreToolUse Bash hook → pre-push.sh.
+│   └── hooks/pre-push.sh           Claude Code pre-push gate.
+├── .nvmrc                          Node 22.
+├── .editorconfig                   Shared editor settings.
+├── .prettierrc.json                Root Prettier config (mirror of api/'s).
 ├── package.json                    npm package (CLI distribution).
 ├── ROADMAP.md, CHANGELOG.md, README.md, LICENSE
 ```
