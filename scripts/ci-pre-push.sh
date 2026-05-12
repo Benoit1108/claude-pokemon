@@ -30,6 +30,22 @@ run() {
 
 cd "$(git rev-parse --show-toplevel)"
 
+run "npm audit (api/, prod, high+)" bash -c '
+  cd api && npm audit --omit=dev --audit-level=high
+'
+
+run "i18n FR ↔ EN locale parity (lib/locales)" bash -c '
+  fr_keys=$(jq -r "paths(scalars) | join(\".\")" lib/locales/fr.json | sort -u)
+  en_keys=$(jq -r "paths(scalars) | join(\".\")" lib/locales/en.json | sort -u)
+  missing_in_en=$(comm -23 <(echo "$fr_keys") <(echo "$en_keys"))
+  missing_in_fr=$(comm -13 <(echo "$fr_keys") <(echo "$en_keys"))
+  if [ -n "$missing_in_en" ] || [ -n "$missing_in_fr" ]; then
+    [ -n "$missing_in_en" ] && echo "Missing in en.json:" && echo "$missing_in_en"
+    [ -n "$missing_in_fr" ] && echo "Missing in fr.json:" && echo "$missing_in_fr"
+    exit 1
+  fi
+'
+
 run "Validate top-level JSON sources (jq empty)" bash -c '
   for f in lib/data.default.json lib/data/config.json lib/data/thresholds.json \
            lib/data/seasons.json lib/data/items.json lib/data/berries.json \

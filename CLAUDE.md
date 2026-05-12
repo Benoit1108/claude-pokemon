@@ -90,18 +90,40 @@ Décision dans `lib.sh:840` (block dans `pokemon_tick`). Ordre :
 
 Friendship est lifetime (pas reset sur hatch). Pour la plupart des players, le seuil 50 est atteint bien avant Lv.30 → branche fallback rarement déclenchée.
 
-## Stats partagées (opt-in, anonymes)
+## Stats partagées (opt-in, anonymes) + Arena + Zones + Live PvP
 
-Backend = Cloudflare Worker `claude-pokemon-api` dans `api/` (séparé du package npm). Sources : `api/src/index.js` (~250 LoC, vanilla JS, no deps). Storage : Cloudflare KV (free tier).
+Backend = Cloudflare Worker `claude-pokemon-api` dans `api/` (séparé du package npm). Stack moderne : TypeScript strict, vitest 312 tests, structure `handlers/` + `lib/` + `data/`. Storage : Cloudflare KV (free tier).
 
-**Endpoints** (voir `api/README.md` pour le contract complet) :
+**Endpoints publics (read-only)** :
 - `POST /v1/submit` — submit stats (rate-limited 24h par anon_id)
 - `GET /v1/leaderboard?metric=X&limit=N`
 - `GET /v1/aggregate`
 - `DELETE /v1/forget?anon_id=X` (RGPD)
 - `GET /v1/health`
+- `GET /v1/trainer/<anon_id>` — public profile
+- `GET /v1/badge/<anon_id>.svg` — embeddable README badge
 
-**Privacy** : pas de logs IP côté serveur, anon_id généré localement (8 hex via /dev/urandom), whitelist stricte sur les champs submit (extras rejetés).
+**Endpoints arena PvP (Bearer auth via arena_secret)** :
+- `POST /v1/arena/enable` (origin: cli|web — Sprint 4.2 ouvre le web signup)
+- `POST /v1/arena/disable`, `regenerate`
+- `POST /v1/arena/challenge`, `GET /v1/arena/opponents`, `GET /v1/arena/battle/<id>`
+- `POST /v1/arena/battle/<id>/react`
+- **`GET /v1/arena/whoami?anon_id=X`** (Sprint 5) — valide les credentials sans muter, alimente la page `/login` web
+
+**Pair flow (CLI ↔ web)** :
+- `POST /v1/arena/pair/init` (Bearer, CLI ou web) → code 6-char, TTL 5min
+- `POST /v1/arena/pair/redeem` (code) → renvoie {anon_id, arena_secret}
+
+**Live PvP** :
+- `POST /v1/arena/live/invite`, `POST /v1/arena/live/<id>/{accept,forfeit,commit}`
+- `GET /v1/arena/live/<id>` — état + timer
+
+**Wild zones (Sprint 4.5+)** :
+- `GET /v1/zones`, `GET /v1/zones/<id>`
+- `POST /v1/zone/<id>/{explore,fight,flee}` (Bearer)
+- `PATCH /v1/trainer/<id>/profile` (display_name, quote, bio, pinned_badges)
+
+**Privacy** : pas de logs IP côté serveur, anon_id généré localement (8 hex via /dev/urandom), whitelist stricte sur les champs submit (extras rejetés). Arena_secret stocké hashé (sha256) + comparé en constant-time. Pas de stockage en clair.
 
 **Deploy** :
 ```bash
@@ -125,19 +147,72 @@ CLI side : `view_stats_share`, `view_leaderboard`, `view_aggregate` dans `lib/po
 
 ## Pièges connus
 
+### Côté bash CLI
+
 - **Cursor positioning ANSI dans statusline** : Claude Code strippe le leading whitespace + ignore `\033[<col>G` sur lignes vides. Workaround : anchor char `\033[2;30m·\033[0m` en début de ligne pour forcer la préservation.
 - **Animations** : désactivées par défaut, frames extraites via Python+PIL (canvas 96x96 centré). Opt-in via `enable_animations: true` dans `data.json`.
 - **Sprite alignment 32x16** : utiliser `pokemon_trim_sprite` qui calcule le min_lead et le strip uniformément (préserve l'alignement relatif).
 - **`%-22s` byte-padding** casse sur Unicode (accents = 2 bytes mais 1 char). Utiliser `pokemon_t_pad` (basé sur `LC_ALL=C.UTF-8 wc -m`).
 - **`shellcheck SC1087`** : `jq ".$var..."` est interprété comme expansion d'array. Toujours utiliser `jq --arg f "$var" '.[$f]...'`.
 
-## CI
+### Côté worker (`api/`)
+
+- **`prepare: husky` dans package.json** : casse `cd api && npm ci` en CI (la sous-shell workspace exécute le prepare root sans avoir husky dans son node_modules). On a remplacé husky par un hook Claude Code → plus de prepare-lifecycle. Si jamais on réintroduit husky, mettre `"prepare": "husky || true"`.
+- **Workspace + npm ci depuis api/** : npm trouve la package.json root et exécute son prepare. Sentinel = `"command not found: husky"` au milieu d'un install api.
+- **`scheduled_tasks.lock` dans `.claude/`** : runtime lockfile du système ScheduleWakeup. Doit être gitignoré (déjà fait), pas commit.
+
+## Tests & CI
+
+### Tests locaux
+
+**API (TypeScript)** :
+```bash
+cd api/
+npm test                   # vitest run (312 tests)
+npm run test:coverage      # avec couverture v8
+npm run typecheck          # tsc --noEmit
+npm run lint               # eslint src --ext .ts
+npm run format:check       # prettier check
+```
+
+**CLI (bash)** :
+```bash
+npm test                   # bats tests/cli/
+bash bin/install.sh && bash bin/status.sh
+```
+
+### Hook pre-push (Claude Code, auto)
+
+`.claude/hooks/pre-push.sh` intercepte tout `git push` lancé via outil Bash et lance `npm run ci:pre-push` (`scripts/ci-pre-push.sh`) :
+
+1. `jq empty` sur tous les JSON sources + locales
+2. `shellcheck -S error` (si installé)
+3. `bash lib/build-data.sh` + diff check (data.default.json en sync)
+4. `api/` : ESLint, Prettier, tsc --noEmit, vitest 312
+
+Bypass : `git push --no-verify` ou `--dry-run`. **Ne PAS bypass sans demande explicite user.**
+
+### GitHub Actions CI
 
 `.github/workflows/ci.yml` valide à chaque push :
 1. **Lint bash** (`shellcheck -S error`) sur tous les scripts publiés
 2. **Validate JSON** (`jq empty`) + parité des clés FR/EN dans les locales
 3. **Install dry-run** (`bash -n`, vérifie présence des fichiers requis)
-4. **npm pack --dry-run**
+4. **CLI smoke tests** (bats)
+5. **Worker — ESLint + TypeScript + Prettier**
+6. **Worker — Vitest + coverage**
+7. **npm pack --dry-run**
+
+## Companion web : claude-pokemon-arena
+
+Le site public lié vit dans un repo voisin `~/repositories/perso/claude-pokemon-arena/`. Il consomme **ce** worker (`api/`) via SSR Nuxt. Le shared package `claude-pokemon-shared/` est exposé en workspace npm et linké depuis l'arena via git submodule.
+
+- **Arena prod** : https://claude-pokemon-arena.pages.dev/
+- **Workflow déploiement complet** (CLI + web simultanés) :
+  1. Modifs api/ ou shared/ ici → `cd api/ && wrangler deploy`
+  2. Push main ici → submodule pointer à jour
+  3. Côté arena : `git submodule update --remote vendor/claude-pokemon && git add vendor && git commit -m "chore: bump shared submodule"`
+  4. Push main arena → CF Pages auto-deploy
 
 ## Workflow de publish npm
 

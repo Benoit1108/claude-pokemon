@@ -6,72 +6,175 @@ on:
   pull_request:
     branches: [main]
 
+# Pipeline shape (mirrors GitLab-style stages, fail-fast across stages) :
+#
+#   security ──► quality (parallel: shellcheck / json+drift+parity / api-lint /
+#                                  api-prettier / api-typecheck) ──► test
+#                                  (cli bats + api vitest + install-dry-run) ──► package (npm pack)
+#
+# Two sides share the pipeline : the bash CLI (lib/, bin/) and the api/ worker
+# (TypeScript, vitest). Each side's gates live in its own stage to keep the
+# DAG readable.
+
+env:
+  NODE_VERSION: '20'
+
 jobs:
-  lint-bash:
-    name: Lint bash scripts (shellcheck)
+  # ─── Stage : security ─────────────────────────────────────────────────────
+  security-root:
+    name: 🔒 npm audit (root devDeps)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Run shellcheck on bash scripts
-        run: |
-          # Only fail on errors, not warnings (we have many style warnings)
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: npm audit (high+)
+        run: npm audit --audit-level=high || echo "::warning::root deps have audit findings"
+
+  security-api:
+    name: 🔒 npm audit (api/)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
+      - name: npm audit (prod, high+)
+        run: npm audit --omit=dev --audit-level=high
+
+  # ─── Stage : quality — bash side ──────────────────────────────────────────
+  bash-shellcheck:
+    name: 🐛 Bash — shellcheck (errors only)
+    needs: [security-root]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: |
           shellcheck -S error \
             bin/install.sh bin/uninstall.sh bin/status.sh \
             bin/update.sh bin/export.sh bin/import.sh \
             lib/lib.sh lib/statusline.sh lib/pokemon-status.sh \
             lib/build-data.sh
 
-  validate-json:
-    name: Validate JSON files
+  bash-json:
+    name: 🌍 Data JSON validate + locale parity + build drift
+    needs: [security-root]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Install jq
-        run: sudo apt-get install -y jq
-      - name: Validate data.default.json
-        run: jq empty lib/data.default.json
-      - name: Validate split sources
+      - run: sudo apt-get install -y jq
+      - name: Validate data.default.json + split sources
         run: |
+          jq empty lib/data.default.json
           for f in lib/data/config.json lib/data/thresholds.json \
                    lib/data/seasons.json lib/data/items.json lib/data/berries.json \
                    lib/data/special/*.json lib/data/lineages/*.json \
                    lib/data/wild_pool/*.json; do
             jq empty "$f"
           done
-      - name: Verify data.default.json is up-to-date with sources
+      - name: Verify data.default.json is in sync with sources
         run: |
           bash lib/build-data.sh
           if ! git diff --exit-code lib/data.default.json; then
-            echo "::error::lib/data.default.json is stale. Run \`bash lib/build-data.sh\` and commit the result."
+            echo "::error::lib/data.default.json is stale. Run \`npm run build:data\` and commit."
             exit 1
           fi
-      - name: Validate locales
+      - name: Validate locales JSON
         run: |
           jq empty lib/locales/fr.json
           jq empty lib/locales/en.json
-      - name: Verify locale parity (FR vs EN have same keys)
+      - name: Enforce FR ↔ EN locale parity
         run: |
           fr_keys=$(jq -r 'paths(scalars) | join(".")' lib/locales/fr.json | sort -u)
           en_keys=$(jq -r 'paths(scalars) | join(".")' lib/locales/en.json | sort -u)
           missing_in_en=$(comm -23 <(echo "$fr_keys") <(echo "$en_keys"))
           missing_in_fr=$(comm -13 <(echo "$fr_keys") <(echo "$en_keys"))
-          if [ -n "$missing_in_en" ]; then
-            echo "::warning::Missing in en.json: $missing_in_en"
-          fi
-          if [ -n "$missing_in_fr" ]; then
-            echo "::warning::Missing in fr.json: $missing_in_fr"
+          if [ -n "$missing_in_en" ] || [ -n "$missing_in_fr" ]; then
+            [ -n "$missing_in_en" ] && echo "::error::Missing in en.json:" && echo "$missing_in_en"
+            [ -n "$missing_in_fr" ] && echo "::error::Missing in fr.json:" && echo "$missing_in_fr"
+            exit 1
           fi
 
-  install-dry-run:
-    name: Install dry-run (verify install.sh syntax + structure)
+  # ─── Stage : quality — api side ───────────────────────────────────────────
+  api-lint:
+    name: 🐛 api — ESLint
+    needs: [security-api]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+
+  api-prettier:
+    name: 💅 api — Prettier check
+    needs: [security-api]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
+      - run: npm ci
+      - run: npm run format:check
+
+  api-typecheck:
+    name: 🚨 api — TypeScript typecheck
+    needs: [security-api]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: api/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+
+  # ─── Stage : test ─────────────────────────────────────────────────────────
+  cli-tests:
+    name: ✅ CLI smoke tests (Bats)
+    needs: [bash-shellcheck, bash-json]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Install dependencies
-        run: sudo apt-get install -y jq chafa util-linux curl
-      - name: Bash syntax check on install.sh
-        run: bash -n bin/install.sh
-      - name: Verify lib files exist
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: sudo apt-get install -y jq && npm ci
+      - run: npm test
+
+  install-dry-run:
+    name: ✅ Install dry-run (syntax + structure)
+    needs: [bash-shellcheck, bash-json]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: sudo apt-get install -y jq chafa util-linux curl
+      - run: bash -n bin/install.sh
+      - name: Verify required files
         run: |
           test -f lib/lib.sh
           test -f lib/data.default.json
@@ -82,32 +185,9 @@ jobs:
           test -f skills/pokemon/SKILL.md
           echo "✓ All required files present"
 
-  npm-pack-check:
-    name: npm pack — verify packaging
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-      - name: npm pack dry run
-        run: npm pack --dry-run
-
-  cli-tests:
-    name: CLI smoke tests (Bats)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-      - name: Install jq + bats
-        run: sudo apt-get install -y jq && npm ci
-      - name: Run Bats
-        run: npm test
-
-  worker-typecheck:
-    name: Worker — TypeScript + ESLint + Prettier
+  api-tests:
+    name: ✅ api — Vitest + coverage
+    needs: [api-lint, api-prettier, api-typecheck]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -116,32 +196,20 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: api/package-lock.json
-      - name: Install dependencies
-        run: npm ci
-      - name: TypeScript typecheck
-        run: npm run typecheck
-      - name: ESLint
-        run: npm run lint
-      - name: Prettier check
-        run: npm run format:check
+      - run: npm ci
+      - run: npm run test:coverage
 
-  worker-tests:
-    name: Worker — Vitest + coverage
+  # ─── Stage : packaging ────────────────────────────────────────────────────
+  npm-pack:
+    name: 📦 npm pack — verify packaging
+    needs: [cli-tests, install-dry-run, api-tests]
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: api
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: api/package-lock.json
-      - name: Install dependencies
-        run: npm ci
-      - name: Run Vitest with coverage
-        run: npm run test:coverage
+          node-version: ${{ env.NODE_VERSION }}
+      - run: npm pack --dry-run
