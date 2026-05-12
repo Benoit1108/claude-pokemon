@@ -30,7 +30,7 @@
   "scripts": {
     "build:data": "bash lib/build-data.sh",
     "test": "bats tests/cli/",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "ci:pre-push": "bash scripts/ci-pre-push.sh"
   },
   "files": [
