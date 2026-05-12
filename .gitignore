@@ -15,5 +15,6 @@ sprites-mini-anim/
 .demo/*.cast
 .demo/*-raw.gif
 
-# Claude Code local settings (per-machine, not for sharing)
-.claude/
+# Claude Code per-machine local settings (the shared settings.json + hooks
+# scripts ARE committed — they define team conventions, not user prefs).
+.claude/settings.local.json
