@@ -84,16 +84,7 @@ export const ZONES: WildZone[] = [
     flavor_fr: 'Des grottes labyrinthiques aux échos étranges.',
     level_min: 21,
     level_max: 30,
-    wild_pool: [
-      'zubat',
-      'geodude',
-      'diglett',
-      'sandshrew',
-      'machop',
-      'cubone',
-      'rhyhorn',
-      'gloom',
-    ],
+    wild_pool: ['zubat', 'geodude', 'diglett', 'sandshrew', 'machop', 'cubone', 'rhyhorn', 'gloom'],
     rare_pool: ['onix', 'graveler', 'golbat'],
   },
   {
@@ -104,15 +95,7 @@ export const ZONES: WildZone[] = [
     flavor_fr: 'Un complexe industriel parcouru de courants intenses.',
     level_min: 31,
     level_max: 40,
-    wild_pool: [
-      'magnemite',
-      'voltorb',
-      'pikachu',
-      'mareep',
-      'flaaffy',
-      'electabuzz',
-      'elekid',
-    ],
+    wild_pool: ['magnemite', 'voltorb', 'pikachu', 'mareep', 'flaaffy', 'electabuzz', 'elekid'],
     rare_pool: ['magneton', 'electrode', 'raichu', 'ampharos'],
   },
   {
@@ -196,9 +179,7 @@ export const ZONES: WildZone[] = [
 ]
 
 /** O(1) lookup by zone id. */
-export const ZONES_BY_ID: Record<string, WildZone> = Object.fromEntries(
-  ZONES.map(z => [z.id, z]),
-)
+export const ZONES_BY_ID: Record<string, WildZone> = Object.fromEntries(ZONES.map(z => [z.id, z]))
 
 export function getZone(id: string): WildZone | undefined {
   return ZONES_BY_ID[id]

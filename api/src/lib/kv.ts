@@ -187,10 +187,7 @@ export { ARENA_CHALLENGE_COOLDOWN_S }
 // Live PvP (Sprint 2.10) — polling-based realtime battles
 // ---------------------------------------------------------------------------
 
-export async function getLiveBattle(
-  env: Env,
-  battleId: string,
-): Promise<LiveBattleRecord | null> {
+export async function getLiveBattle(env: Env, battleId: string): Promise<LiveBattleRecord | null> {
   const raw = await env.STATS.get(`live:${battleId}`)
   if (!raw) return null
   try {
@@ -274,11 +271,9 @@ export async function setZoneCooldown(
   zoneId: string,
   ttlSeconds: number,
 ): Promise<void> {
-  await env.STATS.put(
-    `zone:cd:${anonId}:${zoneId}`,
-    String(Math.floor(Date.now() / 1000)),
-    { expirationTtl: clampTtl(ttlSeconds) },
-  )
+  await env.STATS.put(`zone:cd:${anonId}:${zoneId}`, String(Math.floor(Date.now() / 1000)), {
+    expirationTtl: clampTtl(ttlSeconds),
+  })
 }
 
 /** Pending encounter slot. One per anon_id (newer rolls overwrite older).

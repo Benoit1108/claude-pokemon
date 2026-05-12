@@ -129,7 +129,7 @@ describe('handleTrainerProfilePatch', () => {
       quote: null,
       bio: null,
       pinned_badges: [],
-  origin: 'cli',
+      origin: 'cli',
       schema_version: 1,
       client_version: 'test',
       submitted_at: '2026-05-11T10:00:00Z',

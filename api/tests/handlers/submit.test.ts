@@ -119,10 +119,7 @@ describe('handleSubmit', () => {
   // ---------------------------------------------------------------------------
 
   it('persists bio when provided', async () => {
-    await handleSubmit(
-      makeRequest({ ...validBody, bio: 'A trainer from Lavender Town.' }),
-      env,
-    )
+    await handleSubmit(makeRequest({ ...validBody, bio: 'A trainer from Lavender Town.' }), env)
     const stored = await getStats(env, 'abc12345')
     expect(stored?.bio).toBe('A trainer from Lavender Town.')
   })
@@ -216,10 +213,7 @@ describe('handleSubmit', () => {
   })
 
   it("rejects origin: 'linked' from clients (worker-only state)", async () => {
-    const res = await handleSubmit(
-      makeRequest({ ...validBody, origin: 'linked' }),
-      env,
-    )
+    const res = await handleSubmit(makeRequest({ ...validBody, origin: 'linked' }), env)
     expect(res.status).toBe(400)
   })
 

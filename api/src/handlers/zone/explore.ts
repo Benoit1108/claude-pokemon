@@ -45,12 +45,7 @@ import {
   type WildZone,
 } from '../../data/zones'
 import { speciesToCombatType } from '../../data/species-types'
-import {
-  ANON_ID_RE,
-  POKEDEX_MAX_IDS,
-  type ItemDrop,
-  type PendingEncounter,
-} from '../../types'
+import { ANON_ID_RE, POKEDEX_MAX_IDS, type ItemDrop, type PendingEncounter } from '../../types'
 
 interface ExploreSuccess {
   ok: true
@@ -83,7 +78,9 @@ function pickFrom<T>(arr: readonly T[]): T | null {
 }
 
 /** Pick a species id from the zone's pools, weighted toward common. */
-function rollSpecies(zone: WildZone): { species_id: string; pool: PendingEncounter['pool'] } | null {
+function rollSpecies(
+  zone: WildZone,
+): { species_id: string; pool: PendingEncounter['pool'] } | null {
   const roll = Math.random()
   if (
     roll < ZONE_ENCOUNTER_LEGENDARY_WEIGHT &&
@@ -107,10 +104,7 @@ function rollSpecies(zone: WildZone): { species_id: string; pool: PendingEncount
 
 /** Wild encounter level : uniform within the zone's bracket. */
 function rollLevel(zone: WildZone): number {
-  return (
-    zone.level_min +
-    Math.floor(Math.random() * (zone.level_max - zone.level_min + 1))
-  )
+  return zone.level_min + Math.floor(Math.random() * (zone.level_max - zone.level_min + 1))
 }
 
 export async function handleZoneExplore(

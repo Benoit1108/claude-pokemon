@@ -29,7 +29,9 @@
   },
   "scripts": {
     "build:data": "bash lib/build-data.sh",
-    "test": "bats tests/cli/"
+    "test": "bats tests/cli/",
+    "prepare": "husky",
+    "ci:pre-push": "bash scripts/ci-pre-push.sh"
   },
   "files": [
     "bin/",
@@ -43,6 +45,7 @@
     "shared"
   ],
   "devDependencies": {
-    "bats": "^1.13.0"
+    "bats": "^1.13.0",
+    "husky": "^9.1.7"
   }
 }

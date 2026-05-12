@@ -204,11 +204,7 @@ describe('Live PvP — invite/accept/status/forfeit', () => {
   it('returns 404 on accept of an unknown battle id', async () => {
     const dSecret = await enable(env, defender)
     const fake = '0'.repeat(32)
-    const res = await handleLiveAccept(
-      makeReq(dSecret, {}),
-      `/v1/arena/live/${fake}/accept`,
-      env,
-    )
+    const res = await handleLiveAccept(makeReq(dSecret, {}), `/v1/arena/live/${fake}/accept`, env)
     expect(res.status).toBe(404)
   })
 

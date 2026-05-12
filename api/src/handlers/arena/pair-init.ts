@@ -8,12 +8,7 @@
 
 import type { Env } from '../../env.d'
 import { jsonResp } from '../../lib/http'
-import {
-  constantTimeEqual,
-  extractBearer,
-  generatePairCode,
-  sha256Hex,
-} from '../../lib/arena'
+import { constantTimeEqual, extractBearer, generatePairCode, sha256Hex } from '../../lib/arena'
 import { getArena, putPairRecord } from '../../lib/kv'
 import { ANON_ID_RE, PAIR_CODE_TTL_S, type PairRecord } from '../../types'
 

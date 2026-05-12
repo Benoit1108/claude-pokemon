@@ -5,23 +5,9 @@
 
 import type { Env } from '../../env.d'
 import { jsonResp } from '../../lib/http'
-import {
-  generateBattleId,
-  constantTimeEqual,
-  extractBearer,
-  sha256Hex,
-} from '../../lib/arena'
-import {
-  getArena,
-  getLiveInviteCooldown,
-  putLiveBattle,
-  setLiveInviteCooldown,
-} from '../../lib/kv'
-import {
-  ANON_ID_RE,
-  LIVE_BATTLE_INVITE_COOLDOWN_S,
-  type LiveBattleRecord,
-} from '../../types'
+import { generateBattleId, constantTimeEqual, extractBearer, sha256Hex } from '../../lib/arena'
+import { getArena, getLiveInviteCooldown, putLiveBattle, setLiveInviteCooldown } from '../../lib/kv'
+import { ANON_ID_RE, LIVE_BATTLE_INVITE_COOLDOWN_S, type LiveBattleRecord } from '../../types'
 
 export async function handleLiveInvite(request: Request, env: Env): Promise<Response> {
   let body: unknown
@@ -59,10 +45,7 @@ export async function handleLiveInvite(request: Request, env: Env): Promise<Resp
   const lastInvite = await getLiveInviteCooldown(env, challengerId)
   if (lastInvite !== null) {
     const secsLeft = Math.ceil(LIVE_BATTLE_INVITE_COOLDOWN_S - (Date.now() / 1000 - lastInvite))
-    return jsonResp(
-      { error: 'rate_limited', cooldown_remaining_s: Math.max(0, secsLeft) },
-      429,
-    )
+    return jsonResp({ error: 'rate_limited', cooldown_remaining_s: Math.max(0, secsLeft) }, 429)
   }
 
   const battleId = generateBattleId()

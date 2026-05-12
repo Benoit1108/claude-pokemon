@@ -120,7 +120,8 @@ export async function handleTrainerProfilePatch(
   // left untouched. Empty string is treated as null for display_name and
   // quote (consistent with submit handler semantics).
   if ('display_name' in patch) {
-    record.display_name = patch.display_name && patch.display_name !== '' ? patch.display_name : null
+    record.display_name =
+      patch.display_name && patch.display_name !== '' ? patch.display_name : null
   }
   if ('quote' in patch) {
     record.quote = patch.quote && patch.quote !== '' ? patch.quote : null

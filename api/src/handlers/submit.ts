@@ -4,12 +4,7 @@ import type { Env } from '../env.d'
 import { jsonResp } from '../lib/http'
 import { validateSubmit } from '../lib/validation'
 import { getCooldown, getStats, putStats, setCooldown } from '../lib/kv'
-import {
-  POKEDEX_MAX_IDS,
-  SUBMIT_COOLDOWN_S,
-  type SubmitPayload,
-  type KVRecord,
-} from '../types'
+import { POKEDEX_MAX_IDS, SUBMIT_COOLDOWN_S, type SubmitPayload, type KVRecord } from '../types'
 
 export async function handleSubmit(request: Request, env: Env): Promise<Response> {
   let body: unknown
@@ -40,19 +35,14 @@ export async function handleSubmit(request: Request, env: Env): Promise<Response
   // Pinned badges are intersected with the user's actual badges — you can't
   // pin a badge you don't own (defense in depth even though the CLI checks).
   const ownedBadges = new Set(payload.stats.badges)
-  const pinned = (payload.pinned_badges ?? [])
-    .filter(b => ownedBadges.has(b))
-    .slice(0, 3)
+  const pinned = (payload.pinned_badges ?? []).filter(b => ownedBadges.has(b)).slice(0, 3)
 
   // Pokédex ids — dedup + cap at POKEDEX_MAX_IDS as defense in depth even
   // though validation already enforces the bound. Keeps storage predictable
   // if the validator ever loosens.
   const stats = { ...payload.stats }
   if (stats.pokedex_seen_ids) {
-    stats.pokedex_seen_ids = Array.from(new Set(stats.pokedex_seen_ids)).slice(
-      0,
-      POKEDEX_MAX_IDS,
-    )
+    stats.pokedex_seen_ids = Array.from(new Set(stats.pokedex_seen_ids)).slice(0, POKEDEX_MAX_IDS)
   }
 
   // Sprint 4 — origin tracking. Defaults :
@@ -64,9 +54,7 @@ export async function handleSubmit(request: Request, env: Env): Promise<Response
   // A 'linked' trainer keeps its origin even if a CLI submit lands.
   const existing = await getStats(env, payload.anon_id)
   const origin =
-    existing?.origin === 'linked'
-      ? 'linked'
-      : payload.origin || existing?.origin || 'cli'
+    existing?.origin === 'linked' ? 'linked' : payload.origin || existing?.origin || 'cli'
 
   // Persist (overwrite by anon_id — pseudo-idempotent)
   const record: KVRecord = {

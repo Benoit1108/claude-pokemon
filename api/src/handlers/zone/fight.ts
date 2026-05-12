@@ -131,8 +131,7 @@ export async function handleZoneFight(
   // submitted yet from the web).
   const stats = await getStats(env, anonId)
   const playerLevel = stats?.stats.active.current_level ?? arena.team_snapshot.level
-  const playerLineage = (stats?.stats.active.lineage ??
-    arena.team_snapshot.lineage) as Lineage
+  const playerLineage = (stats?.stats.active.lineage ?? arena.team_snapshot.lineage) as Lineage
   const playerIsShiny = stats?.stats.active.is_shiny ?? arena.team_snapshot.is_shiny
 
   const challenger: BattleParticipant = {

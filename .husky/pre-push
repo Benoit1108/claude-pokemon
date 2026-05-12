@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+# Pre-push hook — mirrors what the GitHub Actions CI runs (.github/workflows/ci.yml).
+# Goal : a green local run should mean a green CI run, so we never push a broken
+# pipeline. To skip in emergencies : `git push --no-verify`.
+
+set -e
+
+echo "🔍 pre-push : running CI gates locally..."
+echo
+
+npm run ci:pre-push

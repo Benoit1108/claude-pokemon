@@ -67,11 +67,7 @@ describe('handleZoneFight — auth + preconditions', () => {
   it('401 without Bearer', async () => {
     await enable(env)
     await seedEncounter(env, 'aaaaaaaa')
-    const res = await handleZoneFight(
-      reqBody(null, 'aaaaaaaa'),
-      '/v1/zone/route-1/fight',
-      env,
-    )
+    const res = await handleZoneFight(reqBody(null, 'aaaaaaaa'), '/v1/zone/route-1/fight', env)
     expect(res.status).toBe(401)
   })
 
@@ -89,11 +85,7 @@ describe('handleZoneFight — auth + preconditions', () => {
   it('403 when trainer not arena-enabled', async () => {
     const secret = await enable(env)
     await seedEncounter(env, 'aaaaaaaa')
-    const res = await handleZoneFight(
-      reqBody(secret, 'bbbbbbbb'),
-      '/v1/zone/route-1/fight',
-      env,
-    )
+    const res = await handleZoneFight(reqBody(secret, 'bbbbbbbb'), '/v1/zone/route-1/fight', env)
     expect(res.status).toBe(403)
   })
 
@@ -110,11 +102,7 @@ describe('handleZoneFight — auth + preconditions', () => {
 
   it('404 no pending encounter', async () => {
     const secret = await enable(env)
-    const res = await handleZoneFight(
-      reqBody(secret, 'aaaaaaaa'),
-      '/v1/zone/route-1/fight',
-      env,
-    )
+    const res = await handleZoneFight(reqBody(secret, 'aaaaaaaa'), '/v1/zone/route-1/fight', env)
     expect(res.status).toBe(404)
     const body = (await res.json()) as { error: string }
     expect(body.error).toBe('no_pending_encounter')
@@ -123,11 +111,7 @@ describe('handleZoneFight — auth + preconditions', () => {
   it('409 zone mismatch (path zone ≠ encounter zone)', async () => {
     const secret = await enable(env)
     await seedEncounter(env, 'aaaaaaaa', { zone_id: 'foret-jade' })
-    const res = await handleZoneFight(
-      reqBody(secret, 'aaaaaaaa'),
-      '/v1/zone/route-1/fight',
-      env,
-    )
+    const res = await handleZoneFight(reqBody(secret, 'aaaaaaaa'), '/v1/zone/route-1/fight', env)
     expect(res.status).toBe(409)
     const body = (await res.json()) as { error: string }
     expect(body.error).toBe('encounter_zone_mismatch')
@@ -147,11 +131,7 @@ describe('handleZoneFight — battle resolution + XP', () => {
       level: 1,
       combat_type: 'grass',
     })
-    const res = await handleZoneFight(
-      reqBody(secret, 'aaaaaaaa'),
-      '/v1/zone/route-1/fight',
-      env,
-    )
+    const res = await handleZoneFight(reqBody(secret, 'aaaaaaaa'), '/v1/zone/route-1/fight', env)
     expect(res.status).toBe(200)
     const body = (await res.json()) as {
       won: boolean
@@ -172,11 +152,7 @@ describe('handleZoneFight — battle resolution + XP', () => {
   it('persists XP + zone_wins on the stats record after win', async () => {
     const secret = await enable(env, 50)
     await seedEncounter(env, 'aaaaaaaa', { species_id: 'caterpie', combat_type: 'grass' })
-    await handleZoneFight(
-      reqBody(secret, 'aaaaaaaa'),
-      '/v1/zone/route-1/fight',
-      env,
-    )
+    await handleZoneFight(reqBody(secret, 'aaaaaaaa'), '/v1/zone/route-1/fight', env)
     const stats = await getStats(env, 'aaaaaaaa')
     expect(stats?.stats.lifetime.total_zone_xp).toBeGreaterThan(0)
     expect(stats?.stats.lifetime.zone_wins).toBe(1)
@@ -196,21 +172,13 @@ describe('handleZoneFight — battle resolution + XP', () => {
     const env1 = makeEnv(new MockKV())
     const s1 = await enable(env1, 30)
     await seedEncounter(env1, 'aaaaaaaa', encounterArgs)
-    const r1 = await handleZoneFight(
-      reqBody(s1, 'aaaaaaaa'),
-      '/v1/zone/route-1/fight',
-      env1,
-    )
+    const r1 = await handleZoneFight(reqBody(s1, 'aaaaaaaa'), '/v1/zone/route-1/fight', env1)
     const b1 = (await r1.json()) as { battle: { turns: unknown[] } }
 
     const env2 = makeEnv(new MockKV())
     const s2 = await enable(env2, 30)
     await seedEncounter(env2, 'aaaaaaaa', encounterArgs)
-    const r2 = await handleZoneFight(
-      reqBody(s2, 'aaaaaaaa'),
-      '/v1/zone/route-1/fight',
-      env2,
-    )
+    const r2 = await handleZoneFight(reqBody(s2, 'aaaaaaaa'), '/v1/zone/route-1/fight', env2)
     const b2 = (await r2.json()) as { battle: { turns: unknown[] } }
     expect(b1.battle.turns).toEqual(b2.battle.turns)
   })
@@ -247,11 +215,7 @@ describe('handleZoneFight — end-to-end via explore', () => {
     const secret = await enable(env, 5)
     // Force encounter outcome
     vi.spyOn(Math, 'random').mockReturnValue(0.1)
-    await handleZoneExplore(
-      reqBody(secret, 'aaaaaaaa'),
-      '/v1/zone/route-1/explore',
-      env,
-    )
+    await handleZoneExplore(reqBody(secret, 'aaaaaaaa'), '/v1/zone/route-1/explore', env)
     vi.restoreAllMocks()
 
     // Encounter exists with a combat_type set
@@ -259,11 +223,7 @@ describe('handleZoneFight — end-to-end via explore', () => {
     expect(pending?.combat_type).toBeTruthy()
 
     // Fight resolves
-    const res = await handleZoneFight(
-      reqBody(secret, 'aaaaaaaa'),
-      '/v1/zone/route-1/fight',
-      env,
-    )
+    const res = await handleZoneFight(reqBody(secret, 'aaaaaaaa'), '/v1/zone/route-1/fight', env)
     expect(res.status).toBe(200)
   })
 })
@@ -277,11 +237,7 @@ describe('handleZoneFlee', () => {
   it('discards the pending encounter', async () => {
     const secret = await enable(env)
     await seedEncounter(env, 'aaaaaaaa')
-    const res = await handleZoneFlee(
-      reqBody(secret, 'aaaaaaaa'),
-      '/v1/zone/route-1/flee',
-      env,
-    )
+    const res = await handleZoneFlee(reqBody(secret, 'aaaaaaaa'), '/v1/zone/route-1/flee', env)
     expect(res.status).toBe(200)
     const body = (await res.json()) as { ok: boolean; fled: boolean }
     expect(body.fled).toBe(true)
@@ -290,11 +246,7 @@ describe('handleZoneFlee', () => {
 
   it('idempotent — fleeing nothing is a 200 with fled=false', async () => {
     const secret = await enable(env)
-    const res = await handleZoneFlee(
-      reqBody(secret, 'aaaaaaaa'),
-      '/v1/zone/route-1/flee',
-      env,
-    )
+    const res = await handleZoneFlee(reqBody(secret, 'aaaaaaaa'), '/v1/zone/route-1/flee', env)
     expect(res.status).toBe(200)
     const body = (await res.json()) as { fled: boolean }
     expect(body.fled).toBe(false)
@@ -303,11 +255,7 @@ describe('handleZoneFlee', () => {
   it('requires Bearer auth (401)', async () => {
     await enable(env)
     await seedEncounter(env, 'aaaaaaaa')
-    const res = await handleZoneFlee(
-      reqBody(null, 'aaaaaaaa'),
-      '/v1/zone/route-1/flee',
-      env,
-    )
+    const res = await handleZoneFlee(reqBody(null, 'aaaaaaaa'), '/v1/zone/route-1/flee', env)
     expect(res.status).toBe(401)
   })
 })

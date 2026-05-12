@@ -3,12 +3,7 @@ import { handleArenaEnable } from '../../../src/handlers/arena/enable'
 import { handleZoneExplore } from '../../../src/handlers/zone/explore'
 import { handleZoneList } from '../../../src/handlers/zone/list'
 import { handleZoneDetail } from '../../../src/handlers/zone/detail'
-import {
-  getPendingEncounter,
-  getStats,
-  getZoneCooldown,
-  putStats,
-} from '../../../src/lib/kv'
+import { getPendingEncounter, getStats, getZoneCooldown, putStats } from '../../../src/lib/kv'
 import { MockKV, makeEnv } from '../../helpers/mockKV'
 import type { KVRecord } from '../../../src/types'
 
@@ -20,10 +15,7 @@ const trainer = {
   is_shiny: false,
 }
 
-async function enable(
-  env: ReturnType<typeof makeEnv>,
-  level = 5,
-): Promise<string> {
+async function enable(env: ReturnType<typeof makeEnv>, level = 5): Promise<string> {
   const res = await handleArenaEnable(
     new Request('https://x', {
       method: 'POST',
@@ -163,11 +155,7 @@ describe('handleZoneExplore — cooldown', () => {
 
   it('429 when exploring within 20s of last explore', async () => {
     const secret = await enable(env)
-    await handleZoneExplore(
-      exploreReq(secret, 'aaaaaaaa'),
-      '/v1/zone/route-1/explore',
-      env,
-    )
+    await handleZoneExplore(exploreReq(secret, 'aaaaaaaa'), '/v1/zone/route-1/explore', env)
     const second = await handleZoneExplore(
       exploreReq(secret, 'aaaaaaaa'),
       '/v1/zone/route-1/explore',
@@ -181,20 +169,12 @@ describe('handleZoneExplore — cooldown', () => {
 
   it('cooldown is per-zone — exploring a different zone works', async () => {
     const secret = await enable(env, 5)
-    await handleZoneExplore(
-      exploreReq(secret, 'aaaaaaaa'),
-      '/v1/zone/route-1/explore',
-      env,
-    )
+    await handleZoneExplore(exploreReq(secret, 'aaaaaaaa'), '/v1/zone/route-1/explore', env)
     // foret-jade requires Lv.11+ ; need a higher-level trainer for this test.
     // Re-enable with a level that passes both brackets.
     const env2 = makeEnv(new MockKV())
     const secret2 = await enable(env2, 12)
-    await handleZoneExplore(
-      exploreReq(secret2, 'aaaaaaaa'),
-      '/v1/zone/route-1/explore',
-      env2,
-    )
+    await handleZoneExplore(exploreReq(secret2, 'aaaaaaaa'), '/v1/zone/route-1/explore', env2)
     const onForet = await handleZoneExplore(
       exploreReq(secret2, 'aaaaaaaa'),
       '/v1/zone/foret-jade/explore',
@@ -205,11 +185,7 @@ describe('handleZoneExplore — cooldown', () => {
 
   it('sets the cooldown timestamp on success', async () => {
     const secret = await enable(env)
-    await handleZoneExplore(
-      exploreReq(secret, 'aaaaaaaa'),
-      '/v1/zone/route-1/explore',
-      env,
-    )
+    await handleZoneExplore(exploreReq(secret, 'aaaaaaaa'), '/v1/zone/route-1/explore', env)
     const cd = await getZoneCooldown(env, 'aaaaaaaa', 'route-1')
     expect(cd).toBeGreaterThan(0)
   })
@@ -317,11 +293,7 @@ describe('handleZoneExplore — encounter mechanics', () => {
     await putStats(env, seedRecord)
     randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1)
 
-    await handleZoneExplore(
-      exploreReq(secret, 'aaaaaaaa'),
-      '/v1/zone/route-1/explore',
-      env,
-    )
+    await handleZoneExplore(exploreReq(secret, 'aaaaaaaa'), '/v1/zone/route-1/explore', env)
     const updated = await getStats(env, 'aaaaaaaa')
     expect(updated?.stats.pokedex_seen_ids?.length).toBeGreaterThan(0)
     expect(updated?.stats.pokedex_seen_count).toBeGreaterThan(0)

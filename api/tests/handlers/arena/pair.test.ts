@@ -86,10 +86,7 @@ describe('Pair redeem', () => {
     const init = await handlePairInit(makeReq(secret, { anon_id: 'aaaaaaaa' }), env)
     const { code } = (await init.json()) as { code: string }
 
-    const redeem = await handlePairRedeem(
-      makeReq(null, { code }),
-      env,
-    )
+    const redeem = await handlePairRedeem(makeReq(null, { code }), env)
     expect(redeem.status).toBe(200)
     const body = (await redeem.json()) as { anon_id: string; arena_secret: string }
     expect(body.anon_id).toBe('aaaaaaaa')

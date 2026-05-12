@@ -337,10 +337,10 @@ export const LIVE_BATTLE_INACTIVITY_S = 5 * 60 // forfeit if no activity for 5 m
 export const LIVE_BATTLE_INVITE_COOLDOWN_S = 30 // 30s between invites per challenger
 
 export type LiveBattleState =
-  | 'pending'   // challenger created it, waiting for defender accept
-  | 'active'    // both joined, exchanging turns
-  | 'finished'  // resolved (KO or turn limit)
-  | 'expired'   // inactivity timeout
+  | 'pending' // challenger created it, waiting for defender accept
+  | 'active' // both joined, exchanging turns
+  | 'finished' // resolved (KO or turn limit)
+  | 'expired' // inactivity timeout
   | 'abandoned' // someone forfeit
 
 export interface LiveBattleSide {
