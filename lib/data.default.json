@@ -968,7 +968,7 @@
     311845000
   ],
   "trade_cooldown_hours": 24,
-  "version": "1.0.0-beta.6",
+  "version": "1.0.0-beta.7",
   "wild_pool": [
     {
       "emoji": "🌿",
