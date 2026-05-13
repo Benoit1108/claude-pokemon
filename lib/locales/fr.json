@@ -36,7 +36,7 @@
     "current": "Actuel",
     "held_item": "Tient",
     "status_injured": "🩹 Blessé",
-    "xp_rebalance_title": "🔧 Courbe XP rééquilibrée (v1.0.0-beta.7)",
+    "xp_rebalance_title": "🔧 Courbe XP rééquilibrée",
     "xp_rebalance_line1": "On a corrigé un bug : la courbe d'XP avait des deltas qui",
     "xp_rebalance_line2": "diminuaient après Lv.16 (gain plus facile en mid-game qu'en early).",
     "xp_rebalance_line3": "Ton total XP est préservé, mais ton niveau a pu redescendre.",
