@@ -5,6 +5,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Courbe XP rééquilibrée** (gros fix bug). La spec d'origine annonçait "ratio géométrique 1.205× Lv.1→16 puis 1.05× Lv.16→100" appliqué sur les **thresholds cumulés**, ce qui produisait des deltas marginaux qui **diminuaient** au-delà de Lv.16 : 855K XP pour aller de Lv.15 à Lv.16, puis 250K seulement pour Lv.16→17 (chute de 3.4×). Les niveaux 17 à 100 étaient progressivement plus faciles, contrairement au principe annoncé. Nouvelle courbe propre :
+  - **Lv.0→1 = 1,000,000 XP** (œuf, one-shot hatching cost — narrativement séparé)
+  - **Phase A** (Lv.1→16) : delta démarre à 202K (Lv.1→2), ratio **1.143× sur les deltas** par niveau. Lv.5 ≈ 2M, Lv.10 ≈ 4.3M, **Lv.16 = 10M**.
+  - **Phase B** (Lv.16→100) : delta continue de croître avec ratio **1.021× par niveau**. Lv.36 ≈ 43M, Lv.55 ≈ 90M, **Lv.100 = 312M**.
+  - **Deltas monotones croissants** de Lv.1 à Lv.100 (seule l'éclosion est non-monotone par design).
+  - Migration automatique : `update.sh` force-propage les nouveaux thresholds, le clamp-down existant dans `pokemon_tick` (`lib.sh:631`) ajuste le niveau affiché au prochain tick. Le `total_xp` est préservé.
+  - **Notice one-shot** affiché dans `/pokemon` après upgrade pour expliquer la régression de niveau. Idempotent via `state.xp_rebalance_v2_acknowledged: true`. Les nouveaux installs sont seedés avec le flag set, donc skip le notice.
+
 ### Changed
 
 - **SVG badge enrichi** (`/v1/badge/<anon_id>.svg`). Affiche maintenant `⚔️` à côté de la lignée+niveau si le dresseur est inscrit dans le pool arena (handler interroge `getArena` en plus de `getStats`, ~1 KV read en plus). La ligne stats du bas inclut le compteur Pokédex `📖 X/251` (donnée déjà dans le payload submit, juste pas exploitée). Layout serré pour rester dans 480 px : retrait du label "tokens" sous-entendu par l'icône `⚡`.

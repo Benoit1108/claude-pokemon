@@ -59,6 +59,38 @@ pokemon_box_bottom() {
   printf '%s╰%s╯%s\n' "$DIM" "$dashes" "$RESET"
 }
 
+# One-shot rebalance notice (v1.0.0-beta.7). Fires for users whose state
+# predates the XP curve fix and have measurable progress. Idempotent : the
+# flag is persisted after rendering so it never fires again.
+# Args: $1 = total_xp (passed by caller to avoid re-reading state).
+pokemon_render_xp_rebalance_notice_if_needed() {
+  local total_xp="${1:-0}"
+  # Only fire for users with non-trivial progress (skip empty/fresh installs
+  # that somehow lack the flag).
+  [ "$total_xp" -lt 1000 ] && return 0
+  local acked
+  acked=$(jq -r '.xp_rebalance_v2_acknowledged // false' "$POKEMON_STATE")
+  [ "$acked" = "true" ] && return 0
+
+  printf '\n'
+  pokemon_box_top "$(pokemon_t main.xp_rebalance_title)" 70
+  printf '  %s\n' "$(pokemon_t main.xp_rebalance_line1)"
+  printf '  %s\n' "$(pokemon_t main.xp_rebalance_line2)"
+  printf '  %s\n' "$(pokemon_t main.xp_rebalance_line3)"
+  printf '  %s\n' "$(pokemon_t main.xp_rebalance_line4)"
+  printf '\n  %s%s%s\n' "$DIM" "$(pokemon_t main.xp_rebalance_footer)" "$RESET"
+  pokemon_box_bottom 70
+  printf '\n'
+
+  # Persist acknowledgement so the notice never fires again.
+  touch "$POKEMON_LOCK"
+  (
+    flock -x 200
+    jq '.xp_rebalance_v2_acknowledged = true' "$POKEMON_STATE" > "$POKEMON_STATE.tmp" \
+      && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
+  ) 200>"$POKEMON_LOCK"
+}
+
 # ── Subcommand: --shiny toggle ───────────────────────────────────────────────
 toggle_shiny() {
   mkdir -p "$POKEMON_DIR"; touch "$POKEMON_LOCK"
@@ -688,6 +720,11 @@ view_main() {
   is_shiny=$(jq -r '.is_shiny' "$POKEMON_STATE")
   created_at=$(jq -r '.created_at' "$POKEMON_STATE")
   max_level=$(pokemon_max_level)
+
+  # One-shot rebalance notice (v1.0.0-beta.7) — only fires for users whose
+  # state predates the XP curve fix. New installs are seeded with the
+  # acknowledged flag, so they skip this entirely.
+  pokemon_render_xp_rebalance_notice_if_needed "$total_xp"
 
   local name showdown_id emoji color lineage_label
   name=$(pokemon_evo_field "$lineage" "$level" "name")
