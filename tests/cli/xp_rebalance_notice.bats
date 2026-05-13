@@ -71,3 +71,17 @@ teardown() {
   ' "$POKEMON_DIR/data.json")
   [ "$result" = "0" ]
 }
+
+@test "new threshold curve : has exactly 101 entries (Lv.0 → Lv.100)" {
+  count=$(jq -r '.thresholds | length' "$POKEMON_DIR/data.json")
+  [ "$count" = "101" ]
+}
+
+@test "new threshold curve : Lv.100 lands in the 300M-320M endgame range" {
+  # Lock the late-game ceiling. A future edit that drifts Lv.100 outside
+  # this range (e.g. accidentally tweaks a ratio) breaks the test and
+  # forces a CHANGELOG entry.
+  lv100=$(jq -r '.thresholds[100]' "$POKEMON_DIR/data.json")
+  [ "$lv100" -ge 300000000 ]
+  [ "$lv100" -le 320000000 ]
+}
