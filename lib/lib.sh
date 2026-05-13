@@ -550,7 +550,8 @@ pokemon_init_state_if_missing() {
     evolution_flash_remaining: 0,
     sessions: {},
     created_at: $now,
-    last_updated: $now
+    last_updated: $now,
+    xp_rebalance_v2_acknowledged: true
   }' > "$POKEMON_STATE"
 }
 
