@@ -146,6 +146,13 @@ Polish pack — multiple small wins bundled.
   - URL param `?secret=<hash>` unlocks dev-only features
 - **CLI↔web QR sync** : new CLI command `/pokemon link` displays a QR code in the terminal. Scanning on a mobile browser auto-logs the user into their `anon_id` profile (no password). Useful to view your own trainer card from your phone instantly.
 
+### 2.14 — Wild & traded Pokémon en Arène + chart 18 types ✅
+Tout Pokémon élevé dans le CLI (sauvage capturé, échangé, starter, ou forcé à la main) peut entrer en arène — plus seulement les 8 lignées de starters. Sinon l'intérêt des sauvages s'effondre.
+- Moteur de combat `shared` étendu des **5 types collapsés aux 18 types canoniques** (un Dragon reste Dragon) : matrice `TYPE_CHART` 18×18 Gen-6+ avec **vraies immunités 0×**. Backward-compat sur les matchups starters → replays historiques déterministes.
+- Résolution species→type **générée** depuis `lib/data/wild_pool` (source unique, 251 espèces, drift-check CI), consommée par le worker, le live PvP et le web. `lineageToCombatType()` gère starter / `psyduck` / `trade-psyduck` / inconnu→normal.
+- **Movesets réels par learnset** (level-up, comme le vrai jeu) : pipeline PokéAPI → snapshot commité (refresh manuel hors CI) → générateur offline déterministe → 302 moves + 251 learnsets level-gated. Starters gardent leurs movesets curatés.
+- Validation lignée : whitelist strict → format-check ouvert (arena enable + submit). Rendu web par couleur de type (18).
+
 ### 2.13+ — Stretch (post-arena complete, scope TBD)
 - **3v3 team battles** : pick 3 from your team, switch mid-battle, type-coverage strategy.
 - **Tournaments / seasons** : monthly bracket, seasonal leaderboard reset, Hall of Fame.
@@ -207,6 +214,9 @@ Goal : aggregate the ecosystem into a professional showcase.
 | 2026-05-05 | Visual direction = "modern + GameBoy soul" | Pure retro pixel-art ages poorly, hybrid keeps long-term appeal |
 | 2026-05-05 | Free-tier subdomains for MVP, custom domain at Phase 4 | De-risk infra, buy domain when portfolio ready |
 | 2026-05-05 | Phase order = 1 → 2 → 3 → 4 strict | Each phase grows audience for next, no parallel work |
+| 2026-06-02 | Combat engine = 18 canonical types (was 5 collapsed) | Wilds/échangés en arène n'auraient aucune identité de type si on collapse ; un Dragon doit rester Dragon |
+| 2026-06-02 | Lignée : résolution graceful (inconnu → normal) au lieu d'un whitelist | Ajouter une espèce ne doit jamais bloquer l'arène ni le partage de stats |
+| 2026-06-02 | Species→type & learnsets = artefacts générés (wild_pool + snapshot PokéAPI), drift-checkés | Une seule source de vérité, zéro maintenance manuelle à 251 espèces, build offline déterministe |
 
 ---
 

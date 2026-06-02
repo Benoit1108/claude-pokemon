@@ -28,7 +28,7 @@
     "claude-pokemon": "./bin/claude-pokemon"
   },
   "scripts": {
-    "build:data": "bash lib/build-data.sh",
+    "build:data": "bash lib/build-data.sh && npm run -s -w shared build:gen",
     "test": "bats tests/cli/",
     "ci:pre-push": "bash scripts/ci-pre-push.sh"
   },
