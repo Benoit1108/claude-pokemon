@@ -24,6 +24,9 @@ export {
   ARENA_MAX_TURNS,
   ALLOWED_LINEAGES,
   LINEAGE_TO_TYPE,
+  lineageToCombatType,
+  speciesToCombatType,
+  SPECIES_COMBAT_TYPE,
   type BattleParticipant,
   type BattleResult,
   type BattleSide,
@@ -36,6 +39,11 @@ export const SCHEMA_VERSION = 1
 export const SUBMIT_COOLDOWN_S = 24 * 60 * 60
 export const ANON_ID_RE = /^[a-f0-9]{8,16}$/
 export const DISPLAY_NAME_RE = /^[a-zA-Z0-9_-]{2,24}$/
+// Lineage : a starter key (`fire`), a species id (`psyduck`), or a traded
+// species (`trade-psyduck`). Since "wild & traded in the arena" (Phase 2.14)
+// we no longer whitelist a fixed set — any well-formed lineage is accepted and
+// its combat type is resolved gracefully (unknown → normal) by the engine.
+export const LINEAGE_RE = /^[a-z][a-z0-9-]{1,32}$/
 
 export const ALLOWED_BADGES = new Set([
   'hatch',

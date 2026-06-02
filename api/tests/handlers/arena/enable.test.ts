@@ -66,9 +66,17 @@ describe('handleArenaEnable', () => {
     expect(res.status).toBe(400)
   })
 
-  it('returns 400 on validation errors (bad lineage)', async () => {
-    const res = await handleArenaEnable(makeRequest({ ...validTeam, lineage: 'bogus' }), env)
+  it('returns 400 on malformed lineage', async () => {
+    const res = await handleArenaEnable(makeRequest({ ...validTeam, lineage: 'Invalid!' }), env)
     expect(res.status).toBe(400)
+  })
+
+  it('accepts a wild / traded lineage (Phase 2.14)', async () => {
+    const res = await handleArenaEnable(
+      makeRequest({ ...validTeam, lineage: 'trade-psyduck' }),
+      env,
+    )
+    expect(res.status).toBe(200)
   })
 
   it('returns 400 on level out of range', async () => {

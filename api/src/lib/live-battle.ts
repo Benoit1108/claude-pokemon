@@ -9,7 +9,7 @@
 import {
   ARENA_MAX_TURNS,
   LIVE_BATTLE_INACTIVITY_S,
-  LINEAGE_TO_TYPE,
+  lineageToCombatType,
   type BattleSide,
   type BattleTurn,
   type LiveBattleRecord,
@@ -17,7 +17,7 @@ import {
   type LiveBattleView,
 } from '../types'
 import { TYPE_CHART, attackPower, hashSeed, maxHp, mulberry32 } from './battle'
-import { movesForStage, stageFor, type Move } from './moves'
+import { movesForParticipant, type Move } from './moves'
 
 export function liveBattleView(record: LiveBattleRecord): LiveBattleView {
   const c = record.challenger
@@ -86,21 +86,23 @@ function rollStrike(args: {
 }): { damage: number; effectiveness: number; critical: boolean } {
   const atk = attackPower(args.attackerLevel, args.attackerIsShiny)
   const moveType = args.attackerMove.type
-  const defType = LINEAGE_TO_TYPE[args.defenderLineage as keyof typeof LINEAGE_TO_TYPE] ?? 'normal'
+  const defType = lineageToCombatType(args.defenderLineage)
   const effectiveness = TYPE_CHART[moveType][defType]
   const variance = 0.85 + args.rng() * 0.3 // 0.85..1.15
   const critical = args.rng() < 0.0625
   const critMult = critical ? 1.5 : 1
   const raw = (atk * effectiveness * args.attackerMove.power * variance * critMult) / 4
-  return { damage: Math.max(1, Math.round(raw)), effectiveness, critical }
+  // True immunity (0×) deals 0 ; otherwise floor at 1 (mirrors shared/battle.ts).
+  const damage = effectiveness === 0 ? 0 : Math.max(1, Math.round(raw))
+  return { damage, effectiveness, critical }
 }
 
-/** Look up a move by its `name` field within a participant's stage pool. The
- * pool comes from movesForStage(stageFor(lineage, level)). Returns null if the
+/** Look up a move by its `name` field within a participant's move pool. The
+ * pool comes from movesForParticipant(lineage, level) — curated stage moves for
+ * starters, level-up learnset for wild / traded species. Returns null if the
  * move is not in this side's pool — caller should reject with 400. */
 export function lookupMoveForSide(side: LiveBattleSide, moveId: string): Move | null {
-  const stage = stageFor(side.snapshot.lineage, side.snapshot.level)
-  const pool = movesForStage(stage.showdown_id)
+  const pool = movesForParticipant(side.snapshot.lineage, side.snapshot.level)
   return pool.find(m => m.name === moveId) ?? null
 }
 
