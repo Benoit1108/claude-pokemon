@@ -175,6 +175,14 @@ jobs:
       - run: npm ci
       - run: npm run -w shared typecheck
       - run: npm run -w shared test
+      - name: Verify shared dist is in sync with sources (committed build)
+        run: |
+          npm run -w shared build:gen
+          npm run -w shared build
+          if ! git diff --exit-code shared/dist shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts; then
+            echo "::error::shared dist/generated is stale. Run \`npm run build:data && npm run -w shared build\` and commit."
+            exit 1
+          fi
 
   # ─── Stage : test ─────────────────────────────────────────────────────────
   cli-tests:

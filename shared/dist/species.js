@@ -22,6 +22,10 @@ export function lineageToCombatType(lineage) {
     if (lineage in LINEAGE_TO_TYPE)
         return LINEAGE_TO_TYPE[lineage];
     const speciesId = lineage.replace(/^trade-/, '');
+    // A traded starter (`trade-fire`) is not produced today, but keep the
+    // starter mapping authoritative if it ever is.
+    if (speciesId in LINEAGE_TO_TYPE)
+        return LINEAGE_TO_TYPE[speciesId];
     return speciesToCombatType(speciesId);
 }
 //# sourceMappingURL=species.js.map
