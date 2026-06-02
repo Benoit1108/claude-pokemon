@@ -2023,7 +2023,17 @@ view_arena() {
       local secret
       secret=$(jq -r '.arena_secret // ""' <<<"$resp" 2>/dev/null)
       if [ -z "$secret" ]; then
-        printf "  %s$(pokemon_t arena.enable_failed "$resp")%s\n\n" "$DIM" "$RESET"
+        # Surface the server's error code/details instead of the raw JSON
+        # envelope — the raw body is what made past failures unreadable.
+        local err_code err_msg
+        err_code=$(jq -r '.error // ""' <<<"$resp" 2>/dev/null)
+        case "$err_code" in
+          validation)      err_msg=$(jq -r '.details | join("; ")' <<<"$resp" 2>/dev/null) ;;
+          already_enabled) err_msg=$(pokemon_t arena.already_enabled) ;;
+          "")              err_msg="$resp" ;;
+          *)               err_msg="$err_code" ;;
+        esac
+        printf "  %s$(pokemon_t arena.enable_failed "$err_msg")%s\n\n" "$DIM" "$RESET"
         return
       fi
       _arena_save_secret "$secret"
