@@ -244,7 +244,7 @@ describe('validateSubmit', () => {
     expect(errs.some(e => e.includes('schema_version'))).toBe(true)
   })
 
-  it('rejects unknown lineage', () => {
+  it('rejects malformed lineage', () => {
     const payload = {
       ...validPayload,
       stats: {
@@ -252,7 +252,19 @@ describe('validateSubmit', () => {
         lifetime: { ...validPayload.stats.lifetime, lineages_completed: ['pikachu_lineage'] },
       },
     }
-    expect(validateSubmit(payload).some(e => e.includes('unknown lineage'))).toBe(true)
+    expect(validateSubmit(payload).some(e => e.includes('malformed lineage'))).toBe(true)
+  })
+
+  it('accepts wild / traded lineages (Phase 2.14)', () => {
+    const payload = {
+      ...validPayload,
+      stats: {
+        ...validPayload.stats,
+        active: { ...validPayload.stats.active, lineage: 'trade-psyduck' },
+        lifetime: { ...validPayload.stats.lifetime, lineages_completed: ['psyduck', 'dratini'] },
+      },
+    }
+    expect(validateSubmit(payload)).toEqual([])
   })
 
   it('rejects negative lifetime stats', () => {

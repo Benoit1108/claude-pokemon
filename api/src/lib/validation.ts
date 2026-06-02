@@ -11,7 +11,7 @@ import {
   POKEDEX_ID_RE,
   POKEDEX_MAX_IDS,
   SCHEMA_VERSION,
-  ALLOWED_LINEAGES,
+  LINEAGE_RE,
   ALLOWED_BADGES,
   type BattleParticipant,
   type SubmitPayload,
@@ -139,8 +139,8 @@ export function validateSubmit(body: unknown): string[] {
       errs.push('stats.lifetime.lineages_completed must be array')
     } else {
       for (const lin of lt.lineages_completed) {
-        if (typeof lin !== 'string' || !ALLOWED_LINEAGES.has(lin)) {
-          errs.push(`unknown lineage: ${lin}`)
+        if (typeof lin !== 'string' || !LINEAGE_RE.test(lin)) {
+          errs.push(`malformed lineage: ${lin}`)
         }
       }
     }
@@ -151,8 +151,8 @@ export function validateSubmit(body: unknown): string[] {
   if (!a || typeof a !== 'object') {
     errs.push('stats.active missing')
   } else {
-    if (a.lineage !== null && (typeof a.lineage !== 'string' || !ALLOWED_LINEAGES.has(a.lineage))) {
-      errs.push(`unknown active.lineage: ${a.lineage}`)
+    if (a.lineage !== null && (typeof a.lineage !== 'string' || !LINEAGE_RE.test(a.lineage))) {
+      errs.push(`malformed active.lineage: ${a.lineage}`)
     }
     if (typeof a.current_level !== 'number' || a.current_level < 0 || a.current_level > 100) {
       errs.push('active.current_level must be 0-100')
@@ -215,8 +215,8 @@ export function validateTeamSnapshot(body: unknown): string[] {
       errs.push('team_snapshot.display_name must match /^[a-zA-Z0-9_-]{2,24}$/')
     }
   }
-  if (typeof p.lineage !== 'string' || !ALLOWED_LINEAGES.has(p.lineage)) {
-    errs.push(`team_snapshot.lineage must be one of allowed lineages`)
+  if (typeof p.lineage !== 'string' || !LINEAGE_RE.test(p.lineage)) {
+    errs.push(`team_snapshot.lineage must match ${LINEAGE_RE}`)
   }
   if (typeof p.level !== 'number' || p.level < 1 || p.level > 100) {
     errs.push('team_snapshot.level must be 1-100')

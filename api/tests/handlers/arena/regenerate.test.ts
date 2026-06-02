@@ -69,7 +69,7 @@ describe('handleArenaRegenerate', () => {
 
   it('returns 400 on validation errors', async () => {
     const secret = await enable(env)
-    const res = await handleArenaRegenerate(makeReq(secret, { ...team, lineage: 'bogus' }), env)
+    const res = await handleArenaRegenerate(makeReq(secret, { ...team, lineage: 'Invalid!' }), env)
     expect(res.status).toBe(400)
   })
 
