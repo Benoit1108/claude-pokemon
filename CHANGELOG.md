@@ -5,8 +5,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+### Added
+
+- **⚔️ Wild & traded Pokémon en Arène + chart 18 types** (Phase 2.14). N'importe quel Pokémon élevé dans le CLI (sauvage capturé, échangé `trade-*`, ou forcé à la main) peut désormais entrer en arène — plus seulement les 8 lignées de starters.
+  - **Moteur de combat `shared` étendu des 5 types collapsés aux 18 types canoniques** : un Dragon reste Dragon, un Spectre reste Spectre. `TYPE_CHART` est maintenant la matrice 18×18 Gen-6+ (construite à partir d'une table sparse de matchups) avec les **vraies immunités 0×** (Normal⇄Spectre, Sol→Vol, Électrik→Sol, Dragon→Fée…). Un coup immunisé fait 0 dégât ; un matchup mutuellement immunisé se décide au % HP au `turn_limit`. Backward-compat : les matchups starters d'origine (Feu>Plante>Eau>Feu, Électrik>Eau) sont inchangés → les replays historiques restent déterministes.
+  - **Résolution de type générée depuis `lib/data/wild_pool`** (source unique de vérité, 251 espèces) : nouveau `shared/src/species-combat-type.generated.ts` + `lineageToCombatType()` (starter connu → mapping ; sinon strip `trade-` → species map → fallback `normal`). La table partielle hand-maintenue côté worker (`species-types.ts`) est supprimée au profit d'un re-export.
+  - **Movesets réels par learnset** (comme le vrai jeu) : pipeline PokéAPI → snapshot commité minimal (`shared/data/pokeapi-learnsets.snapshot.json`, rafraîchi manuellement via `npm run fetch:pokeapi`) → générateur offline déterministe → `learnsets.generated.ts` (302 moves bilingues, 251 learnsets level-gated). `movesForParticipant()` sert les moves curatés pour les starters, et pour tout autre espèce les 4 derniers moves offensifs appris ≤ niveau (≥1 STAB garanti). Live PvP `lookupMoveForSide` utilise désormais ce pool (gère les wilds).
+  - **Validation lignée ouverte** : le whitelist strict des 8 starters (`ALLOWED_LINEAGES`) est remplacé par un format-check `LINEAGE_RE` (`/^[a-z][a-z0-9-]{1,32}$/`) côté worker (arena enable + submit). Un Pokémon hors-starter ne bloque plus ni le partage de stats ni l'inscription arène.
+  - **Build & CI** : `npm run build:data` régénère aussi les artefacts shared (species types + learnsets), avec drift-check ajouté au pre-push et à GitHub Actions (job `shared-tests` + étape de sync).
+
 ### Fixed
 
+- **Message d'erreur `/pokemon arena enable` lisible** : en cas d'échec, le CLI affichait le JSON brut de la réponse serveur (cause de confusions du type « c'est le pseudo ? »). Il parse maintenant le code d'erreur (`validation` → détails joints, `already_enabled` → message dédié) et n'affiche le corps brut qu'en dernier recours.
 - **Courbe XP rééquilibrée** (gros fix bug). La spec d'origine annonçait "ratio géométrique 1.205× Lv.1→16 puis 1.05× Lv.16→100" appliqué sur les **thresholds cumulés**, ce qui produisait des deltas marginaux qui **diminuaient** au-delà de Lv.16 : 855K XP pour aller de Lv.15 à Lv.16, puis 250K seulement pour Lv.16→17 (chute de 3.4×). Les niveaux 17 à 100 étaient progressivement plus faciles, contrairement au principe annoncé. Nouvelle courbe propre :
   - **Lv.0→1 = 1,000,000 XP** (œuf, one-shot hatching cost — narrativement séparé)
   - **Phase A** (Lv.1→16) : delta démarre à 202K (Lv.1→2), ratio **1.143× sur les deltas** par niveau. Lv.5 ≈ 2M, Lv.10 ≈ 4.3M, **Lv.16 = 10M**.

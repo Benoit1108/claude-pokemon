@@ -85,6 +85,14 @@ jobs:
             echo "::error::lib/data.default.json is stale. Run \`npm run build:data\` and commit."
             exit 1
           fi
+      - name: Verify shared generated data is in sync (species types + learnsets)
+        run: |
+          node shared/scripts/build-species-combat-type.mjs
+          node shared/scripts/build-learnsets.mjs
+          if ! git diff --exit-code shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts; then
+            echo "::error::shared generated data is stale. Run \`npm run build:data\` and commit."
+            exit 1
+          fi
       - name: Validate locales JSON
         run: |
           jq empty lib/locales/fr.json
@@ -153,6 +161,21 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
 
+  # ─── Stage : quality — shared package ─────────────────────────────────────
+  shared-tests:
+    name: ✅ shared — typecheck + Vitest
+    needs: [security-root]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run -w shared typecheck
+      - run: npm run -w shared test
+
   # ─── Stage : test ─────────────────────────────────────────────────────────
   cli-tests:
     name: ✅ CLI smoke tests (Bats)
@@ -205,7 +228,7 @@ jobs:
   # ─── Stage : packaging ────────────────────────────────────────────────────
   npm-pack:
     name: 📦 npm pack — verify packaging
-    needs: [cli-tests, install-dry-run, api-tests]
+    needs: [cli-tests, install-dry-run, api-tests, shared-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

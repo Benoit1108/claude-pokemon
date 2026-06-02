@@ -76,6 +76,18 @@ run "lib/data.default.json is in sync with lib/data/** sources" bash -c '
   fi
 '
 
+run "shared generated data in sync (species types + learnsets)" bash -c '
+  npm run -s -w shared build:gen >/dev/null
+  if ! git diff --exit-code --quiet shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts; then
+    echo "  ::error:: shared generated data is stale. Run \`npm run build:data\` and stage the result."
+    git --no-pager diff --stat shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts
+    exit 1
+  fi
+'
+
+run "shared : TypeScript check" npm run -s -w shared typecheck
+run "shared : Vitest"           npm run -s -w shared test
+
 run "api : ESLint"           npm run -s -w api lint
 run "api : Prettier check"   npm run -s -w api format:check
 run "api : TypeScript check" npm run -s -w api typecheck
