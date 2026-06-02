@@ -109,6 +109,8 @@ export const STAGE_MOVES = {
     feraligatr: ['Hydrocanon', 'Mâchouille', 'Tranche', 'Bélier'],
 };
 const BASIC_MOVES = ['Charge', 'Mimi-Queue', 'Morsure', 'Tranche'];
+/** A combatant carries 4 moves (mirrors the canonical battle cap). */
+const MOVESET_SIZE = 4;
 function basicMoves() {
     return BASIC_MOVES.map(n => MOVES[n] ?? MOVES.Charge);
 }
@@ -133,12 +135,12 @@ function movesFromLearnset(speciesId, level, stab) {
         return basicMoves();
     const learnable = learnset.filter(e => e.level <= level);
     const pool = learnable.length ? learnable : learnset.slice(0, 1);
-    let chosen = pool.slice(-4);
+    let chosen = pool.slice(-MOVESET_SIZE);
     if (!chosen.some(e => GENERATED_MOVES[e.move]?.type === stab)) {
         const stabMoves = pool.filter(e => GENERATED_MOVES[e.move]?.type === stab);
         const bestStab = stabMoves[stabMoves.length - 1];
         if (bestStab)
-            chosen = [...chosen.slice(0, 3), bestStab];
+            chosen = [...chosen.slice(0, MOVESET_SIZE - 1), bestStab];
     }
     const moves = chosen
         .map(e => GENERATED_MOVES[e.move])

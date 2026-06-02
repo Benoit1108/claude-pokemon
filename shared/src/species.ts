@@ -24,5 +24,8 @@ export function lineageToCombatType(lineage: string | null | undefined): CombatT
   if (!lineage) return 'normal'
   if (lineage in LINEAGE_TO_TYPE) return LINEAGE_TO_TYPE[lineage as Lineage]
   const speciesId = lineage.replace(/^trade-/, '')
+  // A traded starter (`trade-fire`) is not produced today, but keep the
+  // starter mapping authoritative if it ever is.
+  if (speciesId in LINEAGE_TO_TYPE) return LINEAGE_TO_TYPE[speciesId as Lineage]
   return speciesToCombatType(speciesId)
 }

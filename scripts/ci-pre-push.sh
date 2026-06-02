@@ -76,11 +76,14 @@ run "lib/data.default.json is in sync with lib/data/** sources" bash -c '
   fi
 '
 
-run "shared generated data in sync (species types + learnsets)" bash -c '
+run "shared generated data + dist in sync" bash -c '
   npm run -s -w shared build:gen >/dev/null
-  if ! git diff --exit-code --quiet shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts; then
-    echo "  ::error:: shared generated data is stale. Run \`npm run build:data\` and stage the result."
-    git --no-pager diff --stat shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts
+  npm run -s -w shared build >/dev/null
+  if ! git diff --exit-code --quiet \
+      shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts shared/dist; then
+    echo "  ::error:: shared generated data / dist is stale. Run \`npm run build:data && npm run -w shared build\` and stage the result."
+    git --no-pager diff --stat \
+      shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts shared/dist
     exit 1
   fi
 '

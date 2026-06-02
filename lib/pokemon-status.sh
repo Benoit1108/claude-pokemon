@@ -2033,7 +2033,10 @@ view_arena() {
           "")              err_msg="$resp" ;;
           *)               err_msg="$err_code" ;;
         esac
-        printf "  %s$(pokemon_t arena.enable_failed "$err_msg")%s\n\n" "$DIM" "$RESET"
+        # Keep the server-controlled message as a printf *argument*, never in
+        # the format string — a literal % in $err_msg would otherwise be
+        # re-parsed and corrupt the output.
+        printf '  %s%s%s\n\n' "$DIM" "$(pokemon_t arena.enable_failed "$err_msg")" "$RESET"
         return
       fi
       _arena_save_secret "$secret"
