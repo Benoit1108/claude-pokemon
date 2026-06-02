@@ -3,17 +3,79 @@
 // the same BattleResult. This is what makes battles replayable on /battle/[id]:
 // the persistence layer stores only the seed + snapshots, and the frontend
 // can re-derive the full turn log if it ever needs to.
-import { ARENA_MAX_TURNS, LINEAGE_TO_TYPE, } from './types.js';
-// Effectiveness multiplier when `attacker` hits `defender`.
-// Fire > Grass > Water > Fire (rock-paper-scissors). Electric > Water,
-// resisted by Grass. Normal (eevee) is neutral both ways.
-export const TYPE_CHART = {
-    fire: { fire: 0.5, water: 0.5, grass: 2.0, electric: 1.0, normal: 1.0 },
-    water: { fire: 2.0, water: 0.5, grass: 0.5, electric: 1.0, normal: 1.0 },
-    grass: { fire: 0.5, water: 2.0, grass: 0.5, electric: 1.0, normal: 1.0 },
-    electric: { fire: 1.0, water: 2.0, grass: 0.5, electric: 0.5, normal: 1.0 },
-    normal: { fire: 1.0, water: 1.0, grass: 1.0, electric: 1.0, normal: 1.0 },
+import { ARENA_MAX_TURNS, COMBAT_TYPES, } from './types.js';
+import { lineageToCombatType } from './species.js';
+// Canonical Gen-6+ type chart (single attacker type vs single defender type).
+// Sparse spec : only the non-neutral matchups are listed ; everything else is
+// 1.0. The dense TYPE_CHART below is built from this so the source stays
+// readable and we don't hand-transcribe 324 cells. Values : 2 = super
+// effective, 0.5 = resisted, 0 = immune.
+const TYPE_CHART_OVERRIDES = {
+    normal: { rock: 0.5, ghost: 0, steel: 0.5 },
+    fire: { fire: 0.5, water: 0.5, grass: 2, ice: 2, bug: 2, rock: 0.5, dragon: 0.5, steel: 2 },
+    water: { fire: 2, water: 0.5, grass: 0.5, ground: 2, rock: 2, dragon: 0.5 },
+    electric: { water: 2, electric: 0.5, grass: 0.5, ground: 0, flying: 2, dragon: 0.5 },
+    grass: {
+        fire: 0.5,
+        water: 2,
+        grass: 0.5,
+        poison: 0.5,
+        ground: 2,
+        flying: 0.5,
+        bug: 0.5,
+        rock: 2,
+        dragon: 0.5,
+        steel: 0.5,
+    },
+    ice: { fire: 0.5, water: 0.5, grass: 2, ice: 0.5, ground: 2, flying: 2, dragon: 2, steel: 0.5 },
+    fighting: {
+        normal: 2,
+        ice: 2,
+        poison: 0.5,
+        flying: 0.5,
+        psychic: 0.5,
+        bug: 0.5,
+        rock: 2,
+        ghost: 0,
+        dark: 2,
+        steel: 2,
+        fairy: 0.5,
+    },
+    poison: { grass: 2, poison: 0.5, ground: 0.5, rock: 0.5, ghost: 0.5, steel: 0, fairy: 2 },
+    ground: { fire: 2, electric: 2, grass: 0.5, poison: 2, flying: 0, bug: 0.5, rock: 2, steel: 2 },
+    flying: { electric: 0.5, grass: 2, fighting: 2, bug: 2, rock: 0.5, steel: 0.5 },
+    psychic: { fighting: 2, poison: 2, psychic: 0.5, dark: 0, steel: 0.5 },
+    bug: {
+        fire: 0.5,
+        grass: 2,
+        fighting: 0.5,
+        poison: 0.5,
+        flying: 0.5,
+        psychic: 2,
+        ghost: 0.5,
+        dark: 2,
+        steel: 0.5,
+        fairy: 0.5,
+    },
+    rock: { fire: 2, ice: 2, fighting: 0.5, ground: 0.5, flying: 2, bug: 2, steel: 0.5 },
+    ghost: { normal: 0, psychic: 2, ghost: 2, dark: 0.5 },
+    dragon: { dragon: 2, steel: 0.5, fairy: 0 },
+    dark: { fighting: 0.5, psychic: 2, ghost: 2, dark: 0.5, fairy: 0.5 },
+    steel: { fire: 0.5, water: 0.5, electric: 0.5, ice: 2, rock: 2, steel: 0.5, fairy: 2 },
+    fairy: { fire: 0.5, fighting: 2, poison: 0.5, dragon: 2, dark: 2, steel: 0.5 },
 };
+function buildTypeChart() {
+    const chart = {};
+    for (const attacker of COMBAT_TYPES) {
+        chart[attacker] = {};
+        for (const defender of COMBAT_TYPES) {
+            chart[attacker][defender] = TYPE_CHART_OVERRIDES[attacker]?.[defender] ?? 1.0;
+        }
+    }
+    return chart;
+}
+// Effectiveness multiplier when `attacker` type hits `defender` type.
+export const TYPE_CHART = buildTypeChart();
 // Stat derivation from level (no per-species curves yet — keeps things simple
 // and prevents power-creep when we add more starters).
 export function maxHp(level, isShiny) {
@@ -52,7 +114,7 @@ function buildCombatant(side, p) {
         hp: maxHp(p.level, p.is_shiny),
         maxHp: maxHp(p.level, p.is_shiny),
         attack: attackPower(p.level, p.is_shiny),
-        type: LINEAGE_TO_TYPE[p.lineage],
+        type: lineageToCombatType(p.lineage),
     };
 }
 // Damage formula : attack × effectiveness × ±15% variance, ÷4 to scale to
@@ -64,7 +126,11 @@ function rollDamage(attacker, defender, rng) {
     const critical = critRoll < 0.0625;
     const critMult = critical ? 1.5 : 1;
     const raw = (attacker.attack * effectiveness * variance * critMult) / 4;
-    return { damage: Math.max(1, Math.round(raw)), effectiveness, critical };
+    // True immunity (0×) deals 0 ; otherwise floor at 1 so a turn always
+    // advances. A fully-immune matchup just runs to ARENA_MAX_TURNS (decided
+    // on HP%), it never deadlocks.
+    const damage = effectiveness === 0 ? 0 : Math.max(1, Math.round(raw));
+    return { damage, effectiveness, critical };
 }
 /**
  * Resolve a battle deterministically.

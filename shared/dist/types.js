@@ -1,6 +1,31 @@
 // Shared battle types — single source of truth for the claude-pokemon
 // ecosystem. The worker API, the arena web, and any future client must
 // import these instead of re-declaring them.
+/** The 18 canonical Pokémon types. The battle engine used to collapse these
+ * to 5 (the starter lineages) — since "wild & traded Pokémon in the arena"
+ * (Phase 2.14) every species keeps its real type (a Dragon stays a Dragon),
+ * resolved from its `wild_pool` entry. Combatants remain single-type (the
+ * CLI data stores one type per species). */
+export const COMBAT_TYPES = [
+    'normal',
+    'fire',
+    'water',
+    'electric',
+    'grass',
+    'ice',
+    'fighting',
+    'poison',
+    'ground',
+    'flying',
+    'psychic',
+    'bug',
+    'rock',
+    'ghost',
+    'dragon',
+    'dark',
+    'steel',
+    'fairy',
+];
 // Typed as ReadonlySet<string> (not Lineage) so validation code can pass
 // arbitrary user input through .has() without a cast. The .has() result is
 // always boolean — TS predicate refinement would be nicer but isn't worth

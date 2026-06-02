@@ -10,8 +10,10 @@
 // requires also adding it (or an equivalent) on the CLI side so the player's
 // state.json move catalog stays consistent.
 
-import { stageFor } from './stages.js'
-import type { CombatType } from './types.js'
+import { LINEAGE_STAGES, stageFor } from './stages.js'
+import { lineageToCombatType } from './species.js'
+import { GENERATED_MOVES, SPECIES_LEARNSET } from './learnsets.generated.js'
+import type { CombatType, Lineage } from './types.js'
 
 export interface Move {
   name: string
@@ -124,14 +126,53 @@ export const STAGE_MOVES: Record<string, string[]> = {
 
 const BASIC_MOVES = ['Charge', 'Mimi-Queue', 'Morsure', 'Tranche']
 
+function basicMoves(): Move[] {
+  return BASIC_MOVES.map(n => MOVES[n] ?? MOVES.Charge!)
+}
+
 /** The four moves available at a given stage. Falls back to a basic set when
  * the stage isn't catalogued so battles never get stuck without options. */
 export function movesForStage(showdownId: string): Move[] {
-  const names = STAGE_MOVES[showdownId] ?? BASIC_MOVES
+  const names = STAGE_MOVES[showdownId]
+  if (!names) return basicMoves()
   return names.map(n => MOVES[n] ?? MOVES.Charge!)
 }
 
-/** Convenience wrapper : (lineage, level) → 4 moves available at that tier. */
+function isStarterLineage(lineage: string): lineage is Lineage {
+  return lineage in LINEAGE_STAGES
+}
+
+/** Pick the 4 most-recently-learned offensive moves a species knows by `level`
+ * from its generated learnset, guaranteeing at least one STAB move when one is
+ * learnable. Used for wild / traded Pokémon that have no curated stage moveset.
+ * Falls back to the basic set if the species isn't in the learnset data. */
+function movesFromLearnset(speciesId: string, level: number, stab: CombatType): Move[] {
+  const learnset = SPECIES_LEARNSET[speciesId]
+  if (!learnset?.length) return basicMoves()
+
+  const learnable = learnset.filter(e => e.level <= level)
+  const pool = learnable.length ? learnable : learnset.slice(0, 1)
+  let chosen = pool.slice(-4)
+
+  if (!chosen.some(e => GENERATED_MOVES[e.move]?.type === stab)) {
+    const stabMoves = pool.filter(e => GENERATED_MOVES[e.move]?.type === stab)
+    const bestStab = stabMoves[stabMoves.length - 1]
+    if (bestStab) chosen = [...chosen.slice(0, 3), bestStab]
+  }
+
+  const moves = chosen
+    .map(e => GENERATED_MOVES[e.move])
+    .filter((m): m is Move => Boolean(m))
+  return moves.length ? moves : basicMoves()
+}
+
+/** Convenience wrapper : (lineage, level) → 4 moves available at that tier.
+ * Starter lineages keep their hand-curated stage movesets ; any other lineage
+ * (wild / traded species) resolves its moveset from the level-up learnset. */
 export function movesForParticipant(lineage: string, level: number): Move[] {
-  return movesForStage(stageFor(lineage, level).showdown_id)
+  if (isStarterLineage(lineage)) {
+    return movesForStage(stageFor(lineage, level).showdown_id)
+  }
+  const speciesId = lineage.replace(/^trade-/, '')
+  return movesFromLearnset(speciesId, level, lineageToCombatType(lineage))
 }
