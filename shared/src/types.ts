@@ -12,10 +12,33 @@ export type Lineage =
   | 'cyndaquil'
   | 'totodile'
 
-/** Pokémon types used by the battle engine. We collapse the 18 canonical
- * types to 5 (the lineages we actually have) — fewer matchups to balance,
- * tighter rock-paper-scissors loop. */
-export type CombatType = 'fire' | 'water' | 'grass' | 'electric' | 'normal'
+/** The 18 canonical Pokémon types. The battle engine used to collapse these
+ * to 5 (the starter lineages) — since "wild & traded Pokémon in the arena"
+ * (Phase 2.14) every species keeps its real type (a Dragon stays a Dragon),
+ * resolved from its `wild_pool` entry. Combatants remain single-type (the
+ * CLI data stores one type per species). */
+export const COMBAT_TYPES = [
+  'normal',
+  'fire',
+  'water',
+  'electric',
+  'grass',
+  'ice',
+  'fighting',
+  'poison',
+  'ground',
+  'flying',
+  'psychic',
+  'bug',
+  'rock',
+  'ghost',
+  'dragon',
+  'dark',
+  'steel',
+  'fairy',
+] as const
+
+export type CombatType = (typeof COMBAT_TYPES)[number]
 
 export type BattleSide = 'challenger' | 'defender'
 
