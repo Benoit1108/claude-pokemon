@@ -323,6 +323,8 @@
     "title": "🔗 PAIRING WEB",
     "code_label": "Code (6 caractères) :",
     "url_label": "Ouvre cette URL dans ton navigateur :",
+    "qr_label": "Ou scanne ce QR avec ton téléphone :",
+    "qr_hint": "Astuce : installe qrencode pour afficher un QR scannable du lien ci-dessus.",
     "expires": "⏱  Expire à %s (5 min après émission). Code à usage unique.",
     "warning": "⚠️  Ne partage pas ce code — il transfère ton secret arena vers le navigateur.",
     "failed": "Pairing impossible : %s"

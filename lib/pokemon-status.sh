@@ -2234,9 +2234,22 @@ view_arena_pair() {
     return
   fi
 
+  local pair_url="$web_url/pair?code=$code"
   printf "  %s$(pokemon_t pair.code_label)%s   %s%s%s\n\n" "$DIM" "$RESET" "$BOLD$GOLD" "$code" "$RESET"
   printf "  %s$(pokemon_t pair.url_label)%s\n" "$DIM" "$RESET"
-  printf "  %s%s/pair?code=%s%s\n\n" "$BOLD" "$web_url" "$code" "$RESET"
+  printf "  %s%s%s\n\n" "$BOLD" "$pair_url" "$RESET"
+
+  # Scannable QR of the pair URL (Sprint 2.12) — opens /pair on a phone so the
+  # user doesn't retype the link. qrencode is optional ; without it we just
+  # keep the URL above and hint how to enable the QR.
+  if command -v qrencode >/dev/null 2>&1; then
+    printf "  %s$(pokemon_t pair.qr_label)%s\n" "$DIM" "$RESET"
+    qrencode -t ANSIUTF8 -m 1 "$pair_url" 2>/dev/null | sed 's/^/  /'
+    printf "\n"
+  else
+    printf "  %s$(pokemon_t pair.qr_hint)%s\n\n" "$DIM" "$RESET"
+  fi
+
   printf "  %s$(pokemon_t pair.expires "$expires_at")%s\n\n" "$DIM" "$RESET"
   printf "  %s$(pokemon_t pair.warning)%s\n\n" "$DIM" "$RESET"
 }
