@@ -144,7 +144,7 @@ Polish pack — multiple small wins bundled.
   - Konami code anywhere → permanent retro mode (until cleared from localStorage)
   - 10× click on the logo → hidden message / animation
   - URL param `?secret=<hash>` unlocks dev-only features
-- **CLI↔web QR sync** : new CLI command `/pokemon link` displays a QR code in the terminal. Scanning on a mobile browser auto-logs the user into their `anon_id` profile (no password). Useful to view your own trainer card from your phone instantly.
+- **CLI↔web QR sync** ✅ : `/pokemon arena pair` renders a scannable QR of the `/pair?code=` link in the terminal (via `qrencode`, optional with graceful fallback). Scanning on a phone opens `/pair` which pairs the browser to the `anon_id` (the redeem flow already existed). Sound theme 3-state cycle + Konami also done (web). 10× logo click + `?secret=` dropped.
 
 ### 2.14 — Wild & traded Pokémon en Arène + chart 18 types ✅
 Tout Pokémon élevé dans le CLI (sauvage capturé, échangé, starter, ou forcé à la main) peut entrer en arène — plus seulement les 8 lignées de starters. Sinon l'intérêt des sauvages s'effondre.

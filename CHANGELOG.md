@@ -7,6 +7,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ### Added
 
+- **QR de pairing dans le terminal** (Phase 2.12). `/pokemon arena pair` affiche maintenant, en plus du code + lien, un **QR scannable** du lien `…/pair?code=XXX` (rendu via `qrencode -t ANSIUTF8`) — on scanne avec le téléphone pour ouvrir la page `/pair` (qui appaire le navigateur) sans retaper l'URL. `qrencode` est **optionnel** : s'il n'est pas installé, on garde le lien + une astuce pour l'activer (aucune dépendance dure ajoutée). Locales FR/EN (`pair.qr_label`, `pair.qr_hint`).
+
 - **⚔️ Wild & traded Pokémon en Arène + chart 18 types** (Phase 2.14). N'importe quel Pokémon élevé dans le CLI (sauvage capturé, échangé `trade-*`, ou forcé à la main) peut désormais entrer en arène — plus seulement les 8 lignées de starters.
   - **Moteur de combat `shared` étendu des 5 types collapsés aux 18 types canoniques** : un Dragon reste Dragon, un Spectre reste Spectre. `TYPE_CHART` est maintenant la matrice 18×18 Gen-6+ (construite à partir d'une table sparse de matchups) avec les **vraies immunités 0×** (Normal⇄Spectre, Sol→Vol, Électrik→Sol, Dragon→Fée…). Un coup immunisé fait 0 dégât ; un matchup mutuellement immunisé se décide au % HP au `turn_limit`. Backward-compat : les matchups starters d'origine (Feu>Plante>Eau>Feu, Électrik>Eau) sont inchangés → les replays historiques restent déterministes.
   - **Résolution de type générée depuis `lib/data/wild_pool`** (source unique de vérité, 251 espèces) : nouveau `shared/src/species-combat-type.generated.ts` + `lineageToCombatType()` (starter connu → mapping ; sinon strip `trade-` → species map → fallback `normal`). La table partielle hand-maintenue côté worker (`species-types.ts`) est supprimée au profit d'un re-export.
