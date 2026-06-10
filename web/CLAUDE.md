@@ -107,11 +107,18 @@ claude-pokemon-arena/
 
 ### Local dev
 
+From the **monorepo root** (`claude-pokemon/`), one command runs the local worker
++ the web together, **isolated from prod** :
+
 ```bash
-# .env points to prod worker by default — uncomment the localhost line to point
-# at a local wrangler dev (cd vendor/claude-pokemon/api && npm run dev).
-npm run dev   # → http://localhost:3000
+npm run dev   # api (wrangler dev, local KV) :8787  +  web :3000
 ```
+
+The web's `apiBase` auto-targets the **local** worker in dev (`http://localhost:8787`,
+isolated KV), so accounts/data created while testing never hit prod. Production
+builds target the deployed worker. Set `NUXT_PUBLIC_API_BASE` to override (e.g.
+point dev at prod on purpose). Web only : `npm run -w web dev`. API only :
+`npm run -w api dev` (+ `npm run -w api seed:local` to seed local KV).
 
 ### Pre-push (auto via Claude Code hook)
 

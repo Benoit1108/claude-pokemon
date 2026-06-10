@@ -79,7 +79,15 @@ export default defineNuxtConfig({
   // and exported as `NUXT_PUBLIC_GITHUB_STARS` env var.
   runtimeConfig: {
     public: {
-      apiBase: 'https://claude-pokemon-api.benoit-dev.workers.dev',
+      // Local dev targets a local `wrangler dev` worker (isolated KV) so testing
+      // never creates accounts/data on prod. Production builds (NODE_ENV) hit the
+      // deployed worker. `NUXT_PUBLIC_API_BASE` overrides either (CI, staging, or
+      // pointing dev at prod on purpose).
+      apiBase:
+        process.env.NUXT_PUBLIC_API_BASE ||
+        (process.env.NODE_ENV === 'production'
+          ? 'https://claude-pokemon-api.benoit-dev.workers.dev'
+          : 'http://localhost:8787'),
       version: process.env.npm_package_version || '0.1.0',
       githubStars: process.env.NUXT_PUBLIC_GITHUB_STARS || '0',
     },
