@@ -2,6 +2,11 @@ node_modules/
 *.log
 .DS_Store
 
+# Wrangler local dev secrets (e.g. api/.dev.vars holds GITHUB_CLIENT_SECRET).
+# NEVER commit — only .dev.vars.example is tracked.
+.dev.vars
+**/.dev.vars
+
 # User-specific testing artifacts
 *.bak-*
 .lock

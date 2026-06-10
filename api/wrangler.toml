@@ -8,6 +8,12 @@ workers_dev = true
 [observability]
 enabled = false
 
+# Public, non-secret values. GitHub OAuth client_id is exposed in the browser
+# authorize URL anyway, so it's safe to commit. The matching client_secret is a
+# wrangler secret (NOT here) : `npx wrangler secret put GITHUB_CLIENT_SECRET`.
+[vars]
+GITHUB_CLIENT_ID = "Ov23liiZGFKFIT78EDcz"
+
 # KV namespace bound as `env.STATS`. The `id` is filled after running:
 #   wrangler kv namespace create STATS
 [[kv_namespaces]]
