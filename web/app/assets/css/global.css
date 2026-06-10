@@ -1,0 +1,114 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * Sprint 5 — global styles that don't fit UnoCSS utilities.
+ *
+ * Contents kept intentionally small (~30 lines of actual rules) :
+ *   1. body : ambient radial-gradient backdrop, font + smoothing
+ *   2. @keyframes rise-in : stagger reveal used on hero / tile entry
+ *   3. .reveal helper + .reveal-1..5 delay variants
+ *
+ * Theme + token vars live in uno.config.ts (the source of truth) ; this file
+ * only consumes them via Tailwind / UnoCSS-emitted classes when needed.
+ * Fonts are loaded via nuxt.config.ts head links (preconnect + stylesheet)
+ * rather than @import here — saves a network round-trip on first paint.
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/* Default body face — DM Sans, with system fallbacks. Sets the baseline so
+ * components that don't override get sensible body typography automatically. */
+body {
+  font-family:
+    'DM Sans',
+    ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ambient backdrop — two soft radial gradients (warm top-left, cool
+ * bottom-right) using brand-accent + lineage-water tones. Fixed attachment
+ * so it doesn't scroll with content. Subtle enough not to fight any page
+ * but adds depth + identity. Override per-page via `body[data-page="..."]`
+ * if a section needs a flat background later. */
+body {
+  background-color: rgb(250 250 250);
+  background-image:
+    radial-gradient(
+      ellipse 900px 600px at 0% 0%,
+      rgb(212 160 23 / 0.06) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 900px 600px at 100% 100%,
+      rgb(38 143 255 / 0.06) 0%,
+      transparent 55%
+    );
+  background-attachment: fixed;
+}
+html.dark body {
+  background-color: rgb(13 17 23);
+  background-image:
+    radial-gradient(
+      ellipse 900px 600px at 0% 0%,
+      rgb(255 215 0 / 0.08) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 900px 600px at 100% 100%,
+      rgb(38 143 255 / 0.08) 0%,
+      transparent 55%
+    );
+  background-attachment: fixed;
+}
+
+/* Stagger reveal — used on hero text, tiles, leaderboard rows. Cheap
+ * css-only entry animation, ~600 ms with delays in 80ms increments. */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.reveal {
+  animation: rise-in 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.reveal-1 {
+  animation-delay: 60ms;
+}
+.reveal-2 {
+  animation-delay: 140ms;
+}
+.reveal-3 {
+  animation-delay: 220ms;
+}
+.reveal-4 {
+  animation-delay: 300ms;
+}
+.reveal-5 {
+  animation-delay: 380ms;
+}
+
+::selection {
+  background: rgb(212 160 23 / 0.18);
+  color: inherit;
+}
+html.dark ::selection {
+  background: rgb(255 215 0 / 0.22);
+}
+
+/* Respect prefers-reduced-motion — kill all reveal + transition + spin. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-1,
+  .reveal-2,
+  .reveal-3,
+  .reveal-4,
+  .reveal-5 {
+    animation: none !important;
+  }
+}

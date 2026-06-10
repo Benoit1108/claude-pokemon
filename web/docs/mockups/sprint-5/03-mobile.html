@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>03 · Mobile bottom-nav · claude-pokemon arena</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  .page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 4rem 1.5rem 2rem;
+    gap: 2.5rem;
+  }
+  .page__intro { text-align: center; max-width: 56ch; }
+  .page__intro h1 { margin: 0 0 0.5rem; }
+  .page__intro p { margin: 0; color: var(--text-secondary); }
+
+  /* Phone frame ------------------------------------------ */
+  .phone-rack {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .phone {
+    position: relative;
+    width: 360px;
+    height: 740px;
+    background: var(--surface-page);
+    border: 12px solid #18181b;
+    border-radius: 44px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    flex-shrink: 0;
+  }
+  [data-theme="dark"] .phone { border-color: #000; }
+  .phone__notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 24px;
+    background: #18181b;
+    border-radius: 0 0 14px 14px;
+    z-index: 100;
+  }
+  [data-theme="dark"] .phone__notch { background: #000; }
+  .phone__inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    background: var(--surface-page);
+  }
+  .phone__caption {
+    margin-top: 0.75rem;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Mobile header (minimal) ------------------------------ */
+  .m-header {
+    position: sticky; top: 0; z-index: 30;
+    height: 52px;
+    padding: 0 1rem;
+    padding-top: env(safe-area-inset-top);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    background: var(--surface-overlay);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(180%);
+    border-bottom: 1px solid var(--surface-border);
+  }
+  .m-brand { display: inline-flex; align-items: center; gap: 0.375rem; }
+  .m-brand svg { width: 22px; height: 22px; }
+  .m-brand span { font-family: var(--font-display); font-weight: 700; font-size: 0.875rem; letter-spacing: -0.02em; }
+  .m-brand .accent { background: linear-gradient(135deg, var(--brand-accent), var(--lineage-fire)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .m-header .theme-toggle { transform: scale(0.86); transform-origin: right center; }
+  .m-header__right { display: flex; align-items: center; gap: 0.375rem; }
+  .m-user {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--surface-elevated);
+    border: 1px solid var(--surface-border);
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 3px;
+  }
+  .m-user .user-avatar { width: 100%; height: 100%; }
+
+  /* Mobile content stub --------------------------------- */
+  .m-content {
+    padding: 1.25rem 1rem calc(72px + env(safe-area-inset-bottom) + 1rem);
+  }
+  .m-content h2 { margin: 0 0 0.5rem; }
+  .m-content p { color: var(--text-secondary); margin: 0 0 1.25rem; font-size: 0.875rem; line-height: 1.55; }
+
+  .m-card {
+    padding: 1rem;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .m-card__sprite {
+    width: 48px; height: 48px;
+    background: var(--surface-elevated);
+    border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    image-rendering: pixelated;
+    flex-shrink: 0;
+  }
+  .m-card__main { flex: 1; min-width: 0; }
+  .m-card__name { font-weight: 600; font-size: 0.9375rem; }
+  .m-card__meta { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-tertiary); margin-top: 2px; }
+  .m-card__level {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    background: var(--brand-accent-soft);
+    color: var(--brand-accent-strong);
+    border-radius: var(--radius-pill);
+    font-weight: 500;
+  }
+  [data-theme="dark"] .m-card__level { color: var(--brand-accent); }
+
+  /* Bottom nav ------------------------------------------ */
+  .bottom-nav {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: calc(64px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--surface-overlay);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+    border-top: 1px solid var(--surface-border);
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    z-index: 40;
+  }
+  .bnav-item {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 44px;
+    color: var(--text-tertiary);
+    background: transparent;
+    border: 0;
+    padding: 6px 4px 8px;
+    font-size: 10px;
+    font-weight: 500;
+    transition: color var(--duration-default) var(--ease-out);
+    text-decoration: none;
+  }
+  .bnav-item svg {
+    width: 22px;
+    height: 22px;
+    transition: transform var(--duration-default) var(--ease-spring);
+  }
+  .bnav-item:hover { color: var(--text-secondary); }
+  .bnav-item[aria-current="page"] {
+    color: var(--text-primary);
+  }
+  .bnav-item[aria-current="page"] svg {
+    transform: translateY(-2px);
+  }
+  .bnav-item[aria-current="page"]::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--brand-accent), var(--lineage-fire));
+    box-shadow: 0 0 12px -2px var(--brand-accent);
+  }
+
+  /* Annotations alongside phones ---------------------- */
+  .notes {
+    width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .note-card {
+    padding: 1rem 1.125rem;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+  }
+  .note-card h4 { margin: 0 0 0.375rem; font-family: var(--font-display); font-size: 0.9375rem; font-weight: 600; }
+  .note-card p { margin: 0; font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.55; }
+  .note-card code { font-family: var(--font-mono); font-size: 0.75rem; padding: 1px 5px; background: var(--surface-elevated); border-radius: 5px; }
+  .note-card__index { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-tertiary); letter-spacing: 0.08em; }
+</style>
+</head>
+<body>
+
+<a class="mockup-toolbar" href="index.html">← all mockups · 03 mobile</a>
+
+<main class="page">
+  <div class="page__intro reveal reveal-1">
+    <h1 class="text-h1">Mobile — header light + bottom-nav</h1>
+    <p class="text-body">Sur mobile (<code style="font-family:var(--font-mono);padding:1px 5px;background:var(--surface-elevated);border-radius:5px;">&lt; md</code>), les onglets descendent dans une bottom-nav fixed. Le header se réduit à logo + theme + user (pas de tabs, pas de stars pill).</p>
+  </div>
+
+  <div class="phone-rack">
+
+    <div>
+      <div class="phone reveal reveal-2">
+        <div class="phone__notch"></div>
+        <div class="phone__inner">
+
+          <!-- Mobile header -->
+          <header class="m-header">
+            <a class="m-brand" href="#">
+              <svg viewBox="0 0 32 32" aria-hidden="true">
+                <defs><linearGradient id="mbalTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ef4444"/><stop offset="1" stop-color="#c81e1e"/></linearGradient></defs>
+                <circle cx="16" cy="16" r="14" fill="#fafafa" stroke="#18181b" stroke-width="2"/>
+                <path d="M2 16 A14 14 0 0 1 30 16 Z" fill="url(#mbalTop)" stroke="#18181b" stroke-width="2"/>
+                <circle cx="16" cy="16" r="4.5" fill="#fafafa" stroke="#18181b" stroke-width="2"/>
+                <circle cx="16" cy="16" r="1.6" fill="#18181b"/>
+              </svg>
+              <span>claude-<span class="accent">pokemon</span></span>
+            </a>
+            <div class="m-header__right">
+              <div class="theme-toggle" data-theme-toggle role="radiogroup" aria-label="Theme">
+                <span class="theme-thumb"></span>
+                <button class="theme-option" data-theme-value="light" aria-label="Light">☀</button>
+                <button class="theme-option" data-theme-value="dark" aria-label="Dark">🌙</button>
+                <button class="theme-option" data-theme-value="system" aria-label="System">🖥</button>
+              </div>
+              <button class="m-user" aria-label="Profile menu">
+                <span class="user-avatar" style="position:relative;display:block;border-radius:50%;overflow:hidden;background:#fff;width:100%;height:100%;">
+                  <span style="content:'';position:absolute;inset:0 0 50% 0;background:linear-gradient(180deg,#ef4444,#c81e1e);display:block;"></span>
+                  <span style="content:'';position:absolute;inset:50% 0 auto 0;height:2px;background:#18181b;transform:translateY(-50%);display:block;"></span>
+                  <span style="position:absolute;left:50%;top:50%;width:5px;height:5px;background:#fff;border:1.5px solid #18181b;border-radius:50%;transform:translate(-50%,-50%);z-index:2;"></span>
+                </span>
+              </button>
+            </div>
+          </header>
+
+          <!-- Stub content -->
+          <div class="m-content">
+            <h2 class="text-h2">Mon équipe</h2>
+            <p>6 emplacements · 4 actifs</p>
+
+            <div class="m-card">
+              <div class="m-card__sprite">🔥</div>
+              <div class="m-card__main">
+                <div class="m-card__name">Salamèche</div>
+                <div class="m-card__meta">Lv. 14 · HP 38 / 42</div>
+              </div>
+              <span class="m-card__level">★ 14</span>
+            </div>
+
+            <div class="m-card">
+              <div class="m-card__sprite">⚡</div>
+              <div class="m-card__main">
+                <div class="m-card__name">Pikachu</div>
+                <div class="m-card__meta">Lv. 12 · HP 31 / 35</div>
+              </div>
+              <span class="m-card__level">★ 12</span>
+            </div>
+
+            <div class="m-card">
+              <div class="m-card__sprite">🍃</div>
+              <div class="m-card__main">
+                <div class="m-card__name">Bulbizarre</div>
+                <div class="m-card__meta">Lv. 11 · HP 36 / 36</div>
+              </div>
+              <span class="m-card__level">★ 11</span>
+            </div>
+
+            <div class="m-card">
+              <div class="m-card__sprite">💧</div>
+              <div class="m-card__main">
+                <div class="m-card__name">Carapuce</div>
+                <div class="m-card__meta">Lv. 9 · HP 28 / 32</div>
+              </div>
+              <span class="m-card__level">★ 9</span>
+            </div>
+          </div>
+
+          <!-- Bottom nav -->
+          <nav class="bottom-nav" aria-label="Mobile navigation">
+            <a class="bnav-item" href="#" aria-label="Pokédex">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4z"/><circle cx="9" cy="9" r="2.2"/></svg>
+              Pokédex
+            </a>
+            <a class="bnav-item" aria-current="page" href="#" aria-label="Arena (sélectionné)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/><line x1="16" y1="16" x2="20" y2="20"/><line x1="19" y1="21" x2="21" y2="19"/></svg>
+              Arena
+            </a>
+            <a class="bnav-item" href="#" aria-label="Trail">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19l5-5 4 4 7-9"/><circle cx="19" cy="9" r="2"/></svg>
+              Trail
+            </a>
+            <a class="bnav-item" href="#" aria-label="Zones">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+              Zones
+            </a>
+            <a class="bnav-item" href="#" aria-label="Profil">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 5-6 8-6s7 2 8 6"/></svg>
+              Profil
+            </a>
+          </nav>
+
+        </div>
+      </div>
+      <div class="phone__caption">390 × 844 · safe-area-inset</div>
+    </div>
+
+    <aside class="notes reveal reveal-3">
+      <div class="note-card">
+        <span class="note-card__index">M1 · header</span>
+        <h4>Header mobile minimal</h4>
+        <p><code>52px</code> avec <code>padding-top: env(safe-area-inset-top)</code>. Logo + segmented theme (scale&nbsp;0.86) + user avatar. <strong>Pas de tabs</strong> — ils vivent dans la bottom-nav. <strong>Pas de stars pill</strong> — déplacée vers le menu profil sur mobile.</p>
+      </div>
+      <div class="note-card">
+        <span class="note-card__index">M2 · bottom-nav</span>
+        <h4>5 entrées · pill gradient</h4>
+        <p>Position <code>fixed</code> (ici <code>absolute</code> dans le frame). Hauteur <code>64px + env(safe-area-inset-bottom)</code>. Icônes Lucide-style stroked 22px. Tap target ≥44px sur toute la zone. Active = icon translate <code>-2px</code> + pill <code>28×3px</code> gradient <code>gold → fire</code> avec glow.</p>
+      </div>
+      <div class="note-card">
+        <span class="note-card__index">M3 · entrées</span>
+        <h4>Pokédex / Arena / Trail / Zones / Profil</h4>
+        <p>Mêmes 4 sections que desktop + <strong>Profil</strong> en remplacement du UserMenu desktop. Le UserMenu desktop contient theme retro, logout, settings — sur mobile c'est la page <code>/profil</code> qui héberge tout ça.</p>
+      </div>
+      <div class="note-card">
+        <span class="note-card__index">M4 · motion</span>
+        <h4>Économe par défaut</h4>
+        <p>Seule l'animation au changement d'onglet (icon lift + pill apparition) est notable. <code>prefers-reduced-motion</code> coupe le translate. Le backdrop-blur est essentiel — sans lui le contenu défilant sous la bottom-nav casse la lecture.</p>
+      </div>
+    </aside>
+
+  </div>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

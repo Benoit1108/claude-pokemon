@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>02 · Landing hero · claude-pokemon arena</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  /* Header (shared minimal) -------------------------------- */
+  .header {
+    position: sticky; top: 0; z-index: 50;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; padding: 0 1.5rem;
+    background: var(--surface-overlay);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(180%);
+    border-bottom: 1px solid var(--surface-border);
+  }
+  .header__cluster { display: flex; align-items: center; gap: 0.75rem; }
+  .header__brand { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.375rem 0.25rem 0.25rem; border-radius: var(--radius-md); transition: background-color var(--duration-default) var(--ease-out); }
+  .header__brand:hover { background: var(--surface-elevated); }
+  .pokeball-icon { width: 28px; height: 28px; transition: transform var(--duration-default) var(--ease-out); }
+  .header__wordmark { font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; letter-spacing: -0.02em; }
+  .header__wordmark .accent { background: linear-gradient(135deg, var(--brand-accent), var(--lineage-fire)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .nav-tabs { display: flex; gap: 0.125rem; }
+  .nav-tab { position: relative; padding: 0.5rem 0.875rem; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); border-radius: var(--radius-md); transition: color var(--duration-default) var(--ease-out), background-color var(--duration-default) var(--ease-out); }
+  .nav-tab:hover { background: var(--surface-elevated); color: var(--text-primary); }
+  .nav-tab[aria-current="page"] { color: var(--text-primary); }
+  .nav-tab[aria-current="page"]::after { content: ''; position: absolute; left: 0.875rem; right: 0.875rem; bottom: -16px; height: 2px; background: linear-gradient(90deg, var(--brand-accent), var(--lineage-fire)); border-radius: 2px 2px 0 0; }
+  .user-pill { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.625rem 0.25rem 0.25rem; background: var(--surface-elevated); border: 1px solid var(--surface-border); border-radius: var(--radius-pill); color: var(--text-primary); transition: all var(--duration-default) var(--ease-out); }
+  .user-pill:hover { border-color: var(--brand-accent-ring); background: var(--surface-card); }
+  .user-avatar { position: relative; width: 22px; height: 22px; border-radius: 50%; overflow: hidden; background: #fff; flex-shrink: 0; }
+  .user-avatar::before { content: ''; position: absolute; inset: 0 0 50% 0; background: linear-gradient(180deg, #ef4444, #c81e1e); }
+  .user-avatar::after { content: ''; position: absolute; inset: 50% 0 auto 0; height: 2px; background: #18181b; transform: translateY(-50%); }
+  .user-avatar > .dot { position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; background: #fff; border: 1.5px solid #18181b; border-radius: 50%; transform: translate(-50%, -50%); z-index: 2; }
+  .user-name { font-size: 0.8125rem; font-weight: 500; }
+  .pill--version { font-family: var(--font-mono); font-size: 0.6875rem; padding: 0.125rem 0.5rem; color: var(--text-tertiary); }
+
+  /* Hero --------------------------------------------------- */
+  .hero {
+    position: relative;
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 5rem 1.5rem 2rem;
+    text-align: center;
+    overflow: hidden;
+  }
+  .hero__copy { max-width: 56rem; margin: 0 auto; }
+  .hero__copy .text-display { margin: 0; }
+  .hero-accent {
+    background: linear-gradient(135deg, var(--brand-accent) 0%, var(--lineage-fire) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    margin-bottom: 1.5rem;
+    background: var(--brand-accent-soft);
+    color: var(--brand-accent-strong);
+    border: 1px solid var(--brand-accent-ring);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  [data-theme="dark"] .hero__eyebrow { color: var(--brand-accent); }
+  .hero__eyebrow::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--brand-accent);
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px var(--brand-accent-soft);
+  }
+  .hero__subtitle {
+    max-width: 52ch;
+    margin: 1.25rem auto 0;
+    font-size: 1.0625rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+
+  /* Decorative pokéballs in bg ---------------------------- */
+  .hero__deco {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: -1;
+  }
+  .hero__deco svg { position: absolute; opacity: 0.06; }
+  [data-theme="dark"] .hero__deco svg { opacity: 0.08; }
+  .hero__deco .p1 { top: -40px; left: -60px; width: 220px; transform: rotate(-12deg); }
+  .hero__deco .p2 { bottom: -80px; right: -60px; width: 280px; transform: rotate(20deg); }
+
+  /* Featured grid ---------------------------------------- */
+  .featured {
+    max-width: 1140px;
+    margin: 2.5rem auto 0;
+    padding: 0 1.5rem;
+  }
+  .featured-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  @media (max-width: 720px) { .featured-grid { grid-template-columns: 1fr; } }
+
+  .tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    padding: 1.75rem 1.75rem 1.5rem;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    color: inherit;
+    transition: transform var(--duration-default) var(--ease-out),
+                border-color var(--duration-default) var(--ease-out),
+                box-shadow var(--duration-default) var(--ease-out);
+  }
+  .tile::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 120px;
+    background: radial-gradient(120% 100% at 0% 0%, var(--tile-color) 0%, transparent 60%);
+    opacity: 0.08;
+    pointer-events: none;
+    transition: opacity var(--duration-default) var(--ease-out);
+  }
+  .tile::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 2rem; bottom: 2rem;
+    width: 3px;
+    background: var(--tile-color);
+    border-radius: 0 3px 3px 0;
+    opacity: 0.7;
+    transition: opacity var(--duration-default) var(--ease-out),
+                top var(--duration-default) var(--ease-out),
+                bottom var(--duration-default) var(--ease-out);
+  }
+  .tile[data-lineage="grass"]    { --tile-color: var(--lineage-grass); }
+  .tile[data-lineage="fire"]     { --tile-color: var(--lineage-fire); }
+  .tile[data-lineage="water"]    { --tile-color: var(--lineage-water); }
+  .tile[data-lineage="electric"] { --tile-color: var(--lineage-electric); }
+
+  .tile:hover {
+    transform: translateY(-4px);
+    border-color: var(--tile-color);
+    box-shadow: 0 18px 40px -12px color-mix(in srgb, var(--tile-color) 40%, transparent);
+  }
+  .tile:hover::before { opacity: 0.18; }
+  .tile:hover::after { top: 1rem; bottom: 1rem; opacity: 1; }
+  .tile:hover .tile__cta { opacity: 1; transform: translateX(0); }
+  .tile:hover .tile__icon { transform: translateY(-2px) rotate(-3deg); }
+
+  .tile__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+  }
+  .tile__icon {
+    font-size: 2.75rem;
+    line-height: 1;
+    filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.25));
+    transition: transform var(--duration-default) var(--ease-spring);
+  }
+  .tile__badge {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    padding: 0.25rem 0.5rem;
+    background: color-mix(in srgb, var(--tile-color) 14%, transparent);
+    color: var(--tile-color);
+    border-radius: var(--radius-pill);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .tile h2 { margin: 0; }
+  .tile__desc {
+    margin: 0;
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+  .tile__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--tile-color);
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity var(--duration-default) var(--ease-out),
+                transform var(--duration-default) var(--ease-out);
+  }
+  .tile__cta svg { transition: transform var(--duration-default) var(--ease-out); }
+  .tile:hover .tile__cta svg { transform: translateX(2px); }
+
+  /* Secondary actions ------------------------------------ */
+  .secondary {
+    max-width: 1140px;
+    margin: 2rem auto 0;
+    padding: 0 1.5rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.625rem;
+    flex-wrap: wrap;
+  }
+
+  /* Below the fold stubs --------------------------------- */
+  .strip {
+    max-width: 1140px;
+    margin: 5rem auto 0;
+    padding: 0 1.5rem 4rem;
+  }
+  .strip__head { margin-bottom: 1.25rem; display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .strip__head h3 { margin: 0; }
+  .strip__head a { font-size: 0.8125rem; color: var(--text-tertiary); transition: color var(--duration-default) var(--ease-out); }
+  .strip__head a:hover { color: var(--brand-accent); }
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; }
+  .stat {
+    padding: 1rem 1.25rem;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+  }
+  .stat__label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .stat__value {
+    margin-top: 0.375rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.625rem;
+    line-height: 1;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+  .stat__delta {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--status-success);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .stat__delta--down { color: var(--text-tertiary); }
+  .stat__sub { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-tertiary); }
+</style>
+</head>
+<body>
+
+<a class="mockup-toolbar" href="index.html">← all mockups · 02 landing</a>
+
+<!-- Header (recap from 01) -->
+<header class="header">
+  <div class="header__cluster">
+    <a href="#" class="header__brand pokeball-spin">
+      <svg class="pokeball-icon" viewBox="0 0 32 32" aria-hidden="true">
+        <defs>
+          <linearGradient id="pballTop2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ef4444"/><stop offset="1" stop-color="#c81e1e"/></linearGradient>
+        </defs>
+        <circle cx="16" cy="16" r="14" fill="#fafafa" stroke="#18181b" stroke-width="2"/>
+        <path d="M2 16 A14 14 0 0 1 30 16 Z" fill="url(#pballTop2)" stroke="#18181b" stroke-width="2"/>
+        <circle cx="16" cy="16" r="4.5" fill="#fafafa" stroke="#18181b" stroke-width="2"/>
+        <circle cx="16" cy="16" r="1.6" fill="#18181b"/>
+      </svg>
+      <span class="header__wordmark">claude-<span class="accent">pokemon</span></span>
+    </a>
+    <span class="pill pill--version">v0.4.9</span>
+  </div>
+  <nav class="nav-tabs" aria-label="Main">
+    <a class="nav-tab" aria-current="page" href="#">Pokédex</a>
+    <a class="nav-tab" href="#">Arena</a>
+    <a class="nav-tab" href="#">Trail</a>
+    <a class="nav-tab" href="#">Zones</a>
+  </nav>
+  <div class="header__cluster">
+    <div class="theme-toggle" data-theme-toggle role="radiogroup" aria-label="Theme">
+      <span class="theme-thumb"></span>
+      <button class="theme-option" data-theme-value="light" aria-label="Light">☀</button>
+      <button class="theme-option" data-theme-value="dark" aria-label="Dark">🌙</button>
+      <button class="theme-option" data-theme-value="system" aria-label="System">🖥</button>
+    </div>
+    <button class="user-pill">
+      <span class="user-avatar"><span class="dot"></span></span>
+      <span class="user-name">benoit</span>
+    </button>
+  </div>
+</header>
+
+<!-- ============== Hero ============== -->
+<section class="hero">
+  <div class="hero__deco" aria-hidden="true">
+    <svg class="p1" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="none" stroke="var(--text-primary)" stroke-width="1.5"/><path d="M2 16 A14 14 0 0 1 30 16" fill="none" stroke="var(--text-primary)" stroke-width="1.5"/><circle cx="16" cy="16" r="4.5" fill="none" stroke="var(--text-primary)" stroke-width="1.5"/></svg>
+    <svg class="p2" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="none" stroke="var(--text-primary)" stroke-width="1.5"/><path d="M2 16 A14 14 0 0 1 30 16" fill="none" stroke="var(--text-primary)" stroke-width="1.5"/><circle cx="16" cy="16" r="4.5" fill="none" stroke="var(--text-primary)" stroke-width="1.5"/></svg>
+  </div>
+
+  <div class="hero__copy">
+    <span class="hero__eyebrow reveal reveal-1">Sprint 5 · live preview</span>
+    <h1 class="text-display reveal reveal-1">claude-<span class="hero-accent">pokemon</span> arena</h1>
+    <p class="hero__subtitle reveal reveal-2">Collectionne, fais évoluer, et affronte d'autres dresseurs. Le tout depuis ta statusline Claude&nbsp;Code — installé via <code style="font-family:var(--font-mono);padding:1px 5px;background:var(--surface-elevated);border-radius:5px;font-size:0.875em;">npx claude-pokemon</code>.</p>
+  </div>
+</section>
+
+<!-- ============== Featured 4 tiles ============== -->
+<section class="featured" aria-label="Sections">
+  <div class="featured-grid">
+
+    <a class="tile reveal reveal-1" data-lineage="grass" href="#">
+      <div class="tile__head">
+        <span class="tile__icon" aria-hidden="true">📖</span>
+        <span class="tile__badge">151 capturables</span>
+      </div>
+      <h2 class="text-h2">Pokédex</h2>
+      <p class="tile__desc">Parcours les 151 entrées canoniques. Chaque sprite raconte ta progression — capturé, vu, ou encore inconnu.</p>
+      <span class="tile__cta">Entrer
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </a>
+
+    <a class="tile reveal reveal-2" data-lineage="fire" href="#">
+      <div class="tile__head">
+        <span class="tile__icon" aria-hidden="true">⚔️</span>
+        <span class="tile__badge">PvP async</span>
+      </div>
+      <h2 class="text-h2">Arena</h2>
+      <p class="tile__desc">Affronte d'autres dresseurs en combats asynchrones. Calcul de tour côté serveur, replays partageables.</p>
+      <span class="tile__cta">Entrer
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </a>
+
+    <a class="tile reveal reveal-3" data-lineage="water" href="#">
+      <div class="tile__head">
+        <span class="tile__icon" aria-hidden="true">🏞️</span>
+        <span class="tile__badge">solo</span>
+      </div>
+      <h2 class="text-h2">Trail</h2>
+      <p class="tile__desc">Suis un parcours scénarisé à travers les biomes. Quêtes courtes, événements rares, recompenses temporelles.</p>
+      <span class="tile__cta">Entrer
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </a>
+
+    <a class="tile reveal reveal-4" data-lineage="electric" href="#">
+      <div class="tile__head">
+        <span class="tile__icon" aria-hidden="true">🗺️</span>
+        <span class="tile__badge">8 zones</span>
+      </div>
+      <h2 class="text-h2">Zones</h2>
+      <p class="tile__desc">Explore Route 1 jusqu'au Mont Argent. Chaque zone a son pool de Pokémon, ses légendes, son niveau requis.</p>
+      <span class="tile__cta">Entrer
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </a>
+
+  </div>
+</section>
+
+<!-- ============== Secondary CTAs (déclassés) ============== -->
+<div class="secondary reveal reveal-5">
+  <a class="btn btn-secondary" href="#">🎮 Crée ton dresseur</a>
+  <a class="btn btn-ghost" href="#">💻 Install the CLI</a>
+  <a class="btn btn-ghost" href="#">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    GitHub
+  </a>
+</div>
+
+<!-- ============== Below the fold — stubs ============== -->
+<section class="strip" aria-label="Statistiques globales">
+  <div class="strip__head">
+    <h3 class="text-h3">Global stats <span class="text-caption" style="margin-left:0.5rem;">live</span></h3>
+    <a href="#">Tout voir →</a>
+  </div>
+  <div class="stats-row">
+    <div class="stat">
+      <span class="stat__label">Dresseurs actifs</span>
+      <div class="stat__value">1 247</div>
+      <span class="stat__delta">▲ 12 cette semaine</span>
+    </div>
+    <div class="stat">
+      <span class="stat__label">Pokémon capturés</span>
+      <div class="stat__value">38 419</div>
+      <span class="stat__delta">▲ 482 / 24h</span>
+    </div>
+    <div class="stat">
+      <span class="stat__label">Combats Arena</span>
+      <div class="stat__value">5 102</div>
+      <span class="stat__delta stat__delta--down">— stable</span>
+    </div>
+    <div class="stat">
+      <span class="stat__label">Shinys découverts</span>
+      <div class="stat__value">27</div>
+      <span class="stat__sub">1 / 1422 captures</span>
+    </div>
+  </div>
+
+  <div class="strip__head" style="margin-top: 3rem;">
+    <h3 class="text-h3">Leaderboard <span class="text-caption" style="margin-left:0.5rem;">top 5</span></h3>
+    <a href="#">Voir le classement complet →</a>
+  </div>
+  <div class="card" style="padding: 0.5rem; margin-top: 0.5rem;">
+    <div style="display: grid; grid-template-columns: 40px 1fr 100px 80px; gap: 0.5rem; padding: 0.5rem 0.75rem; font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--surface-border);">
+      <span>#</span><span>Dresseur</span><span style="text-align:right;">Niveau</span><span style="text-align:right;">XP</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 40px 1fr 100px 80px; gap: 0.5rem; padding: 0.625rem 0.75rem; align-items: center; border-bottom: 1px solid var(--surface-border);">
+      <span style="font-family: var(--font-mono); font-weight: 600; color: var(--brand-accent);">01</span>
+      <span style="font-weight: 500;">redshell</span>
+      <span style="text-align:right; font-family: var(--font-mono); font-size: 0.8125rem;">Lv. 47</span>
+      <span style="text-align:right; font-family: var(--font-mono); font-size: 0.8125rem; color: var(--text-secondary);">142k</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 40px 1fr 100px 80px; gap: 0.5rem; padding: 0.625rem 0.75rem; align-items: center; border-bottom: 1px solid var(--surface-border);">
+      <span style="font-family: var(--font-mono); font-weight: 600; color: var(--text-tertiary);">02</span>
+      <span style="font-weight: 500;">claire.dev</span>
+      <span style="text-align:right; font-family: var(--font-mono); font-size: 0.8125rem;">Lv. 42</span>
+      <span style="text-align:right; font-family: var(--font-mono); font-size: 0.8125rem; color: var(--text-secondary);">128k</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 40px 1fr 100px 80px; gap: 0.5rem; padding: 0.625rem 0.75rem; align-items: center; border-bottom: 1px solid var(--surface-border);">
+      <span style="font-family: var(--font-mono); font-weight: 600; color: var(--text-tertiary);">03</span>
+      <span style="font-weight: 500;">marc</span>
+      <span style="text-align:right; font-family: var(--font-mono); font-size: 0.8125rem;">Lv. 38</span>
+      <span style="text-align:right; font-family: var(--font-mono); font-size: 0.8125rem; color: var(--text-secondary);">109k</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 40px 1fr 100px 80px; gap: 0.5rem; padding: 0.625rem 0.75rem; align-items: center; background: var(--surface-elevated); border-radius: 0 0 var(--radius-lg) var(--radius-lg);">
+      <span style="font-family: var(--font-mono); font-weight: 600; color: var(--brand-accent);">12</span>
+      <span style="font-weight: 600;">benoit <span class="text-caption" style="margin-left:4px;">vous</span></span>
+      <span style="text-align:right; font-family: var(--font-mono); font-size: 0.8125rem;">Lv. 24</span>
+      <span style="text-align:right; font-family: var(--font-mono); font-size: 0.8125rem; color: var(--text-secondary);">52k</span>
+    </div>
+  </div>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>

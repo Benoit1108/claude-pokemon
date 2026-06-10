@@ -1,0 +1,27 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "nuxt.config.ts",
+    "uno.config.ts",
+    "vitest.config.ts",
+    "app/app.vue",
+    "app/pages/**/*.vue",
+    "app/error.vue",
+    "scripts/*.{ts,mjs,js}",
+    "tests/setup.ts",
+    "tests/**/*.test.ts"
+  ],
+  "project": ["app/**/*.{ts,vue}", "i18n/**/*.{ts,js}", "tests/**/*.ts"],
+  "ignore": ["vendor/**", "dist/**", ".nuxt/**", ".output/**"],
+  "ignoreDependencies": [
+    "vue-i18n",
+    "vue-router",
+    "vue-tsc",
+    "unocss",
+    "@unocss/preset-wind4",
+    "vitest-environment-nuxt",
+    "ffmpeg-static",
+    "playwright"
+  ],
+  "ignoreExportsUsedInFile": true
+}

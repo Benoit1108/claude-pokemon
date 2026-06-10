@@ -30,6 +30,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ### Changed
 
+- **Monorepo : l'arène web rejoint le repo** (Phase R1a, ADR-005). Le site `claude-pokemon-arena` est fusionné ici sous `web/` (historique préservé via `git subtree`) et ajouté aux workspaces npm (`["api","shared","web"]`). Le **submodule `vendor/claude-pokemon` est supprimé** : `web` consomme désormais `claude-pokemon-shared` comme dépendance workspace (`"*"`) au lieu de `file:./vendor/claude-pokemon/shared`. Plus besoin de `git submodule update --init`. Reste de R1a : unifier la CI (un seul workflow) et reconnecter Cloudflare Pages au repo monorepo (*root directory* = `web/`). ADR-005 amendé : on reste sur **npm workspaces** (pas pnpm — aucun bénéfice fonctionnel ici).
 - **SVG badge enrichi** (`/v1/badge/<anon_id>.svg`). Affiche maintenant `⚔️` à côté de la lignée+niveau si le dresseur est inscrit dans le pool arena (handler interroge `getArena` en plus de `getStats`, ~1 KV read en plus). La ligne stats du bas inclut le compteur Pokédex `📖 X/251` (donnée déjà dans le payload submit, juste pas exploitée). Layout serré pour rester dans 480 px : retrait du label "tokens" sous-entendu par l'icône `⚡`.
 
 ## [1.0.0-beta.6] — 2026-05-06

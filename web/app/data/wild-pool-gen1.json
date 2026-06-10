@@ -1,0 +1,1363 @@
+{
+  "wild_pool": [
+    {
+      "id": "bulbasaur",
+      "national_dex": 1,
+      "name_fr": "Bulbizarre",
+      "name_en": "Bulbasaur",
+      "type": "Grass",
+      "emoji": "🌿",
+      "rarity": "common"
+    },
+    {
+      "id": "ivysaur",
+      "national_dex": 2,
+      "name_fr": "Herbizarre",
+      "name_en": "Ivysaur",
+      "type": "Grass",
+      "emoji": "🌿",
+      "rarity": "common"
+    },
+    {
+      "id": "venusaur",
+      "national_dex": 3,
+      "name_fr": "Florizarre",
+      "name_en": "Venusaur",
+      "type": "Grass",
+      "emoji": "🌿",
+      "rarity": "common"
+    },
+    {
+      "id": "charmander",
+      "national_dex": 4,
+      "name_fr": "Salamèche",
+      "name_en": "Charmander",
+      "type": "Fire",
+      "emoji": "🔥",
+      "rarity": "common"
+    },
+    {
+      "id": "charmeleon",
+      "national_dex": 5,
+      "name_fr": "Reptincel",
+      "name_en": "Charmeleon",
+      "type": "Fire",
+      "emoji": "🔥",
+      "rarity": "common"
+    },
+    {
+      "id": "charizard",
+      "national_dex": 6,
+      "name_fr": "Dracaufeu",
+      "name_en": "Charizard",
+      "type": "Fire",
+      "emoji": "🔥",
+      "rarity": "rare"
+    },
+    {
+      "id": "squirtle",
+      "national_dex": 7,
+      "name_fr": "Carapuce",
+      "name_en": "Squirtle",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "wartortle",
+      "national_dex": 8,
+      "name_fr": "Carabaffe",
+      "name_en": "Wartortle",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "blastoise",
+      "national_dex": 9,
+      "name_fr": "Tortank",
+      "name_en": "Blastoise",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "caterpie",
+      "national_dex": 10,
+      "name_fr": "Chenipan",
+      "name_en": "Caterpie",
+      "type": "Bug",
+      "emoji": "🐛",
+      "rarity": "common"
+    },
+    {
+      "id": "metapod",
+      "national_dex": 11,
+      "name_fr": "Chrysacier",
+      "name_en": "Metapod",
+      "type": "Bug",
+      "emoji": "🐛",
+      "rarity": "common"
+    },
+    {
+      "id": "butterfree",
+      "national_dex": 12,
+      "name_fr": "Papilusion",
+      "name_en": "Butterfree",
+      "type": "Bug",
+      "emoji": "🐛",
+      "rarity": "common"
+    },
+    {
+      "id": "weedle",
+      "national_dex": 13,
+      "name_fr": "Aspicot",
+      "name_en": "Weedle",
+      "type": "Bug",
+      "emoji": "🐛",
+      "rarity": "common"
+    },
+    {
+      "id": "kakuna",
+      "national_dex": 14,
+      "name_fr": "Coconfort",
+      "name_en": "Kakuna",
+      "type": "Bug",
+      "emoji": "🐛",
+      "rarity": "common"
+    },
+    {
+      "id": "beedrill",
+      "national_dex": 15,
+      "name_fr": "Dardargnan",
+      "name_en": "Beedrill",
+      "type": "Bug",
+      "emoji": "🐛",
+      "rarity": "common"
+    },
+    {
+      "id": "pidgey",
+      "national_dex": 16,
+      "name_fr": "Roucool",
+      "name_en": "Pidgey",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "pidgeotto",
+      "national_dex": 17,
+      "name_fr": "Roucoups",
+      "name_en": "Pidgeotto",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "pidgeot",
+      "national_dex": 18,
+      "name_fr": "Roucarnage",
+      "name_en": "Pidgeot",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "rattata",
+      "national_dex": 19,
+      "name_fr": "Rattata",
+      "name_en": "Rattata",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "raticate",
+      "national_dex": 20,
+      "name_fr": "Rattatac",
+      "name_en": "Raticate",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "spearow",
+      "national_dex": 21,
+      "name_fr": "Piafabec",
+      "name_en": "Spearow",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "fearow",
+      "national_dex": 22,
+      "name_fr": "Rapasdepic",
+      "name_en": "Fearow",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "ekans",
+      "national_dex": 23,
+      "name_fr": "Abo",
+      "name_en": "Ekans",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "arbok",
+      "national_dex": 24,
+      "name_fr": "Arbok",
+      "name_en": "Arbok",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "pikachu",
+      "national_dex": 25,
+      "name_fr": "Pikachu",
+      "name_en": "Pikachu",
+      "type": "Electric",
+      "emoji": "⚡",
+      "rarity": "common"
+    },
+    {
+      "id": "raichu",
+      "national_dex": 26,
+      "name_fr": "Raichu",
+      "name_en": "Raichu",
+      "type": "Electric",
+      "emoji": "⚡",
+      "rarity": "common"
+    },
+    {
+      "id": "sandshrew",
+      "national_dex": 27,
+      "name_fr": "Sabelette",
+      "name_en": "Sandshrew",
+      "type": "Ground",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "sandslash",
+      "national_dex": 28,
+      "name_fr": "Sablaireau",
+      "name_en": "Sandslash",
+      "type": "Ground",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "nidoranf",
+      "national_dex": 29,
+      "name_fr": "Nidoran♀",
+      "name_en": "Nidoran-F",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "nidorina",
+      "national_dex": 30,
+      "name_fr": "Nidorina",
+      "name_en": "Nidorina",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "nidoqueen",
+      "national_dex": 31,
+      "name_fr": "Nidoqueen",
+      "name_en": "Nidoqueen",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "nidoranm",
+      "national_dex": 32,
+      "name_fr": "Nidoran♂",
+      "name_en": "Nidoran-M",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "nidorino",
+      "national_dex": 33,
+      "name_fr": "Nidorino",
+      "name_en": "Nidorino",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "nidoking",
+      "national_dex": 34,
+      "name_fr": "Nidoking",
+      "name_en": "Nidoking",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "clefairy",
+      "national_dex": 35,
+      "name_fr": "Mélofée",
+      "name_en": "Clefairy",
+      "type": "Fairy",
+      "emoji": "🧚",
+      "rarity": "common"
+    },
+    {
+      "id": "clefable",
+      "national_dex": 36,
+      "name_fr": "Mélodelfe",
+      "name_en": "Clefable",
+      "type": "Fairy",
+      "emoji": "🧚",
+      "rarity": "common"
+    },
+    {
+      "id": "vulpix",
+      "national_dex": 37,
+      "name_fr": "Goupix",
+      "name_en": "Vulpix",
+      "type": "Fire",
+      "emoji": "🔥",
+      "rarity": "common"
+    },
+    {
+      "id": "ninetales",
+      "national_dex": 38,
+      "name_fr": "Feunard",
+      "name_en": "Ninetales",
+      "type": "Fire",
+      "emoji": "🔥",
+      "rarity": "common"
+    },
+    {
+      "id": "jigglypuff",
+      "national_dex": 39,
+      "name_fr": "Rondoudou",
+      "name_en": "Jigglypuff",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "wigglytuff",
+      "national_dex": 40,
+      "name_fr": "Grodoudou",
+      "name_en": "Wigglytuff",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "zubat",
+      "national_dex": 41,
+      "name_fr": "Nosferapti",
+      "name_en": "Zubat",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "golbat",
+      "national_dex": 42,
+      "name_fr": "Nosferalto",
+      "name_en": "Golbat",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "oddish",
+      "national_dex": 43,
+      "name_fr": "Mystherbe",
+      "name_en": "Oddish",
+      "type": "Grass",
+      "emoji": "🌿",
+      "rarity": "common"
+    },
+    {
+      "id": "gloom",
+      "national_dex": 44,
+      "name_fr": "Ortide",
+      "name_en": "Gloom",
+      "type": "Grass",
+      "emoji": "🌿",
+      "rarity": "common"
+    },
+    {
+      "id": "vileplume",
+      "national_dex": 45,
+      "name_fr": "Rafflesia",
+      "name_en": "Vileplume",
+      "type": "Grass",
+      "emoji": "🌿",
+      "rarity": "common"
+    },
+    {
+      "id": "paras",
+      "national_dex": 46,
+      "name_fr": "Paras",
+      "name_en": "Paras",
+      "type": "Bug",
+      "emoji": "🐛",
+      "rarity": "common"
+    },
+    {
+      "id": "parasect",
+      "national_dex": 47,
+      "name_fr": "Parasect",
+      "name_en": "Parasect",
+      "type": "Bug",
+      "emoji": "🐛",
+      "rarity": "common"
+    },
+    {
+      "id": "venonat",
+      "national_dex": 48,
+      "name_fr": "Mimitoss",
+      "name_en": "Venonat",
+      "type": "Bug",
+      "emoji": "🐛",
+      "rarity": "common"
+    },
+    {
+      "id": "venomoth",
+      "national_dex": 49,
+      "name_fr": "Aéromite",
+      "name_en": "Venomoth",
+      "type": "Bug",
+      "emoji": "🐛",
+      "rarity": "common"
+    },
+    {
+      "id": "diglett",
+      "national_dex": 50,
+      "name_fr": "Taupiqueur",
+      "name_en": "Diglett",
+      "type": "Ground",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "dugtrio",
+      "national_dex": 51,
+      "name_fr": "Triopikeur",
+      "name_en": "Dugtrio",
+      "type": "Ground",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "meowth",
+      "national_dex": 52,
+      "name_fr": "Miaouss",
+      "name_en": "Meowth",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "persian",
+      "national_dex": 53,
+      "name_fr": "Persian",
+      "name_en": "Persian",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "psyduck",
+      "national_dex": 54,
+      "name_fr": "Psykokwak",
+      "name_en": "Psyduck",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "golduck",
+      "national_dex": 55,
+      "name_fr": "Akwakwak",
+      "name_en": "Golduck",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "mankey",
+      "national_dex": 56,
+      "name_fr": "Férosinge",
+      "name_en": "Mankey",
+      "type": "Fighting",
+      "emoji": "👊",
+      "rarity": "common"
+    },
+    {
+      "id": "primeape",
+      "national_dex": 57,
+      "name_fr": "Colossinge",
+      "name_en": "Primeape",
+      "type": "Fighting",
+      "emoji": "👊",
+      "rarity": "common"
+    },
+    {
+      "id": "growlithe",
+      "national_dex": 58,
+      "name_fr": "Caninos",
+      "name_en": "Growlithe",
+      "type": "Fire",
+      "emoji": "🔥",
+      "rarity": "common"
+    },
+    {
+      "id": "arcanine",
+      "national_dex": 59,
+      "name_fr": "Arcanin",
+      "name_en": "Arcanine",
+      "type": "Fire",
+      "emoji": "🔥",
+      "rarity": "common"
+    },
+    {
+      "id": "poliwag",
+      "national_dex": 60,
+      "name_fr": "Ptitard",
+      "name_en": "Poliwag",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "poliwhirl",
+      "national_dex": 61,
+      "name_fr": "Têtarte",
+      "name_en": "Poliwhirl",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "poliwrath",
+      "national_dex": 62,
+      "name_fr": "Tartard",
+      "name_en": "Poliwrath",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "abra",
+      "national_dex": 63,
+      "name_fr": "Abra",
+      "name_en": "Abra",
+      "type": "Psychic",
+      "emoji": "🔮",
+      "rarity": "common"
+    },
+    {
+      "id": "kadabra",
+      "national_dex": 64,
+      "name_fr": "Kadabra",
+      "name_en": "Kadabra",
+      "type": "Psychic",
+      "emoji": "🔮",
+      "rarity": "common"
+    },
+    {
+      "id": "alakazam",
+      "national_dex": 65,
+      "name_fr": "Alakazam",
+      "name_en": "Alakazam",
+      "type": "Psychic",
+      "emoji": "🔮",
+      "rarity": "common"
+    },
+    {
+      "id": "machop",
+      "national_dex": 66,
+      "name_fr": "Machoc",
+      "name_en": "Machop",
+      "type": "Fighting",
+      "emoji": "👊",
+      "rarity": "common"
+    },
+    {
+      "id": "machoke",
+      "national_dex": 67,
+      "name_fr": "Machopeur",
+      "name_en": "Machoke",
+      "type": "Fighting",
+      "emoji": "👊",
+      "rarity": "common"
+    },
+    {
+      "id": "machamp",
+      "national_dex": 68,
+      "name_fr": "Mackogneur",
+      "name_en": "Machamp",
+      "type": "Fighting",
+      "emoji": "👊",
+      "rarity": "common"
+    },
+    {
+      "id": "bellsprout",
+      "national_dex": 69,
+      "name_fr": "Chétiflor",
+      "name_en": "Bellsprout",
+      "type": "Grass",
+      "emoji": "🌿",
+      "rarity": "common"
+    },
+    {
+      "id": "weepinbell",
+      "national_dex": 70,
+      "name_fr": "Boustiflor",
+      "name_en": "Weepinbell",
+      "type": "Grass",
+      "emoji": "🌿",
+      "rarity": "common"
+    },
+    {
+      "id": "victreebel",
+      "national_dex": 71,
+      "name_fr": "Empiflor",
+      "name_en": "Victreebel",
+      "type": "Grass",
+      "emoji": "🌿",
+      "rarity": "common"
+    },
+    {
+      "id": "tentacool",
+      "national_dex": 72,
+      "name_fr": "Tentacool",
+      "name_en": "Tentacool",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "tentacruel",
+      "national_dex": 73,
+      "name_fr": "Tentacruel",
+      "name_en": "Tentacruel",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "geodude",
+      "national_dex": 74,
+      "name_fr": "Racaillou",
+      "name_en": "Geodude",
+      "type": "Rock",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "graveler",
+      "national_dex": 75,
+      "name_fr": "Gravalanch",
+      "name_en": "Graveler",
+      "type": "Rock",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "golem",
+      "national_dex": 76,
+      "name_fr": "Grolem",
+      "name_en": "Golem",
+      "type": "Rock",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "ponyta",
+      "national_dex": 77,
+      "name_fr": "Ponyta",
+      "name_en": "Ponyta",
+      "type": "Fire",
+      "emoji": "🔥",
+      "rarity": "common"
+    },
+    {
+      "id": "rapidash",
+      "national_dex": 78,
+      "name_fr": "Galopa",
+      "name_en": "Rapidash",
+      "type": "Fire",
+      "emoji": "🔥",
+      "rarity": "common"
+    },
+    {
+      "id": "slowpoke",
+      "national_dex": 79,
+      "name_fr": "Ramoloss",
+      "name_en": "Slowpoke",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "slowbro",
+      "national_dex": 80,
+      "name_fr": "Flagadoss",
+      "name_en": "Slowbro",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "magnemite",
+      "national_dex": 81,
+      "name_fr": "Magnéti",
+      "name_en": "Magnemite",
+      "type": "Electric",
+      "emoji": "⚡",
+      "rarity": "common"
+    },
+    {
+      "id": "magneton",
+      "national_dex": 82,
+      "name_fr": "Magnéton",
+      "name_en": "Magneton",
+      "type": "Electric",
+      "emoji": "⚡",
+      "rarity": "common"
+    },
+    {
+      "id": "farfetchd",
+      "national_dex": 83,
+      "name_fr": "Canarticho",
+      "name_en": "Farfetch'd",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "doduo",
+      "national_dex": 84,
+      "name_fr": "Doduo",
+      "name_en": "Doduo",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "dodrio",
+      "national_dex": 85,
+      "name_fr": "Dodrio",
+      "name_en": "Dodrio",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "seel",
+      "national_dex": 86,
+      "name_fr": "Otaria",
+      "name_en": "Seel",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "dewgong",
+      "national_dex": 87,
+      "name_fr": "Lamantine",
+      "name_en": "Dewgong",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "grimer",
+      "national_dex": 88,
+      "name_fr": "Tadmorv",
+      "name_en": "Grimer",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "muk",
+      "national_dex": 89,
+      "name_fr": "Grotadmorv",
+      "name_en": "Muk",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "shellder",
+      "national_dex": 90,
+      "name_fr": "Kokiyas",
+      "name_en": "Shellder",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "cloyster",
+      "national_dex": 91,
+      "name_fr": "Crustabri",
+      "name_en": "Cloyster",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "gastly",
+      "national_dex": 92,
+      "name_fr": "Fantominus",
+      "name_en": "Gastly",
+      "type": "Ghost",
+      "emoji": "👻",
+      "rarity": "common"
+    },
+    {
+      "id": "haunter",
+      "national_dex": 93,
+      "name_fr": "Spectrum",
+      "name_en": "Haunter",
+      "type": "Ghost",
+      "emoji": "👻",
+      "rarity": "common"
+    },
+    {
+      "id": "gengar",
+      "national_dex": 94,
+      "name_fr": "Ectoplasma",
+      "name_en": "Gengar",
+      "type": "Ghost",
+      "emoji": "👻",
+      "rarity": "common"
+    },
+    {
+      "id": "onix",
+      "national_dex": 95,
+      "name_fr": "Onix",
+      "name_en": "Onix",
+      "type": "Rock",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "drowzee",
+      "national_dex": 96,
+      "name_fr": "Soporifik",
+      "name_en": "Drowzee",
+      "type": "Psychic",
+      "emoji": "🔮",
+      "rarity": "common"
+    },
+    {
+      "id": "hypno",
+      "national_dex": 97,
+      "name_fr": "Hypnomade",
+      "name_en": "Hypno",
+      "type": "Psychic",
+      "emoji": "🔮",
+      "rarity": "common"
+    },
+    {
+      "id": "krabby",
+      "national_dex": 98,
+      "name_fr": "Krabby",
+      "name_en": "Krabby",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "kingler",
+      "national_dex": 99,
+      "name_fr": "Krabboss",
+      "name_en": "Kingler",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "voltorb",
+      "national_dex": 100,
+      "name_fr": "Voltorbe",
+      "name_en": "Voltorb",
+      "type": "Electric",
+      "emoji": "⚡",
+      "rarity": "common"
+    },
+    {
+      "id": "electrode",
+      "national_dex": 101,
+      "name_fr": "Électrode",
+      "name_en": "Electrode",
+      "type": "Electric",
+      "emoji": "⚡",
+      "rarity": "common"
+    },
+    {
+      "id": "exeggcute",
+      "national_dex": 102,
+      "name_fr": "Noeunoeuf",
+      "name_en": "Exeggcute",
+      "type": "Grass",
+      "emoji": "🌿",
+      "rarity": "common"
+    },
+    {
+      "id": "exeggutor",
+      "national_dex": 103,
+      "name_fr": "Noadkoko",
+      "name_en": "Exeggutor",
+      "type": "Grass",
+      "emoji": "🌿",
+      "rarity": "common"
+    },
+    {
+      "id": "cubone",
+      "national_dex": 104,
+      "name_fr": "Osselait",
+      "name_en": "Cubone",
+      "type": "Ground",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "marowak",
+      "national_dex": 105,
+      "name_fr": "Ossatueur",
+      "name_en": "Marowak",
+      "type": "Ground",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "hitmonlee",
+      "national_dex": 106,
+      "name_fr": "Kicklee",
+      "name_en": "Hitmonlee",
+      "type": "Fighting",
+      "emoji": "👊",
+      "rarity": "common"
+    },
+    {
+      "id": "hitmonchan",
+      "national_dex": 107,
+      "name_fr": "Tygnon",
+      "name_en": "Hitmonchan",
+      "type": "Fighting",
+      "emoji": "👊",
+      "rarity": "common"
+    },
+    {
+      "id": "lickitung",
+      "national_dex": 108,
+      "name_fr": "Excelangue",
+      "name_en": "Lickitung",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "koffing",
+      "national_dex": 109,
+      "name_fr": "Smogo",
+      "name_en": "Koffing",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "weezing",
+      "national_dex": 110,
+      "name_fr": "Smogogo",
+      "name_en": "Weezing",
+      "type": "Poison",
+      "emoji": "☠",
+      "rarity": "common"
+    },
+    {
+      "id": "rhyhorn",
+      "national_dex": 111,
+      "name_fr": "Rhinocorne",
+      "name_en": "Rhyhorn",
+      "type": "Ground",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "rhydon",
+      "national_dex": 112,
+      "name_fr": "Rhinoféros",
+      "name_en": "Rhydon",
+      "type": "Ground",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "chansey",
+      "national_dex": 113,
+      "name_fr": "Leveinard",
+      "name_en": "Chansey",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "tangela",
+      "national_dex": 114,
+      "name_fr": "Saquedeneu",
+      "name_en": "Tangela",
+      "type": "Grass",
+      "emoji": "🌿",
+      "rarity": "common"
+    },
+    {
+      "id": "kangaskhan",
+      "national_dex": 115,
+      "name_fr": "Kangourex",
+      "name_en": "Kangaskhan",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "horsea",
+      "national_dex": 116,
+      "name_fr": "Hypocéan",
+      "name_en": "Horsea",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "seadra",
+      "national_dex": 117,
+      "name_fr": "Hypotrempe",
+      "name_en": "Seadra",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "goldeen",
+      "national_dex": 118,
+      "name_fr": "Poissirène",
+      "name_en": "Goldeen",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "seaking",
+      "national_dex": 119,
+      "name_fr": "Poissoroy",
+      "name_en": "Seaking",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "staryu",
+      "national_dex": 120,
+      "name_fr": "Stari",
+      "name_en": "Staryu",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "starmie",
+      "national_dex": 121,
+      "name_fr": "Staross",
+      "name_en": "Starmie",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "mrmime",
+      "national_dex": 122,
+      "name_fr": "M. Mime",
+      "name_en": "Mr. Mime",
+      "type": "Psychic",
+      "emoji": "🔮",
+      "rarity": "common"
+    },
+    {
+      "id": "scyther",
+      "national_dex": 123,
+      "name_fr": "Insécateur",
+      "name_en": "Scyther",
+      "type": "Bug",
+      "emoji": "🐛",
+      "rarity": "common"
+    },
+    {
+      "id": "jynx",
+      "national_dex": 124,
+      "name_fr": "Lippoutou",
+      "name_en": "Jynx",
+      "type": "Ice",
+      "emoji": "❄",
+      "rarity": "common"
+    },
+    {
+      "id": "electabuzz",
+      "national_dex": 125,
+      "name_fr": "Élektek",
+      "name_en": "Electabuzz",
+      "type": "Electric",
+      "emoji": "⚡",
+      "rarity": "common"
+    },
+    {
+      "id": "magmar",
+      "national_dex": 126,
+      "name_fr": "Magmar",
+      "name_en": "Magmar",
+      "type": "Fire",
+      "emoji": "🔥",
+      "rarity": "common"
+    },
+    {
+      "id": "pinsir",
+      "national_dex": 127,
+      "name_fr": "Scarabrute",
+      "name_en": "Pinsir",
+      "type": "Bug",
+      "emoji": "🐛",
+      "rarity": "common"
+    },
+    {
+      "id": "tauros",
+      "national_dex": 128,
+      "name_fr": "Tauros",
+      "name_en": "Tauros",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "magikarp",
+      "national_dex": 129,
+      "name_fr": "Magicarpe",
+      "name_en": "Magikarp",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "gyarados",
+      "national_dex": 130,
+      "name_fr": "Léviator",
+      "name_en": "Gyarados",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "lapras",
+      "national_dex": 131,
+      "name_fr": "Lokhlass",
+      "name_en": "Lapras",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "ditto",
+      "national_dex": 132,
+      "name_fr": "Métamorph",
+      "name_en": "Ditto",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "eevee",
+      "national_dex": 133,
+      "name_fr": "Évoli",
+      "name_en": "Eevee",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "vaporeon",
+      "national_dex": 134,
+      "name_fr": "Aquali",
+      "name_en": "Vaporeon",
+      "type": "Water",
+      "emoji": "💧",
+      "rarity": "common"
+    },
+    {
+      "id": "jolteon",
+      "national_dex": 135,
+      "name_fr": "Voltali",
+      "name_en": "Jolteon",
+      "type": "Electric",
+      "emoji": "⚡",
+      "rarity": "common"
+    },
+    {
+      "id": "flareon",
+      "national_dex": 136,
+      "name_fr": "Pyroli",
+      "name_en": "Flareon",
+      "type": "Fire",
+      "emoji": "🔥",
+      "rarity": "common"
+    },
+    {
+      "id": "porygon",
+      "national_dex": 137,
+      "name_fr": "Porygon",
+      "name_en": "Porygon",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "omanyte",
+      "national_dex": 138,
+      "name_fr": "Amonita",
+      "name_en": "Omanyte",
+      "type": "Rock",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "omastar",
+      "national_dex": 139,
+      "name_fr": "Amonistar",
+      "name_en": "Omastar",
+      "type": "Rock",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "kabuto",
+      "national_dex": 140,
+      "name_fr": "Kabuto",
+      "name_en": "Kabuto",
+      "type": "Rock",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "kabutops",
+      "national_dex": 141,
+      "name_fr": "Kabutops",
+      "name_en": "Kabutops",
+      "type": "Rock",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "aerodactyl",
+      "national_dex": 142,
+      "name_fr": "Ptéra",
+      "name_en": "Aerodactyl",
+      "type": "Rock",
+      "emoji": "🪨",
+      "rarity": "common"
+    },
+    {
+      "id": "snorlax",
+      "national_dex": 143,
+      "name_fr": "Ronflex",
+      "name_en": "Snorlax",
+      "type": "Normal",
+      "emoji": "🐾",
+      "rarity": "common"
+    },
+    {
+      "id": "articuno",
+      "national_dex": 144,
+      "name_fr": "Artikodin",
+      "name_en": "Articuno",
+      "type": "Ice",
+      "emoji": "❄",
+      "rarity": "legendary"
+    },
+    {
+      "id": "zapdos",
+      "national_dex": 145,
+      "name_fr": "Électhor",
+      "name_en": "Zapdos",
+      "type": "Electric",
+      "emoji": "⚡",
+      "rarity": "legendary"
+    },
+    {
+      "id": "moltres",
+      "national_dex": 146,
+      "name_fr": "Sulfura",
+      "name_en": "Moltres",
+      "type": "Fire",
+      "emoji": "🔥",
+      "rarity": "legendary"
+    },
+    {
+      "id": "dratini",
+      "national_dex": 147,
+      "name_fr": "Minidraco",
+      "name_en": "Dratini",
+      "type": "Dragon",
+      "emoji": "🐉",
+      "rarity": "common"
+    },
+    {
+      "id": "dragonair",
+      "national_dex": 148,
+      "name_fr": "Draco",
+      "name_en": "Dragonair",
+      "type": "Dragon",
+      "emoji": "🐉",
+      "rarity": "common"
+    },
+    {
+      "id": "dragonite",
+      "national_dex": 149,
+      "name_fr": "Dracolosse",
+      "name_en": "Dragonite",
+      "type": "Dragon",
+      "emoji": "🐉",
+      "rarity": "rare"
+    },
+    {
+      "id": "mewtwo",
+      "national_dex": 150,
+      "name_fr": "Mewtwo",
+      "name_en": "Mewtwo",
+      "type": "Psychic",
+      "emoji": "🔮",
+      "rarity": "legendary"
+    },
+    {
+      "id": "mew",
+      "national_dex": 151,
+      "name_fr": "Mew",
+      "name_en": "Mew",
+      "type": "Psychic",
+      "emoji": "🔮",
+      "rarity": "legendary"
+    }
+  ]
+}

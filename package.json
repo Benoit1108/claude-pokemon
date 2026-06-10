@@ -41,7 +41,8 @@
   ],
   "workspaces": [
     "api",
-    "shared"
+    "shared",
+    "web"
   ],
   "devDependencies": {
     "bats": "^1.13.0"
