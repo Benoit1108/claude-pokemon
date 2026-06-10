@@ -42,6 +42,7 @@ import { handleLiveCommit } from './handlers/arena/live-commit'
 import { handlePairInit } from './handlers/arena/pair-init'
 import { handlePairRedeem } from './handlers/arena/pair-redeem'
 import { handleArenaWhoami } from './handlers/arena/whoami'
+import { handleAuthSession } from './handlers/auth/session'
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -85,6 +86,9 @@ export default {
       }
       if (url.pathname === '/v1/arena/whoami' && request.method === 'GET') {
         return await handleArenaWhoami(request, url, env)
+      }
+      if (url.pathname === '/v1/auth/session' && request.method === 'GET') {
+        return await handleAuthSession(request, env)
       }
       if (url.pathname === '/v1/arena/disable' && request.method === 'DELETE') {
         return await handleArenaDisable(request, url, env)

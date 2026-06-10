@@ -403,3 +403,33 @@ export interface LiveBattleView {
   last_activity_at: string
   forfeit_by: BattleSide | null
 }
+
+// ── Auth : identity + session (Phase R2a, ADR-008/010) ──────────────────────
+
+export type IdentityProvider = 'github' | 'email'
+
+export const USER_ID_RE = /^[a-f0-9]{16}$/
+
+/** Session lifetime — 30 days. KV TTL auto-expires the stored token. */
+export const SESSION_TTL_S = 60 * 60 * 24 * 30
+
+/**
+ * A registered user, identified by one or more external providers and linking
+ * the legacy anon_id account(s) (ADR-010). Stored at `user:<user_id>`.
+ */
+export interface UserRecord {
+  user_id: string
+  created_at: string
+  updated_at: string
+  github: { id: number; login: string } | null
+  email: { address: string } | null
+  /** anon_ids (CLI/web pre-auth accounts) linked to this user. */
+  linked_anon_ids: string[]
+  display_name: string | null
+}
+
+/** A session token's stored side — `session:<sha256(token)>` → this (KV TTL). */
+export interface SessionRecord {
+  user_id: string
+  created_at: string
+}
