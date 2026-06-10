@@ -12,16 +12,20 @@ import type {
   ArenaRecord,
   BattleReactions,
   BattleResult,
+  IdentityProvider,
   KVRecord,
   LiveBattleRecord,
   PairRecord,
   PendingEncounter,
+  SessionRecord,
+  UserRecord,
 } from '../types'
 import {
   emptyReactions,
   LIVE_BATTLE_TTL_S,
   LIVE_BATTLE_INVITE_COOLDOWN_S,
   PAIR_CODE_TTL_S,
+  SESSION_TTL_S,
 } from '../types'
 
 /** Cloudflare KV minimum expirationTtl. Any shorter value throws 400. */
@@ -323,4 +327,63 @@ export async function listAllStats(env: Env): Promise<KVRecord[]> {
     }
   }
   return records
+}
+
+// ── Auth : users, identities, sessions (Phase R2a) ──────────────────────────
+
+export async function getUser(env: Env, userId: string): Promise<UserRecord | null> {
+  const raw = await env.STATS.get(`user:${userId}`)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as UserRecord
+  } catch {
+    return null
+  }
+}
+
+export async function putUser(env: Env, user: UserRecord): Promise<void> {
+  await env.STATS.put(`user:${user.user_id}`, JSON.stringify(user))
+}
+
+/** `identity:<provider>:<externalId>` → user_id (stable across logins). */
+export async function getIdentity(
+  env: Env,
+  provider: IdentityProvider,
+  externalId: string,
+): Promise<string | null> {
+  return await env.STATS.get(`identity:${provider}:${externalId}`)
+}
+
+export async function putIdentity(
+  env: Env,
+  provider: IdentityProvider,
+  externalId: string,
+  userId: string,
+): Promise<void> {
+  await env.STATS.put(`identity:${provider}:${externalId}`, userId)
+}
+
+/** `session:<sha256(token)>` → SessionRecord. TTL-expired by KV. */
+export async function getSession(env: Env, tokenHash: string): Promise<SessionRecord | null> {
+  const raw = await env.STATS.get(`session:${tokenHash}`)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as SessionRecord
+  } catch {
+    return null
+  }
+}
+
+export async function putSession(
+  env: Env,
+  tokenHash: string,
+  record: SessionRecord,
+): Promise<void> {
+  await env.STATS.put(`session:${tokenHash}`, JSON.stringify(record), {
+    expirationTtl: clampTtl(SESSION_TTL_S),
+  })
+}
+
+export async function deleteSession(env: Env, tokenHash: string): Promise<void> {
+  await env.STATS.delete(`session:${tokenHash}`)
 }
