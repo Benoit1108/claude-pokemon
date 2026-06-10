@@ -90,6 +90,11 @@ export default defineNuxtConfig({
           : 'http://localhost:8787'),
       version: process.env.npm_package_version || '0.1.0',
       githubStars: process.env.NUXT_PUBLIC_GITHUB_STARS || '0',
+      // GitHub OAuth client_id (public). Env-aware like apiBase : the local
+      // "dev" OAuth app (localhost callback) in dev, the prod app at build.
+      githubClientId:
+        process.env.NUXT_PUBLIC_GITHUB_CLIENT_ID ||
+        (process.env.NODE_ENV === 'production' ? 'Ov23liiZGFKFIT78EDcz' : 'Ov23litoLzKdCzbcWAHq'),
     },
   },
   compatibilityDate: '2026-05-06',

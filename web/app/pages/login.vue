@@ -11,11 +11,13 @@
 //   3. Drop a .json file (the "download" button output)
 
 import { useArenaSession } from '~/composables/useArenaSession'
+import { useAuthSession } from '~/composables/useAuthSession'
 
 const router = useRouter()
 const api = useApi()
 const { t } = useI18n()
 const { isPaired, set } = useArenaSession()
+const { signInWithGitHub } = useAuthSession()
 
 onMounted(() => {
   if (isPaired.value) {
@@ -135,6 +137,18 @@ useHead({
         {{ t('login.subtitle') }}
       </p>
     </header>
+
+    <section class="card p-6 mb-4 text-center">
+      <button type="button" class="btn-primary w-full justify-center" @click="signInWithGitHub">
+        {{ t('auth.sign_in_github') }}
+      </button>
+    </section>
+
+    <div class="flex items-center gap-3 my-4 text-muted text-xs uppercase tracking-wide">
+      <span class="h-px flex-1 bg-current opacity-20" />
+      {{ t('auth.or') }}
+      <span class="h-px flex-1 bg-current opacity-20" />
+    </div>
 
     <section class="card p-6 space-y-4">
       <div>
