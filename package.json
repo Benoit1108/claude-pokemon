@@ -28,6 +28,7 @@
     "claude-pokemon": "./bin/claude-pokemon"
   },
   "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm run -w api dev\" \"npm run -w web dev\"",
     "build:data": "bash lib/build-data.sh && npm run -s -w shared build:gen",
     "test": "bats tests/cli/",
     "ci:pre-push": "bash scripts/ci-pre-push.sh"
@@ -45,6 +46,7 @@
     "web"
   ],
   "devDependencies": {
-    "bats": "^1.13.0"
+    "bats": "^1.13.0",
+    "concurrently": "^10.0.3"
   }
 }
