@@ -23,6 +23,10 @@
       "types": "./dist/stages.d.ts",
       "import": "./dist/stages.js"
     },
+    "./xp": {
+      "types": "./dist/xp.d.ts",
+      "import": "./dist/xp.js"
+    },
     "./species": {
       "types": "./dist/species.d.ts",
       "import": "./dist/species.js"
