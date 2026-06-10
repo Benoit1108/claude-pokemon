@@ -35,13 +35,12 @@ Until it lands, the layout below (bash CLI + submodule-linked arena) is the live
 reality; the target here is what we migrate toward. See ADR-005…ADR-010.
 
 ```
-monorepo (pnpm workspaces)
-├── packages/shared   — pure, IO-free rules engine = SINGLE SOURCE OF TRUTH
-│                        (resolveBattle, applyTick, evolve, xp curves,
-│                         capture rate, type chart, content data)
-├── packages/cli      — was bash; migrates to TS, imports shared directly
-├── packages/worker   — Cloudflare Worker (api), imports shared
-└── packages/web      — Nuxt arena, imports shared
+monorepo (npm workspaces — root = CLI, + api/ shared/ web/)
+├── (root)   — CLI (npm-published `claude-pokemon`); bash today, migrates to TS
+├── shared/  — pure, IO-free rules engine = SINGLE SOURCE OF TRUTH
+│               (resolveBattle, applyTick, evolve, xp curves, capture, type chart)
+├── api/     — Cloudflare Worker (`claude-pokemon-api`), imports shared
+└── web/     — Nuxt arena (`claude-pokemon-arena`), imports shared (workspace dep)
 ```
 
 - **One engine, three clients.** CLI, worker and web all import `packages/shared`
@@ -296,14 +295,23 @@ patterns (key by anon_id, list+sort for leaderboard at <1000 entries) fit
 KV constraints comfortably. Migrating to D1 (CF SQL) becomes worth it
 beyond ~5K daily active submitters.
 
-### ADR-005 : monorepo (pnpm workspaces)
+### ADR-005 : monorepo (npm workspaces)
 **2026-06-10.** `shared` is about to become the load-bearing engine consumed by
 CLI + worker + web. The current git-submodule link (arena → CLI repo) is a known
 friction (init-or-build-fails, manual bumps) and blocks atomic cross-package
-changes. A pnpm-workspace monorepo (`packages/{shared,cli,worker,web}`) makes
-shared a normal workspace dep — one version, one CI, "change a rule + all its
-consumers in a single PR". Arena git history preserved via subtree merge.
+changes. So the arena is merged into this repo (`web/`, history preserved via
+`git subtree`) and added to the workspaces — shared becomes a normal workspace
+dep, one version, one CI, "change a rule + all its consumers in a single PR".
 Reconsider only if the arena must stay independently releasable.
+
+**Amendment (2026-06-10, R1a).** Originally drafted as *pnpm* with a
+`packages/{…}` layout. Reality: the repo is **already on npm workspaces**
+(`["api","shared","web"]`) and so was the arena — switching to pnpm is a separate
+tooling migration (lockfiles, CI, CF Pages `packageManager`, the pnpm+Nuxt
+hoisting gotcha) for **no functional gain here**. We stay on npm workspaces. The
+layout stays flat (`shared/`, `api/`, `web/`, CLI at root) rather than `packages/`
+— relocating the npm-published CLI root is risky and cosmetic, so it's deferred.
+pnpm/`packages/` only if a concrete pain appears, as an isolated step.
 
 ### ADR-006 : `shared` = single source of truth, pure IO-free engine
 **2026-06-10.** All game rules (XP curve, evolution incl. Eevee friendship/form

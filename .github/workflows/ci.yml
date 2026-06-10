@@ -233,6 +233,95 @@ jobs:
       - run: npm ci
       - run: npm run test:coverage
 
+  # ─── Stage : quality + test + build — web side (Nuxt arena) ───────────────
+  # Web jobs pin Node 22 (web's @nuxt/eslint → eslint-flat-config-utils calls
+  # Object.groupBy, Node 21+). `npm ci` at root installs the whole workspace
+  # (incl. shared's build via prepare + web's nuxt prepare); `-w web` runs each
+  # script with web/ as cwd. No submodule checkout — shared is a workspace dep.
+  web-lint:
+    name: 🐛 web — ESLint
+    needs: [security-root]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci
+      - run: npm run -w web lint
+
+  web-prettier:
+    name: 💅 web — Prettier check
+    needs: [security-root]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci
+      - run: npm run -w web format:check
+
+  web-typecheck:
+    name: 🚨 web — TypeScript typecheck
+    needs: [security-root]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci
+      - run: npm run -w web typecheck
+
+  web-knip:
+    name: 🔍 web — Dead code (knip)
+    needs: [security-root]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci
+      - run: npm run -w web knip
+
+  web-i18n:
+    name: 🌍 web — i18n FR/EN parity
+    needs: [security-root]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci
+      - run: npm run -w web check:i18n
+
+  web-tests:
+    name: ✅ web — Vitest + coverage (80%)
+    needs: [web-lint, web-prettier, web-typecheck, web-knip, web-i18n]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci
+      - run: npm run -w web test:coverage
+
+  web-build:
+    name: 📦 web — Nuxt build (cloudflare-pages preset)
+    needs: [web-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with: { node-version: '22', cache: 'npm' }
+      - run: npm ci
+      - name: Build for Cloudflare Pages
+        env:
+          NITRO_PRESET: cloudflare-pages
+        run: npm run -w web build
+      - name: Verify dist output
+        run: |
+          test -d web/dist || (echo "::error::web/dist not generated" && exit 1)
+          ls -la web/dist | head -20
+
   # ─── Stage : packaging ────────────────────────────────────────────────────
   npm-pack:
     name: 📦 npm pack — verify packaging

@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sprint 5 mockups · claude-pokemon arena</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  .shell { max-width: 1080px; margin: 0 auto; padding: 5rem 1.5rem 6rem; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3rem; }
+  .topbar__brand { display: inline-flex; align-items: center; gap: 0.5rem; font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; }
+  .topbar__brand .accent { color: var(--brand-accent); }
+
+  .intro { margin-bottom: 3rem; max-width: 64ch; }
+  .intro .text-display { margin: 0; font-size: clamp(2rem, 4vw + 1rem, 3.5rem); }
+  .intro p { margin-top: 0.75rem; }
+  .intro__lead { font-size: 1.0625rem; color: var(--text-secondary); }
+
+  .meta-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.25rem; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+  .card-link {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1.75rem 1.75rem 1.5rem;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    transition: transform var(--duration-default) var(--ease-out),
+                border-color var(--duration-default) var(--ease-out),
+                box-shadow var(--duration-default) var(--ease-out);
+  }
+  .card-link::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--brand-accent), var(--lineage-fire));
+    transform: scaleX(0.2);
+    transform-origin: left;
+    opacity: 0.6;
+    transition: transform var(--duration-slow) var(--ease-out),
+                opacity var(--duration-default) var(--ease-out);
+  }
+  .card-link:hover {
+    transform: translateY(-2px);
+    border-color: var(--brand-accent-ring);
+    box-shadow: var(--shadow-md);
+  }
+  .card-link:hover::after { transform: scaleX(1); opacity: 1; }
+
+  .card-link__index {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .card-link h3 { margin: 0.25rem 0 0.25rem; }
+  .card-link p { margin: 0; color: var(--text-secondary); font-size: 0.875rem; line-height: 1.55; }
+  .card-link__chips { display: flex; gap: 0.375rem; margin-top: 1rem; flex-wrap: wrap; }
+
+  .note {
+    margin-top: 4rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+  .note code {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    padding: 1px 5px;
+    background: var(--surface-elevated);
+    border-radius: 5px;
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <div class="topbar">
+    <span class="topbar__brand">claude-<span class="accent">pokemon</span> · mockups</span>
+    <div class="theme-toggle" data-theme-toggle role="radiogroup" aria-label="Theme">
+      <span class="theme-thumb"></span>
+      <button class="theme-option" data-theme-value="light" aria-label="Light" title="Light">☀</button>
+      <button class="theme-option" data-theme-value="dark" aria-label="Dark" title="Dark">🌙</button>
+      <button class="theme-option" data-theme-value="system" aria-label="System" title="System">🖥</button>
+    </div>
+  </div>
+
+  <section class="intro reveal reveal-1">
+    <h1 class="text-display">Sprint 5 — design pass v2</h1>
+    <p class="intro__lead">Direction&nbsp;: <em>Pokémon canon moderne</em>. Surfaces propres type Linear/Vercel, accents lineage isolés, sprites pixel-art assumés mais le reste de la chrome reste aéré.</p>
+    <div class="meta-row">
+      <span class="chip">Bricolage Grotesque</span>
+      <span class="chip">DM Sans</span>
+      <span class="chip">JetBrains Mono</span>
+      <span class="pill">dark-first</span>
+      <span class="pill">prefers-reduced-motion</span>
+    </div>
+  </section>
+
+  <div class="grid">
+    <a class="card-link reveal reveal-1" href="01-header.html">
+      <span class="card-link__index">01 · priorité 1</span>
+      <h3 class="text-h2">Header v2 desktop</h3>
+      <p>Sticky 56px, backdrop-blur, segmented theme 3-état, stars pill GitHub, gradient underline gold→fire sur l'onglet actif.</p>
+      <div class="card-link__chips">
+        <span class="chip">sticky</span>
+        <span class="chip">backdrop-blur</span>
+        <span class="chip">segmented</span>
+      </div>
+    </a>
+
+    <a class="card-link reveal reveal-2" href="02-landing.html">
+      <span class="card-link__index">02 · priorité 2</span>
+      <h3 class="text-h2">Landing hero</h3>
+      <p>4 gros tiles featured 2×2 (Pokédex/Arena/Trail/Zones), CTAs secondaires déclassés en btn-secondary/ghost.</p>
+      <div class="card-link__chips">
+        <span class="chip">lineage accents</span>
+        <span class="chip">hover-reveal</span>
+        <span class="chip">stagger</span>
+      </div>
+    </a>
+
+    <a class="card-link reveal reveal-3" href="03-mobile.html">
+      <span class="card-link__index">03 · priorité 3</span>
+      <h3 class="text-h2">Mobile bottom-nav</h3>
+      <p>5 entrées, safe-area-inset, active = icon lift + pill gradient gold→fire. Header mobile minimaliste sans tabs.</p>
+      <div class="card-link__chips">
+        <span class="chip">md:hidden</span>
+        <span class="chip">safe-area</span>
+        <span class="chip">tap≥44</span>
+      </div>
+    </a>
+
+    <a class="card-link reveal reveal-4" href="04-zones.html">
+      <span class="card-link__index">04 · priorité 4</span>
+      <h3 class="text-h2">Page Zones revampée</h3>
+      <p>Grid de 8 zones, gradient subtil par type, badges status theme-aware, état paired-required géré gracefully (pas un 403 brut).</p>
+      <div class="card-link__chips">
+        <span class="chip">grid 4×2</span>
+        <span class="chip">status badges</span>
+        <span class="chip">/signup</span>
+      </div>
+    </a>
+  </div>
+
+  <div class="note">
+    <strong>Pour ouvrir&nbsp;:</strong> <code>xdg-open docs/mockups/sprint-5/index.html</code> ou un serveur statique (<code>npx serve docs/mockups/sprint-5</code>). Les tokens vivent dans <code>tokens.css</code> — ils miroirisent <code>uno.config.ts</code>. Aucun build, aucun framework.
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

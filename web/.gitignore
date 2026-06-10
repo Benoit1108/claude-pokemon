@@ -1,0 +1,38 @@
+# Nuxt
+.nuxt/
+.output/
+.data/
+dist/
+coverage/
+
+# Node
+node_modules/
+*.log
+.npm
+
+# Env
+.env
+.env.local
+.env.production
+
+# Misc
+.DS_Store
+.vscode/
+.idea/
+
+# Cloudflare
+.wrangler/
+
+# Demo recordings — raw videos are local-only, only the final GIF is committed
+.demo/output/
+.demo/playwright-report/
+
+# Claude Code local settings (per-machine permissions, not shared)
+.claude/settings.local.json
+
+# Build outputs from the vendored submodule's nested workspaces. The shared
+# package's dist/ IS committed in its own repo (intentional) ; everything
+# else in vendor/ is read-only from this repo.
+
+# Local design scratch (mockups, screenshots) — not shipped
+.design/

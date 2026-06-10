@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>04 · Page Zones · claude-pokemon arena</title>
+<link rel="stylesheet" href="tokens.css" />
+<style>
+  /* Header (recap) ---------------------------------------- */
+  .header {
+    position: sticky; top: 0; z-index: 50;
+    height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; padding: 0 1.5rem;
+    background: var(--surface-overlay);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(180%);
+    border-bottom: 1px solid var(--surface-border);
+  }
+  .header__cluster { display: flex; align-items: center; gap: 0.75rem; }
+  .header__brand { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.375rem 0.25rem 0.25rem; border-radius: var(--radius-md); }
+  .pokeball-icon { width: 28px; height: 28px; }
+  .header__wordmark { font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; letter-spacing: -0.02em; }
+  .header__wordmark .accent { background: linear-gradient(135deg, var(--brand-accent), var(--lineage-fire)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .nav-tabs { display: flex; gap: 0.125rem; }
+  .nav-tab { position: relative; padding: 0.5rem 0.875rem; font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); border-radius: var(--radius-md); transition: all var(--duration-default) var(--ease-out); }
+  .nav-tab:hover { background: var(--surface-elevated); color: var(--text-primary); }
+  .nav-tab[aria-current="page"] { color: var(--text-primary); }
+  .nav-tab[aria-current="page"]::after { content: ''; position: absolute; left: 0.875rem; right: 0.875rem; bottom: -16px; height: 2px; background: linear-gradient(90deg, var(--brand-accent), var(--lineage-fire)); border-radius: 2px 2px 0 0; }
+  .user-pill { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.625rem 0.25rem 0.25rem; background: var(--surface-elevated); border: 1px solid var(--surface-border); border-radius: var(--radius-pill); }
+  .user-avatar { position: relative; width: 22px; height: 22px; border-radius: 50%; overflow: hidden; background: #fff; flex-shrink: 0; }
+  .user-avatar::before { content: ''; position: absolute; inset: 0 0 50% 0; background: linear-gradient(180deg, #ef4444, #c81e1e); }
+  .user-avatar::after { content: ''; position: absolute; inset: 50% 0 auto 0; height: 2px; background: #18181b; transform: translateY(-50%); }
+  .user-avatar > .dot { position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; background: #fff; border: 1.5px solid #18181b; border-radius: 50%; transform: translate(-50%, -50%); z-index: 2; }
+  .user-name { font-size: 0.8125rem; font-weight: 500; }
+
+  /* Page ------------------------------------------------- */
+  .page-shell {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 6rem;
+  }
+  .page-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    flex-wrap: wrap;
+  }
+  .page-head__title h1 { margin: 0; }
+  .page-head__title p { margin: 0.5rem 0 0; max-width: 56ch; color: var(--text-secondary); }
+  .page-head__player {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-pill);
+  }
+  .page-head__player__meta {
+    display: flex; flex-direction: column; gap: 0; line-height: 1.1;
+  }
+  .page-head__player__level { font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-tertiary); letter-spacing: 0.06em; text-transform: uppercase; }
+  .page-head__player__value {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+  }
+  .page-head__player__value .accent { color: var(--brand-accent); }
+
+  /* Zones grid ------------------------------------------- */
+  .zones-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
+  @media (max-width: 980px) { .zones-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .zones-grid { grid-template-columns: 1fr; } }
+
+  .zone {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1.25rem 1.25rem 1.125rem;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    color: inherit;
+    transition: transform var(--duration-default) var(--ease-out),
+                border-color var(--duration-default) var(--ease-out),
+                box-shadow var(--duration-default) var(--ease-out);
+    min-height: 200px;
+    cursor: pointer;
+  }
+  .zone__bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(120% 90% at 100% 0%, var(--zone-color, var(--brand-accent)) 0%, transparent 55%),
+      radial-gradient(80% 70% at 0% 100%, var(--zone-color, var(--brand-accent)) 0%, transparent 50%);
+    opacity: 0.07;
+    transition: opacity var(--duration-default) var(--ease-out);
+    z-index: 0;
+  }
+  [data-theme="dark"] .zone__bg { opacity: 0.10; }
+  .zone > * { position: relative; z-index: 1; }
+
+  .zone[data-type="grass"]    { --zone-color: var(--lineage-grass); }
+  .zone[data-type="water"]    { --zone-color: var(--lineage-water); }
+  .zone[data-type="fire"]     { --zone-color: var(--lineage-fire); }
+  .zone[data-type="electric"] { --zone-color: var(--lineage-electric); }
+  .zone[data-type="legendary"]{ --zone-color: var(--brand-accent); }
+
+  .zone:hover {
+    transform: translateY(-3px);
+    border-color: var(--zone-color);
+    box-shadow: 0 14px 32px -10px color-mix(in srgb, var(--zone-color) 35%, transparent);
+  }
+  .zone:hover .zone__bg { opacity: 0.18; }
+  [data-theme="dark"] .zone:hover .zone__bg { opacity: 0.22; }
+  .zone:hover .zone__cta { opacity: 1; transform: translateX(0); }
+
+  /* Locked / paired-required states */
+  .zone--locked { cursor: not-allowed; }
+  .zone--locked .zone__bg { opacity: 0.04; }
+  .zone--locked .zone__title,
+  .zone--locked .zone__desc { filter: grayscale(0.5); color: var(--text-tertiary); }
+  .zone--locked .zone__icon { filter: grayscale(0.7); opacity: 0.55; }
+  .zone--locked:hover { transform: none; border-color: var(--surface-border); box-shadow: none; }
+  .zone--locked:hover .zone__bg { opacity: 0.04; }
+  .zone--locked:hover .zone__cta { opacity: 0.6; transform: translateX(0); }
+
+  .zone__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+  .zone__icon {
+    font-size: 1.75rem;
+    line-height: 1;
+    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.20));
+  }
+
+  /* Status badge ----------------------------------------- */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .status-badge::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 3px currentColor;
+    opacity: 0.25;
+  }
+  .status-badge--sweet  { background: var(--status-success-soft); color: var(--status-success); }
+  .status-badge--prev   { background: var(--status-info-soft);    color: var(--status-info); }
+  .status-badge--out    { background: var(--surface-elevated);    color: var(--text-tertiary); }
+  .status-badge--lock   { background: var(--surface-elevated);    color: var(--text-tertiary); }
+  .status-badge--auth   { background: var(--status-warning-soft); color: var(--status-warning); }
+
+  /* Zone body ------------------------------------------- */
+  .zone__title { margin: 0.5rem 0 0; }
+  .zone__desc { margin: 0.125rem 0 0; font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.4; }
+
+  .zone__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: auto;
+    padding-top: 0.875rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .zone__meta__div { width: 1px; height: 10px; background: var(--surface-border); }
+  .zone__pool {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .zone__pool .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--pool-color, var(--text-tertiary));
+  }
+  .pool-common    { --pool-color: var(--text-tertiary); }
+  .pool-rare      { --pool-color: var(--lineage-water); }
+  .pool-legendary { --pool-color: var(--brand-accent); }
+
+  .zone__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.625rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--zone-color);
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity var(--duration-default) var(--ease-out),
+                transform var(--duration-default) var(--ease-out);
+  }
+  .zone--locked .zone__cta { color: var(--text-secondary); }
+  .zone--auth .zone__cta { color: var(--status-warning); }
+
+  /* Lock overlay icon ---------------------------------- */
+  .zone__lock {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 2;
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-elevated);
+    border: 1px solid var(--surface-border);
+    border-radius: 50%;
+    color: var(--text-secondary);
+  }
+  .zone--auth .zone__lock {
+    background: var(--status-warning-soft);
+    border-color: var(--status-warning);
+    color: var(--status-warning);
+  }
+  .zone__lock svg { width: 13px; height: 13px; }
+
+  /* Legend / footnote ---------------------------------- */
+  .legend {
+    margin-top: 2rem;
+    padding: 1.125rem 1.25rem;
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .legend__title {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .legend__items {
+    display: flex; gap: 1rem; flex-wrap: wrap;
+  }
+  .legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+  }
+</style>
+</head>
+<body>
+
+<a class="mockup-toolbar" href="index.html">← all mockups · 04 zones</a>
+
+<!-- Header -->
+<header class="header">
+  <div class="header__cluster">
+    <a href="#" class="header__brand">
+      <svg class="pokeball-icon" viewBox="0 0 32 32" aria-hidden="true">
+        <defs><linearGradient id="pballZ" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ef4444"/><stop offset="1" stop-color="#c81e1e"/></linearGradient></defs>
+        <circle cx="16" cy="16" r="14" fill="#fafafa" stroke="#18181b" stroke-width="2"/>
+        <path d="M2 16 A14 14 0 0 1 30 16 Z" fill="url(#pballZ)" stroke="#18181b" stroke-width="2"/>
+        <circle cx="16" cy="16" r="4.5" fill="#fafafa" stroke="#18181b" stroke-width="2"/>
+        <circle cx="16" cy="16" r="1.6" fill="#18181b"/>
+      </svg>
+      <span class="header__wordmark">claude-<span class="accent">pokemon</span></span>
+    </a>
+    <span class="pill" style="font-family: var(--font-mono); font-size: 0.6875rem; padding: 0.125rem 0.5rem; color: var(--text-tertiary);">v0.4.9</span>
+  </div>
+  <nav class="nav-tabs" aria-label="Main">
+    <a class="nav-tab" href="#">Pokédex</a>
+    <a class="nav-tab" href="#">Arena</a>
+    <a class="nav-tab" href="#">Trail</a>
+    <a class="nav-tab" aria-current="page" href="#">Zones</a>
+  </nav>
+  <div class="header__cluster">
+    <div class="theme-toggle" data-theme-toggle role="radiogroup" aria-label="Theme">
+      <span class="theme-thumb"></span>
+      <button class="theme-option" data-theme-value="light" aria-label="Light">☀</button>
+      <button class="theme-option" data-theme-value="dark" aria-label="Dark">🌙</button>
+      <button class="theme-option" data-theme-value="system" aria-label="System">🖥</button>
+    </div>
+    <button class="user-pill">
+      <span class="user-avatar"><span class="dot"></span></span>
+      <span class="user-name">benoit</span>
+    </button>
+  </div>
+</header>
+
+<!-- ============== Page ============== -->
+<main class="page-shell">
+
+  <div class="page-head">
+    <div class="page-head__title">
+      <h1 class="text-h1 reveal reveal-1">Zones</h1>
+      <p class="text-body reveal reveal-2">Huit zones thématiques, de Route&nbsp;1 au Mont&nbsp;Argent. Chaque zone a son pool, son niveau et ses légendes. Les tiles <em>sweet-spot</em> sont les plus rentables à ton niveau actuel.</p>
+    </div>
+    <div class="page-head__player reveal reveal-3">
+      <span class="user-avatar" style="width: 28px; height: 28px;"><span class="dot"></span></span>
+      <div class="page-head__player__meta">
+        <span class="page-head__player__level">Niveau dresseur</span>
+        <span class="page-head__player__value">Lv. <span class="accent">14</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="zones-grid">
+
+    <!-- 1 · Route 1 — grass — outclassed -->
+    <a class="zone reveal reveal-1" data-type="grass" href="#">
+      <div class="zone__bg"></div>
+      <div class="zone__head">
+        <span class="zone__icon" aria-hidden="true">🌿</span>
+        <span class="status-badge status-badge--out">Outclassed</span>
+      </div>
+      <h3 class="text-h3 zone__title">Route 1</h3>
+      <p class="zone__desc">Plaines verdoyantes du sud. Rattata, Roucool — c'est ici que tout commence.</p>
+      <div class="zone__meta">
+        <span>Lv. 1–8</span>
+        <span class="zone__meta__div"></span>
+        <span class="zone__pool"><span class="dot"></span>common</span>
+      </div>
+      <span class="zone__cta">Explorer
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </a>
+
+    <!-- 2 · Forêt de Jade — grass — sweet-spot -->
+    <a class="zone reveal reveal-2" data-type="grass" href="#">
+      <div class="zone__bg"></div>
+      <div class="zone__head">
+        <span class="zone__icon" aria-hidden="true">🌲</span>
+        <span class="status-badge status-badge--sweet">Sweet-spot</span>
+      </div>
+      <h3 class="text-h3 zone__title">Forêt de Jade</h3>
+      <p class="zone__desc">Canopée dense. Mystherbe et Chenipan, avec un Aspicot rare sous les fougères.</p>
+      <div class="zone__meta">
+        <span>Lv. 10–15</span>
+        <span class="zone__meta__div"></span>
+        <span class="zone__pool pool-rare"><span class="dot"></span>rare</span>
+      </div>
+      <span class="zone__cta">Explorer
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </a>
+
+    <!-- 3 · Caverne Bleue — water — sweet-spot -->
+    <a class="zone reveal reveal-3" data-type="water" href="#">
+      <div class="zone__bg"></div>
+      <div class="zone__head">
+        <span class="zone__icon" aria-hidden="true">💧</span>
+        <span class="status-badge status-badge--sweet">Sweet-spot</span>
+      </div>
+      <h3 class="text-h3 zone__title">Caverne Bleue</h3>
+      <p class="zone__desc">Rivière souterraine, plafond cristallin. Magicarpe abondants, Krabby occasionnels.</p>
+      <div class="zone__meta">
+        <span>Lv. 13–18</span>
+        <span class="zone__meta__div"></span>
+        <span class="zone__pool pool-rare"><span class="dot"></span>rare</span>
+      </div>
+      <span class="zone__cta">Explorer
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </a>
+
+    <!-- 4 · Mont Sélénite — electric — preview -->
+    <a class="zone reveal reveal-4" data-type="electric" href="#">
+      <div class="zone__bg"></div>
+      <div class="zone__head">
+        <span class="zone__icon" aria-hidden="true">🌙</span>
+        <span class="status-badge status-badge--prev">Preview</span>
+      </div>
+      <h3 class="text-h3 zone__title">Mont Sélénite</h3>
+      <p class="zone__desc">Tunnels phosphorescents. Mélofée le soir, Onix endormis dans les parois.</p>
+      <div class="zone__meta">
+        <span>Lv. 16–22</span>
+        <span class="zone__meta__div"></span>
+        <span class="zone__pool pool-rare"><span class="dot"></span>rare</span>
+      </div>
+      <span class="zone__cta">Aperçu
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/></svg>
+      </span>
+    </a>
+
+    <!-- 5 · Volcan Cinabre — fire — locked -->
+    <a class="zone zone--locked reveal reveal-1" data-type="fire" href="#" aria-disabled="true">
+      <div class="zone__bg"></div>
+      <div class="zone__lock" aria-label="Verrouillée">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      </div>
+      <div class="zone__head">
+        <span class="zone__icon" aria-hidden="true">🌋</span>
+        <span class="status-badge status-badge--lock">Locked</span>
+      </div>
+      <h3 class="text-h3 zone__title">Volcan Cinabre</h3>
+      <p class="zone__desc">Cratère actif. Goupix et Ponyta nichent dans les coulées.</p>
+      <div class="zone__meta">
+        <span>Lv. 22–28</span>
+        <span class="zone__meta__div"></span>
+        <span class="zone__pool pool-rare"><span class="dot"></span>rare</span>
+      </div>
+      <span class="zone__cta">Niveau 22 requis</span>
+    </a>
+
+    <!-- 6 · Centrale Magnétik — electric — locked -->
+    <a class="zone zone--locked reveal reveal-2" data-type="electric" href="#" aria-disabled="true">
+      <div class="zone__bg"></div>
+      <div class="zone__lock" aria-label="Verrouillée">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      </div>
+      <div class="zone__head">
+        <span class="zone__icon" aria-hidden="true">⚡</span>
+        <span class="status-badge status-badge--lock">Locked</span>
+      </div>
+      <h3 class="text-h3 zone__title">Centrale Magnétik</h3>
+      <p class="zone__desc">Halls de turbines abandonnés. Voltorbe en cluster, Magnéton solitaires.</p>
+      <div class="zone__meta">
+        <span>Lv. 26–32</span>
+        <span class="zone__meta__div"></span>
+        <span class="zone__pool pool-rare"><span class="dot"></span>rare</span>
+      </div>
+      <span class="zone__cta">Niveau 26 requis</span>
+    </a>
+
+    <!-- 7 · Lac Aurore — water — locked -->
+    <a class="zone zone--locked reveal reveal-3" data-type="water" href="#" aria-disabled="true">
+      <div class="zone__bg"></div>
+      <div class="zone__lock" aria-label="Verrouillée">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      </div>
+      <div class="zone__head">
+        <span class="zone__icon" aria-hidden="true">❄️</span>
+        <span class="status-badge status-badge--lock">Locked</span>
+      </div>
+      <h3 class="text-h3 zone__title">Lac Aurore</h3>
+      <p class="zone__desc">Lac glaciaire perpétuel. Sorbouboul fréquents, Galarian Stantler rumeur.</p>
+      <div class="zone__meta">
+        <span>Lv. 30–36</span>
+        <span class="zone__meta__div"></span>
+        <span class="zone__pool pool-legendary"><span class="dot"></span>legendary</span>
+      </div>
+      <span class="zone__cta">Niveau 30 requis</span>
+    </a>
+
+    <!-- 8 · Mont Argent — legendary — paired-required (auth) -->
+    <a class="zone zone--auth reveal reveal-4" data-type="legendary" href="/signup">
+      <div class="zone__bg"></div>
+      <div class="zone__lock" aria-label="Connexion requise">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-3V5a3 3 0 0 0-6 0M5 9h6v12H5z"/><circle cx="17" cy="14" r="3"/></svg>
+      </div>
+      <div class="zone__head">
+        <span class="zone__icon" aria-hidden="true">⛰️</span>
+        <span class="status-badge status-badge--auth">Auth requise</span>
+      </div>
+      <h3 class="text-h3 zone__title">Mont Argent</h3>
+      <p class="zone__desc">Sommet endgame. Dracaufeu sauvages, Mewtwo signalé une fois en dix ans.</p>
+      <div class="zone__meta">
+        <span>Lv. 40+</span>
+        <span class="zone__meta__div"></span>
+        <span class="zone__pool pool-legendary"><span class="dot"></span>legendary</span>
+      </div>
+      <span class="zone__cta">Crée un dresseur
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </a>
+
+  </div>
+
+  <!-- Legend -->
+  <div class="legend reveal reveal-5">
+    <span class="legend__title">Légende</span>
+    <div class="legend__items">
+      <span class="legend__item"><span class="status-badge status-badge--sweet">Sweet-spot</span> niveau idéal</span>
+      <span class="legend__item"><span class="status-badge status-badge--prev">Preview</span> aperçu, déblocage proche</span>
+      <span class="legend__item"><span class="status-badge status-badge--out">Outclassed</span> trop facile</span>
+      <span class="legend__item"><span class="status-badge status-badge--lock">Locked</span> niveau dresseur requis</span>
+      <span class="legend__item"><span class="status-badge status-badge--auth">Auth requise</span> dresseur non créé</span>
+    </div>
+  </div>
+
+  <!-- Annotations -->
+  <div style="margin-top: 2.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
+    <div style="padding: 1.125rem 1.25rem; background: var(--surface-card); border: 1px solid var(--surface-border); border-radius: var(--radius-lg);">
+      <span style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-tertiary); letter-spacing: 0.08em;">Z1 · gradient subtil</span>
+      <h4 style="margin: 0.375rem 0 0.375rem; font-family: var(--font-display); font-size: 0.9375rem; font-weight: 600;">Background par type</h4>
+      <p style="margin: 0; font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.55;">Deux radial-gradients très basses opacités (.07 / .10 dark) avec la couleur lineage du type dominant. Pas de bg saturé — l'identité du type reste lisible sans saturer la grille.</p>
+    </div>
+    <div style="padding: 1.125rem 1.25rem; background: var(--surface-card); border: 1px solid var(--surface-border); border-radius: var(--radius-lg);">
+      <span style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-tertiary); letter-spacing: 0.08em;">Z2 · status badges</span>
+      <h4 style="margin: 0.375rem 0 0.375rem; font-family: var(--font-display); font-size: 0.9375rem; font-weight: 600;">5 états distincts</h4>
+      <p style="margin: 0; font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.55;">Sweet-spot = success, Preview = info, Outclassed = tertiary, Locked = tertiary + lock overlay, Auth requise = warning + icon &laquo;&nbsp;person+lock&nbsp;&raquo; (différencie clairement du locked niveau).</p>
+    </div>
+    <div style="padding: 1.125rem 1.25rem; background: var(--surface-card); border: 1px solid var(--surface-border); border-radius: var(--radius-lg);">
+      <span style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-tertiary); letter-spacing: 0.08em;">Z3 · paired-required</span>
+      <h4 style="margin: 0.375rem 0 0.375rem; font-family: var(--font-display); font-size: 0.9375rem; font-weight: 600;">Pas de 403 brut</h4>
+      <p style="margin: 0; font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.55;">Tile cliquable → <code style="font-family:var(--font-mono);padding:1px 5px;background:var(--surface-elevated);border-radius:5px;font-size:0.85em;">/signup</code> direct, jamais d'erreur côté API. CTA "Crée un dresseur" en warning. Cohérent avec le fix récent de <code style="font-family:var(--font-mono);padding:1px 5px;background:var(--surface-elevated);border-radius:5px;font-size:0.85em;">/zones</code> (commit 80d4da0).</p>
+    </div>
+    <div style="padding: 1.125rem 1.25rem; background: var(--surface-card); border: 1px solid var(--surface-border); border-radius: var(--radius-lg);">
+      <span style="font-family: var(--font-mono); font-size: 0.6875rem; color: var(--text-tertiary); letter-spacing: 0.08em;">Z4 · hover</span>
+      <h4 style="margin: 0.375rem 0 0.375rem; font-family: var(--font-display); font-size: 0.9375rem; font-weight: 600;">Lift + glow + CTA reveal</h4>
+      <p style="margin: 0; font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.55;">Tile non-locked&nbsp;: <code style="font-family:var(--font-mono);padding:1px 5px;background:var(--surface-elevated);border-radius:5px;font-size:0.85em;">translateY(-3px)</code> + box-shadow color-mix du type + apparition du CTA &laquo;&nbsp;Explorer →&nbsp;&raquo;. Locked&nbsp;: pas de lift, CTA reste discret (&laquo;&nbsp;Niveau X requis&nbsp;&raquo;).</p>
+    </div>
+  </div>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
