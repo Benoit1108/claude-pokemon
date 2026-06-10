@@ -11,7 +11,8 @@ export declare const LINEAGE_STAGES: Record<Lineage, LineageStage[]>;
  *
  * On ties (multiple stages share the same min_level — Eevee at Lv.30 has 5
  * forms), the first one listed wins. So `stageFor('eevee', 30)` defaults
- * to vaporeon. Use the eevee_form field (when added) to override.
+ * to vaporeon. Pass `eeveeForm` (the chosen evolution, mirrors state.eevee_form
+ * in the CLI) to override — it selects that form once the level qualifies.
  */
-export declare function stageFor(lineage: string, level: number): LineageStage;
+export declare function stageFor(lineage: string, level: number, eeveeForm?: string | null): LineageStage;
 //# sourceMappingURL=stages.d.ts.map

@@ -3,4 +3,5 @@ export * from './species.js';
 export * from './battle.js';
 export * from './stages.js';
 export * from './moves.js';
+export * from './xp.js';
 //# sourceMappingURL=index.d.ts.map

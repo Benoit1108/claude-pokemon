@@ -78,9 +78,10 @@ export const LINEAGE_STAGES = {
  *
  * On ties (multiple stages share the same min_level — Eevee at Lv.30 has 5
  * forms), the first one listed wins. So `stageFor('eevee', 30)` defaults
- * to vaporeon. Use the eevee_form field (when added) to override.
+ * to vaporeon. Pass `eeveeForm` (the chosen evolution, mirrors state.eevee_form
+ * in the CLI) to override — it selects that form once the level qualifies.
  */
-export function stageFor(lineage, level) {
+export function stageFor(lineage, level, eeveeForm) {
     const stages = LINEAGE_STAGES[lineage] ?? LINEAGE_STAGES.fire;
     let chosen = stages[0];
     for (const s of stages) {
@@ -88,6 +89,13 @@ export function stageFor(lineage, level) {
             break; // stages are sorted by min_level ascending
         if (s.min_level > chosen.min_level)
             chosen = s; // strictly greater = new tier
+    }
+    // Eevee: once the evolution level is reached, the chosen form overrides the
+    // default tie-winner (mirrors lib/lib.sh pokemon_evo_field reading eevee_form).
+    if (lineage === 'eevee' && eeveeForm && chosen.min_level >= 30) {
+        const form = stages.find((s) => s.showdown_id === eeveeForm);
+        if (form)
+            return form;
     }
     return chosen;
 }
