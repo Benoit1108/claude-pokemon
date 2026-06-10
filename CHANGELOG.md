@@ -7,6 +7,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ### Added
 
+- **Filet de tests golden** (Phase R0 — refonte). `tests/golden/capture.sh` fige le comportement du moteur bash (courbe XP, niveau depuis l'XP, résolution d'évolution incl. formes Eevee, multiplicateurs de contexte) en fixtures JSONL (`tests/golden/fixtures/`). `tests/cli/golden.bats` re-capture et diffe contre les fixtures → toute dérive de `lib.sh` casse la CI. Ces fixtures sont le **contrat** que le port du moteur en TypeScript (`packages/shared`, ADR-006/007) devra reproduire à l'identique. Voir `docs/architecture.md` (ADR-005→010) + `ROADMAP.md` (Phase R).
 - **QR de pairing dans le terminal** (Phase 2.12). `/pokemon arena pair` affiche maintenant, en plus du code + lien, un **QR scannable** du lien `…/pair?code=XXX` (rendu via `qrencode -t ANSIUTF8`) — on scanne avec le téléphone pour ouvrir la page `/pair` (qui appaire le navigateur) sans retaper l'URL. `qrencode` est **optionnel** : s'il n'est pas installé, on garde le lien + une astuce pour l'activer (aucune dépendance dure ajoutée). Locales FR/EN (`pair.qr_label`, `pair.qr_hint`).
 
 - **⚔️ Wild & traded Pokémon en Arène + chart 18 types** (Phase 2.14). N'importe quel Pokémon élevé dans le CLI (sauvage capturé, échangé `trade-*`, ou forcé à la main) peut désormais entrer en arène — plus seulement les 8 lignées de starters.
