@@ -261,3 +261,26 @@ export interface LiveBattleView {
   last_activity_at: string
   forfeit_by: BattleSide | null
 }
+
+// ── Auth (R2) — GitHub OAuth + opaque session ───────────────────────────────
+
+export interface GithubIdentity {
+  id: number
+  login: string
+}
+
+export interface GithubExchangeResponse {
+  ok: true
+  session_token: string
+  user_id: string
+  github: GithubIdentity | null
+}
+
+export interface AuthSessionResponse {
+  ok: true
+  user_id: string
+  github: GithubIdentity | null
+  email: { address: string } | null
+  display_name: string | null
+  linked_anon_ids: string[]
+}

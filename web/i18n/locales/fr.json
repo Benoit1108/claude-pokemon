@@ -631,5 +631,17 @@
   },
   "floating_damage": {
     "crit": "CRIT !"
+  },
+  "auth": {
+    "sign_in_github": "Continuer avec GitHub",
+    "or": "ou",
+    "callback": {
+      "working": "Connexion en cours…",
+      "error_missing": "Données d'autorisation manquantes — réessaie de te connecter.",
+      "error_denied": "Autorisation GitHub refusée.",
+      "error_state": "Vérification de sécurité échouée (state). Réessaie.",
+      "error_generic": "Échec de la connexion. Réessaie.",
+      "back_to_login": "Retour à la connexion"
+    }
   }
 }

@@ -3,8 +3,10 @@
 
 import type {
   AggregateResponse,
+  AuthSessionResponse,
   BattleResponse,
   ExploreOutcome,
+  GithubExchangeResponse,
   LeaderboardMetric,
   LeaderboardResponse,
   LiveBattleView,
@@ -248,6 +250,25 @@ export class ApiClient {
       baseURL: this.baseUrl,
       headers: { authorization: `Bearer ${args.arenaSecret}` },
       body: { anon_id: args.anonId },
+    })
+  }
+
+  // ── Auth (R2) ─────────────────────────────────────────────────────────────
+
+  /** Exchange a GitHub OAuth `code` for an opaque session (R2b). */
+  githubExchange(args: { code: string; redirectUri: string }): Promise<GithubExchangeResponse> {
+    return this.fetcher('/v1/auth/github/exchange', {
+      method: 'POST',
+      baseURL: this.baseUrl,
+      body: { code: args.code, redirect_uri: args.redirectUri },
+    })
+  }
+
+  /** Validate a session token + hydrate the current user (whoami). */
+  authSession(sessionToken: string): Promise<AuthSessionResponse> {
+    return this.fetcher('/v1/auth/session', {
+      baseURL: this.baseUrl,
+      headers: { authorization: `Bearer ${sessionToken}` },
     })
   }
 }

@@ -631,5 +631,17 @@
   },
   "floating_damage": {
     "crit": "CRIT!"
+  },
+  "auth": {
+    "sign_in_github": "Continue with GitHub",
+    "or": "or",
+    "callback": {
+      "working": "Signing you in…",
+      "error_missing": "Missing authorization data — try signing in again.",
+      "error_denied": "GitHub authorization was denied.",
+      "error_state": "Security check failed (state mismatch). Please try again.",
+      "error_generic": "Sign-in failed. Please try again.",
+      "back_to_login": "Back to sign-in"
+    }
   }
 }
