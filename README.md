@@ -281,6 +281,19 @@ Removes everything. Backups created (`.bak-uninstall-<timestamp>`).
 
 ## Architecture
 
+This repo is a **monorepo** (npm workspaces). The npm-published CLI lives at the
+root (`bin/` + `lib/`) ; the rest are sibling packages :
+
+| Package | Rôle |
+|---------|------|
+| *(root)* | CLI `claude-pokemon` (npm) — bash + jq |
+| `shared/` | `claude-pokemon-shared` — moteur de règles TS (XP, combat, évolution) partagé |
+| `api/` | Worker Cloudflare (`claude-pokemon-api`) |
+| `web/` | Arène web Nuxt → [claude-pokemon-arena.pages.dev](https://claude-pokemon-arena.pages.dev/) |
+
+The **published npm package contains only the CLI** (`bin/ lib/ skills/`) — installing
+`claude-pokemon` never pulls `web/`, `api/` or `shared/`.
+
 - **Bash + jq** for state logic (no runtime dependency on Node)
 - **Node** only as `npx` entry point (delegates to bash scripts)
 - **Pokémon Showdown** sprites (gen5, MIT-friendly) downloaded at install
