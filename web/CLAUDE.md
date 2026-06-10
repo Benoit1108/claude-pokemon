@@ -108,7 +108,7 @@ claude-pokemon-arena/
 ### Local dev
 
 From the **monorepo root** (`claude-pokemon/`), one command runs the local worker
-+ the web together, **isolated from prod** :
+and the web together, **isolated from prod** :
 
 ```bash
 npm run dev   # api (wrangler dev, local KV) :8787  +  web :3000
