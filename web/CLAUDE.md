@@ -4,11 +4,11 @@ Instructions for Claude Code working on the **web arena** companion site. Auto-l
 
 ## What this project is
 
-Public web arena for `claude-pokemon` (CLI compagnon Pokémon, dans le repo voisin `~/repositories/perso/claude-pokemon/`). Sépare visuellement et techniquement du CLI : `claude-pokemon-arena` n'est jamais publié sur npm, deployé via Cloudflare Pages.
+Public web arena for `claude-pokemon`. **Vit dans le monorepo `claude-pokemon` sous `web/`** (packages voisins : `api/` worker, `shared/` moteur). Le package web n'est jamais publié sur npm ; déployé via Cloudflare Pages (root `web/`).
 
 - **Prod URL** : https://claude-pokemon-arena.pages.dev/
-- **GitHub** : https://github.com/Benoit1108/claude-pokemon-arena
-- **Backend** : le Worker `claude-pokemon-api` (dans `vendor/claude-pokemon/api/`, submodule git) — appelé via `useApi()` / `services/api.ts`
+- **GitHub** : monorepo https://github.com/Benoit1108/claude-pokemon (dossier `web/`)
+- **Backend** : le Worker `claude-pokemon-api` (package `api/` du monorepo) — appelé via `useApi()` / `services/api.ts`
 - **Stack** : Nuxt 4 + Vue 3 + UnoCSS preset-wind4 + @nuxtjs/i18n + @nuxtjs/color-mode + TypeScript strict + Vitest + happy-dom
 
 ## Architecture
@@ -60,7 +60,7 @@ claude-pokemon-arena/
 ├── .claude/
 │   ├── settings.json                 PreToolUse Bash hook → pre-push.sh
 │   └── hooks/pre-push.sh             Runs ci-pre-push.sh before any `git push`
-├── vendor/claude-pokemon/            Git submodule (shared package + worker source)
+│                                    (pas de vendor/ — `api/` & `shared/` sont des packages voisins du monorepo)
 ├── nuxt.config.ts                    Modules, i18n config, runtimeConfig, fonts
 ├── uno.config.ts                     Design tokens — theme, shortcuts, custom rules
 └── vitest.config.ts                  setupFiles: ['./tests/setup.ts']
@@ -76,11 +76,11 @@ claude-pokemon-arena/
 - **i18n** : `@nuxtjs/i18n` v10+, `no_prefix` strategy, locale via cookie `arena-i18n`, default `fr`. Locales declared in `nuxt.config.ts:i18n.locales` with `file: 'xx.json'` — module auto-loads them (no `lazy: true`, no `bundle.*` flags — they don't exist in the v10 type).
 - **Color mode** : `@nuxtjs/color-mode` light/dark/system + custom 'retro' (GameBoy DMG palette) managed via class on `<html>` in `app.vue`
 - **Auth** : anon_id (8-16 hex) + arena_secret (32-64 hex) in `localStorage['arena-session-v1']` via `useArenaSession()`. Sprint 5 introduced the recovery-key flow — signup shows the secret once in a blocking modal, `/login` accepts pasted credentials, `GET /v1/arena/whoami` validates them.
-- **Shared package** : `claude-pokemon-shared` is consumed via `file:./vendor/claude-pokemon/shared` workspace dep. The submodule MUST be checked out (`git submodule update --init`) or build/tests fail with "Failed to resolve import 'claude-pokemon-shared'".
+- **Shared package** : `claude-pokemon-shared` is a **workspace package** of the monorepo (`shared/`), consumed as the `"*"` dep. No submodule, no `git submodule update` — `npm install` at the monorepo root links it.
 
 ## Conventions
 
-- **Commits** : Conventional Commits. Scope `arena` for web changes, `api` for worker (when touching `vendor/`). No `Co-Authored-By`.
+- **Commits** : Conventional Commits. Scope `arena` for web changes (`web/`), `api` for the worker, `shared` for the engine. No `Co-Authored-By`.
 - **PR workflow** : feature branches off `main`, squash on merge. Don't push direct to `main` (branch-protected). One commit per merged PR.
 - **CHANGELOG discipline** : every PR adds an entry to `[Unreleased]` in `CHANGELOG.md`. Don't defer to release time — write the entry while the context is fresh. Sections : `Added` / `Changed` / `Fixed` / `Removed` / `Security`.
 - **Comments** : default to none. Only justify hidden constraints, subtle invariants, or behavior that would surprise. Never narrate WHAT the code does (the names already do).
@@ -127,9 +127,9 @@ Bypass : `git push --no-verify` ou `--dry-run`. **Do NOT bypass without an expli
 
 ### Deploy
 
-Push to `main` → Cloudflare Pages auto-deploys (~2 min). Build env on CF Pages : `NITRO_PRESET=cloudflare-pages`, `NODE_VERSION=20`.
+Push to `main` → Cloudflare Pages auto-deploys (~2-5 min). CF Pages config : repo `claude-pokemon`, **root directory vide** (= racine monorepo), build `npm run -w web build`, output `web/dist`, env `NITRO_PRESET=cloudflare-pages` + `NODE_VERSION=20`.
 
-GitHub Actions CI uses Node 22 (required by `eslint-flat-config-utils` calling `Object.groupBy` which lands in Node 21+) and `submodules: true` on checkout.
+GitHub Actions CI = **un seul workflow racine** ; les jobs web tournent en Node 22 (requis par `eslint-flat-config-utils` / `Object.groupBy`, Node 21+). **Pas de checkout submodule** — `shared` est un package workspace.
 
 ## Known traps (chronological discovery)
 
@@ -141,12 +141,12 @@ GitHub Actions CI uses Node 22 (required by `eslint-flat-config-utils` calling `
 6. **i18n `t` loop-var shadowing** : `v-for="t in ..."` collides with `const { t } = useI18n()`. Rename the loop var.
 7. **Test setup needs i18n plugin** : any component using `useI18n()` will throw `Need to install with app.use function` in tests without the global plugin install in `tests/setup.ts`.
 8. **Nuxt CLI typecheck exit code lie** : `nuxt typecheck` prints the error then exits 0 locally despite real TS errors. Detect via grep on `error TS<N>` in the local CI script (already done in `scripts/ci-pre-push.sh`).
-9. **Submodule not auto-checkout in CI** : `actions/checkout@v6` requires `submodules: true` to clone `vendor/claude-pokemon/`. Without it, `claude-pokemon-shared` import resolution fails.
+9. **(obsolète depuis le monorepo)** `shared` était un submodule git (`vendor/claude-pokemon/`) qui exigeait `submodules: true` en CI. C'est maintenant un package workspace : `npm install` à la racine le lie, plus aucune étape submodule.
 10. **Node 21+ for ESLint flat config utils** : `eslint-flat-config-utils` (transitive via `@nuxt/eslint`) uses `Object.groupBy`. CI Node version must be ≥22.
 
 ## Pointers
 
-- Backend / Worker source : `vendor/claude-pokemon/api/src/` (git submodule, read-mostly from here — modify in the parent repo)
+- Backend / Worker source : `api/src/` (package voisin du monorepo)
 - Worker prod URL : `https://claude-pokemon-api.benoit-dev.workers.dev`
-- Shared package source : `vendor/claude-pokemon/shared/` (exported types + battle resolution)
+- Shared package source : `shared/src/` (moteur : types, battle, xp, stages, moves, species)
 - Memory of architectural decisions and gotchas across sessions : `~/.claude/projects/-home-bbruneau-repositories-perso-claude-pokemon/memory/`
