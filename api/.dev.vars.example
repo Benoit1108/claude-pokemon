@@ -1,10 +1,10 @@
-# Local dev secrets for `wrangler dev` (api/). Copy to `.dev.vars` (gitignored)
-# and fill in. These mirror the production wrangler vars/secrets.
+# Template for api/.dev.vars (gitignored). Copy then fill with your DEV OAuth
+# app values — NEVER put real secrets in this .example file (it's committed).
 #
-#   cp api/.dev.vars.example api/.dev.vars
+#   cp api/.dev.vars.example api/.dev.vars   # then edit .dev.vars
 #
-# GITHUB_CLIENT_ID is also in wrangler.toml [vars]; repeated here so the local
-# worker has both halves of the GitHub OAuth pair without touching prod config.
+# Use a SEPARATE "dev" GitHub OAuth App (callback http://localhost:3000/...), so
+# its client_id OVERRIDES the prod one from wrangler.toml for local `wrangler dev`.
 
-GITHUB_CLIENT_ID=Ov23liiZGFKFIT78EDcz
-GITHUB_CLIENT_SECRET=your-local-or-dev-github-client-secret
+GITHUB_CLIENT_ID=your-dev-oauth-app-client-id
+GITHUB_CLIENT_SECRET=your-dev-oauth-app-client-secret
