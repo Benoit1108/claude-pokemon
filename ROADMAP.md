@@ -164,6 +164,31 @@ Tout Pokémon élevé dans le CLI (sauvage capturé, échangé, starter, ou forc
 - **PWA mobile** : installable, push notifications when challenged.
 - **Chat post-match (DM)** : limited scope, ratelimited, opt-in. Free-form global chat NOT planned (modération coût trop élevé).
 
+## 🛠️ Phase R — Refonte écosystème + Travel (socle TS unifié)
+
+Goal : éliminer le facteur limitant (règles dupliquées bash↔TS, sync à sens
+unique, auth inhabituelle, pas de Windows natif) **avant** d'empiler de nouvelles
+features. On vise une seule source de vérité (`shared` TS), une vraie auth, et une
+collection synchronisée CLI↔web — puis on construit le farm idle « Travel »
+par-dessus. Décisions figées : voir `docs/architecture.md` ADR-005…ADR-010.
+
+> **Socle d'abord, features après.** Ordre : `R0 → R1`, puis **R2 ∥ R3**, puis
+> `R4 → R5`. R2 (auth) et R4 (collection) ne dépendent pas de R3 (coquille) —
+> réordonnables si on veut livrer une feature plus tôt.
+
+| # | Phase | Quoi | Pourquoi | Dépend de |
+|---|-------|------|----------|-----------|
+| **R0** | Filet de tests | Tests *golden* du comportement bash actuel (courbe XP, chaînes d'évolution, issues de combat) avant tout port | Le cœur bash est sous-testé (~50 tests / 5300 lignes) — porter sans filet = pari aveugle | — |
+| **R1** | Cœur règles → TS | XP, évolution (+ Eevee), combat, multiplicateurs → `packages/shared` (moteur pur). La CLI bash *appelle* le moteur (1 spawn Node/tick, JSON stdin/stdout). Tests de parité TS == ancien bash. Inclut le **passage en monorepo pnpm** (ADR-005) | Une seule source de vérité. Fondation de tout. Mesurer la latence du tick | R0 |
+| **R2** | Auth refonte | GitHub OAuth (device flow CLI + redirect web) **+** magic-link/OTP email. Sessions opaques KV. Migration des `anon_id` par liaison (ADR-010). Jeu local anonyme conservé en fallback | Identité unifiée = colonne vertébrale de la sync ; UX web enfin standard | indépendant de R1 |
+| **R3** | Coquille CLI → TS | Vues, statusline, sous-commandes → TS. Chute de la dépendance bash → **Windows natif**. *Risque à spiker : remplacer chafa (rendu ANSI sprites) par un équivalent Node/binaire* | Deux projets vraiment homogènes ; débloque Windows | R1 |
+| **R4** | Collection serveur + équipe/PC | Store `collection:<user_id>` serveur-autoritaire (blob KV, ADR-009). Endpoints list/switch/deposit/withdraw/release. UI **Équipe** + **Boîte PC** (web + CLI) | La « collection synchro » — triviale une fois R1+R2 faits | R1, R2 |
+| **R5** | Travel — farm idle + capture | Session de farm par zone (~5 wilds : 3 communs / 1 uncommon / 1 rare/très rare). Auto-retry **lead + rotation au KO**. **Catch-up offline serveur-autoritaire** (temps jamais déclaré par le client) + cap d'accumulation. Capture **RNG par rareté**. Drops d'items. Rapport « pendant ton absence » | Le fun, inspiré du *travel* de Pokéchill | R4, R1 |
+
+**Différé (tranché au début de la phase concernée)** : remplacement chafa (R3),
+schéma JSON d'un Pokémon possédé (R4), schéma items/drops + UX du prompt de
+liaison de compte (R5/R2), signatures fonction-par-fonction du moteur (R1).
+
 ## 🤖 Phase 3 — Discord bot (~1-2 weeks)
 
 Goal : pull the community into a shared space, increase organic discovery.
@@ -217,6 +242,12 @@ Goal : aggregate the ecosystem into a professional showcase.
 | 2026-06-02 | Combat engine = 18 canonical types (was 5 collapsed) | Wilds/échangés en arène n'auraient aucune identité de type si on collapse ; un Dragon doit rester Dragon |
 | 2026-06-02 | Lignée : résolution graceful (inconnu → normal) au lieu d'un whitelist | Ajouter une espèce ne doit jamais bloquer l'arène ni le partage de stats |
 | 2026-06-02 | Species→type & learnsets = artefacts générés (wild_pool + snapshot PokéAPI), drift-checkés | Une seule source de vérité, zéro maintenance manuelle à 251 espèces, build offline déterministe |
+| 2026-06-10 | Monorepo pnpm (ADR-005) — fin du submodule arène | `shared` devient le moteur consommé par CLI+worker+web ; le submodule est une friction et bloque les changements atomiques |
+| 2026-06-10 | `shared` = source de vérité unique, moteur pur sans IO (ADR-006) | Résultats identiques CLI/worker/web par construction ; tue la duplication des règles bash↔TS = bottleneck #1 |
+| 2026-06-10 | CLI migre bash → TS (ADR-007, remplace ADR-002) | La sync force l'unification des règles ; duplication = bottleneck ; Windows natif voulu |
+| 2026-06-10 | Auth = GitHub OAuth + magic-link email, sessions opaques (ADR-008) | Public dev → "Sign in with GitHub" + device flow familier ; identité unifiée gratuite ; opaque = révocable, colle au pattern hash-en-KV |
+| 2026-06-10 | Collection serveur-autoritaire = blob KV par user (ADR-009) | Accès toujours "ma collection" sans requête transverse → KV suffit ; cohérent ADR-004 |
+| 2026-06-10 | Migration identité par liaison, jamais destruction (ADR-010) | Zéro perte pour les users existants ; anonyme local préservé ; idempotent + anti-takeover |
 
 ---
 

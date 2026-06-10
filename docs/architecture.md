@@ -28,6 +28,32 @@ Cross-cutting docs live at the repo root :
 - `CLAUDE.md` — internal AI-assistant primer
 - `CONTRIBUTING.md` — workflow for human contributors
 
+## Target architecture (refonte — in progress, branch `refonte/foundations`)
+
+The 2026-06 refonte unifies the ecosystem around **one TypeScript rules engine**.
+Until it lands, the layout below (bash CLI + submodule-linked arena) is the live
+reality; the target here is what we migrate toward. See ADR-005…ADR-010.
+
+```
+monorepo (pnpm workspaces)
+├── packages/shared   — pure, IO-free rules engine = SINGLE SOURCE OF TRUTH
+│                        (resolveBattle, applyTick, evolve, xp curves,
+│                         capture rate, type chart, content data)
+├── packages/cli      — was bash; migrates to TS, imports shared directly
+├── packages/worker   — Cloudflare Worker (api), imports shared
+└── packages/web      — Nuxt arena, imports shared
+```
+
+- **One engine, three clients.** CLI, worker and web all import `packages/shared`
+  → identical results everywhere *by construction*. Kills the bash/TS rule
+  duplication that was the main feature bottleneck.
+- **shared is pure.** No IO, no globals, no `Date.now`/`random` without an
+  injected clock/seed. State in → `{ state, events }` out. Fully unit-testable;
+  replays deterministic.
+- **Identity & sync.** Real auth (GitHub OAuth device-flow + email magic-link),
+  opaque KV-backed sessions, and a server-authoritative collection (team[6] + PC)
+  shared between CLI and web.
+
 ## Repository layout
 
 ```
@@ -254,6 +280,8 @@ without the ceremony.
 months of polish (statusline rendering, ANSI sprites, atomic state writes,
 flock locking) for marginal gain. The Worker, however, is small and
 benefits from strict types (KVRecord, validation contracts, etc.).
+**Superseded by ADR-007 (2026-06-10)** — the "marginal gain" premise no longer
+holds once synced collection forces rule-unification.
 
 ### ADR-003 : Prettier as formatting source of truth, ESLint for logic
 **2026-05-06.** Prevents the "two formatters, conflicting rules" common
@@ -267,3 +295,60 @@ values, but it's free up to 1 GB storage / 1K writes-per-day. Our access
 patterns (key by anon_id, list+sort for leaderboard at <1000 entries) fit
 KV constraints comfortably. Migrating to D1 (CF SQL) becomes worth it
 beyond ~5K daily active submitters.
+
+### ADR-005 : monorepo (pnpm workspaces)
+**2026-06-10.** `shared` is about to become the load-bearing engine consumed by
+CLI + worker + web. The current git-submodule link (arena → CLI repo) is a known
+friction (init-or-build-fails, manual bumps) and blocks atomic cross-package
+changes. A pnpm-workspace monorepo (`packages/{shared,cli,worker,web}`) makes
+shared a normal workspace dep — one version, one CI, "change a rule + all its
+consumers in a single PR". Arena git history preserved via subtree merge.
+Reconsider only if the arena must stay independently releasable.
+
+### ADR-006 : `shared` = single source of truth, pure IO-free engine
+**2026-06-10.** All game rules (XP curve, evolution incl. Eevee friendship/form
+logic, battle resolution, context multipliers, capture rate, type chart, content
+data) move into `packages/shared` as pure functions: state in → `{ state, events }`
+out. No IO, no globals, no ambient clock/RNG (inject seed + clock). This is what
+makes results identical across CLI/worker/web and keeps everything unit-testable
+with deterministic replays. Function-by-function signatures are settled per-phase;
+the module boundaries + the purity contract are fixed here. Note: Eevee rules and
+context multipliers exist only in bash today — they must be ported in, not lost.
+
+### ADR-007 : CLI migrates bash → TypeScript (supersedes ADR-002)
+**2026-06-10.** ADR-002 kept bash because a rewrite was "marginal gain". That
+premise no longer holds: the synced collection forces rule-unification, the
+bash/TS duplication is now the #1 feature bottleneck, and native Windows is
+wanted. Plan: (P1) extract the engine to TS — bash calls it via one Node
+entrypoint over stdin/stdout JSON (one spawn/tick; bash keeps flock, atomic
+write, ANSI render); (P3) the shell itself becomes TS and bash disappears →
+Windows native. Tick latency (node cold-start ~50-100 ms) is a risk to measure in
+P1; candidate end-state is a single compiled binary (`bun build --compile`) to
+drop the node spawn and the runtime dependency entirely.
+
+### ADR-008 : auth = GitHub OAuth + email magic-link, opaque sessions (not JWT)
+**2026-06-10.** Audience is developers → "Sign in with GitHub" (device-flow on the
+CLI à la `gh auth login`; redirect on web) is the familiar, low-friction path and
+unifies CLI/web identity for free. Email magic-link/OTP covers non-GitHub users.
+The worker issues an **opaque** session token (random, sha256 in KV
+`session:<hash>` → user_id, TTL + refresh) rather than a JWT: revocable (delete the
+key), simpler, no JWT-secret rotation, and it matches the existing hash-in-KV
+pattern (`arena_secret`). JWT's stateless edge is worthless at our scale.
+Reconsider JWT only if the Discord bot needs KV-free token verification.
+
+### ADR-009 : server-authoritative collection as a KV blob (reaffirms ADR-004)
+**2026-06-10.** The synced collection (team[6] + PC + items) lives server-side as
+one JSON blob per user (`collection:<user_id>`), read-modify-write. Access is
+always "load/mutate MY collection" — no cross-user queries — so KV fits (even 500
+mons ≈ 100 KB ≪ 25 MB limit). Consistent with ADR-004. Move to D1 only when we
+need cross-collection queries (trade marketplace, "who owns shiny X", global dex
+stats) — a Phase 3+ concern; the 5K-DAU trigger from ADR-004 still applies.
+
+### ADR-010 : identity migration by linking, never destroying
+**2026-06-10.** Existing users have a local `anon_id` + `stats:`/`arena:` KV
+records. On first login the client sends its `anon_id`(s); the worker attaches
+them to the new `user_id` (`user:<id>.linked_anon_ids`) and aliases the existing
+records — zero data loss, `anon_id` stays a stable alias for badges/trainer URLs.
+Anonymous local play stays fully functional (no login → offline, sync/arena off;
+login = upgrade), honouring the privacy stance above. Linking is idempotent; an
+`anon_id` already linked to another user is rejected (anti-takeover).
