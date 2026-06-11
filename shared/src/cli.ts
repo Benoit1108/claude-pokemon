@@ -18,6 +18,8 @@ import { renderView, type RenderInput } from './render/index.js'
 import { tick, type TickInput } from './tick.js'
 import { renderLeaderboard, renderAggregate, type NetResult } from './render/net.js'
 import { runConfig, type ConfigInput } from './config.js'
+import { runShare, type ShareInput } from './share.js'
+import { randomBytes } from 'node:crypto'
 import type { Locale } from './render/i18n.js'
 import {
   teamToPc,
@@ -150,10 +152,11 @@ async function main(): Promise<void> {
   const isTick = command === 'tick'
   const isNet = command === 'net'
   const isConfig = command === 'config'
+  const isShare = command === 'share'
   const handler = command ? COMMANDS[command] : undefined
-  if (!handler && !isRender && !isMutate && !isTick && !isNet && !isConfig) {
+  if (!handler && !isRender && !isMutate && !isTick && !isNet && !isConfig && !isShare) {
     process.stderr.write(
-      `engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config'].join(', ')})\n`,
+      `engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config', 'share'].join(', ')})\n`,
     )
     process.exit(2)
   }
@@ -210,6 +213,18 @@ async function main(): Promise<void> {
       state: inp.state,
       locale: inp.locale,
     } as ConfigInput)
+    process.stdout.write(JSON.stringify(result))
+    return
+  }
+  if (isShare) {
+    const inp = input as { data: unknown; locale: Locale }
+    const result = runShare({
+      args: process.argv.slice(3),
+      data: inp.data,
+      locale: inp.locale,
+      anonId: randomBytes(4).toString('hex'),
+    } as ShareInput)
+    if (result === null) process.exit(3) // forget/submit/unknown → bash fallback
     process.stdout.write(JSON.stringify(result))
     return
   }
