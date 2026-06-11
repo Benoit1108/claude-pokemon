@@ -14,6 +14,7 @@
 // ("2.0" / "1.2" / "0.5"); the rest are integers.
 import { fileURLToPath } from 'node:url'
 import { realpathSync } from 'node:fs'
+import { renderView, type RenderInput } from './render/index.js'
 import {
   thresholdFor,
   levelFromXp,
@@ -75,10 +76,11 @@ async function readStdin(): Promise<string> {
 
 async function main(): Promise<void> {
   const command = process.argv[2]
+  const isRender = command === 'render'
   const handler = command ? COMMANDS[command] : undefined
-  if (!handler) {
+  if (!handler && !isRender) {
     process.stderr.write(
-      `engine: unknown command ${JSON.stringify(command)} (expected: ${Object.keys(COMMANDS).join(', ')})\n`,
+      `engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render'].join(', ')})\n`,
     )
     process.exit(2)
   }
@@ -91,7 +93,20 @@ async function main(): Promise<void> {
     process.exit(2)
     return
   }
-  process.stdout.write(JSON.stringify(handler(input)))
+  if (isRender) {
+    // The positional `render <view>` is authoritative (the documented
+    // interface); stdin carries state/data/locale. Fall back to a stdin `view`.
+    const inp = input as RenderInput
+    const argView = process.argv[3]
+    if (argView) inp.view = argView
+    const { supported, output } = renderView(inp)
+    // Exit 3 = view not yet ported → the bash dispatcher falls back to its own
+    // implementation (graceful degradation, like the derive bridge in R3b).
+    if (!supported) process.exit(3)
+    process.stdout.write(output)
+    return
+  }
+  process.stdout.write(JSON.stringify(handler!(input)))
 }
 
 // Run only when executed as a script (the bundled entrypoint), never when
