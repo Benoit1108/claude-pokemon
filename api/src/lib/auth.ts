@@ -10,7 +10,16 @@
 import type { Env } from '../env.d'
 import type { IdentityProvider, UserRecord } from '../types'
 import { sha256Hex } from './arena'
-import { getIdentity, getSession, getUser, putIdentity, putSession, putUser } from './kv'
+import {
+  getAnonLink,
+  getIdentity,
+  getSession,
+  getUser,
+  putAnonLink,
+  putIdentity,
+  putSession,
+  putUser,
+} from './kv'
 
 const HEX = '0123456789abcdef'
 
@@ -89,4 +98,30 @@ export async function getUserFromSessionToken(env: Env, token: string): Promise<
   const session = await getSession(env, hash)
   if (!session) return null
   return await getUser(env, session.user_id)
+}
+
+/**
+ * Link a legacy anon_id to a user (ADR-010, link-never-destroy). Idempotent.
+ * Caller MUST have already proven ownership of the anon account (arena_secret).
+ * Throws 'already_linked' if the anon_id is claimed by a different user.
+ */
+export async function linkAnonToUser(
+  env: Env,
+  user: UserRecord,
+  anonId: string,
+  now: string,
+): Promise<UserRecord> {
+  if (user.linked_anon_ids.includes(anonId)) return user
+  const existingOwner = await getAnonLink(env, anonId)
+  if (existingOwner && existingOwner !== user.user_id) {
+    throw new Error('already_linked')
+  }
+  const updated: UserRecord = {
+    ...user,
+    linked_anon_ids: [...user.linked_anon_ids, anonId],
+    updated_at: now,
+  }
+  await putUser(env, updated)
+  await putAnonLink(env, anonId, user.user_id)
+  return updated
 }
