@@ -8,6 +8,7 @@ echo "Update : re-fetch sprites + migration data.json (state.json préservé)"
 [ ! -d "$TARGET" ] && { echo "Pas installé. Lance d'abord : npx claude-pokemon install"; exit 1; }
 
 cp "$ROOT/lib/lib.sh" "$TARGET/lib.sh"
+cp "$ROOT/lib/engine.mjs" "$TARGET/engine.mjs"
 cp "$ROOT/lib/locales/fr.json" "$TARGET/locales/fr.json"
 cp "$ROOT/lib/locales/en.json" "$TARGET/locales/en.json"
 cp "$ROOT/lib/statusline.sh" "$HOME/.claude/statusline-command.sh"

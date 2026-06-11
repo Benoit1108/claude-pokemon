@@ -68,6 +68,7 @@ ok "Dossiers créés sous $TARGET_DIR"
 title "3/5 Installation des scripts"
 
 cp "$ROOT/lib/lib.sh" "$TARGET_DIR/lib.sh"
+cp "$ROOT/lib/engine.mjs" "$TARGET_DIR/engine.mjs"
 cp "$ROOT/lib/locales/fr.json" "$TARGET_DIR/locales/fr.json"
 cp "$ROOT/lib/locales/en.json" "$TARGET_DIR/locales/en.json"
 cp "$ROOT/skills/pokemon/SKILL.md" "$TARGET_SKILL_DIR/SKILL.md"

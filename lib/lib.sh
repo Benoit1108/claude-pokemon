@@ -10,6 +10,10 @@ POKEMON_STATE="$POKEMON_DIR/state.json"
 POKEMON_LOCK="$POKEMON_DIR/.lock"
 POKEMON_LOCALES_DIR="$POKEMON_DIR/locales"
 
+# Bundled TS rules engine (Phase R3b). Sits next to this lib.sh — both in the
+# repo (lib/) and installed (~/.claude/pokemon/). Overridable for tests.
+POKEMON_ENGINE="${POKEMON_ENGINE:-$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)/engine.mjs}"
+
 # ── i18n helper ──────────────────────────────────────────────────────────────
 # Look up a localized string by dotted path key. Optional positional args are
 # substituted via printf format string.
@@ -250,6 +254,38 @@ pokemon_xp_to_next() {
     if $lvl >= $maxL then 0
     else (.thresholds[$lvl + 1] - $xp) end
   ' "$POKEMON_DATA"
+}
+
+# ── TS rules engine bridge (Phase R3b) ───────────────────────────────────────
+# The XP curve + multipliers live in the shared TS package (single source of
+# truth, golden-verified) and are bundled into engine.mjs. The tick spawns it
+# once (batch derive) instead of recomputing the rules in jq. Node is already a
+# hard dependency (bin/claude-pokemon is a node script). If node or the bundle
+# is missing at runtime, callers fall back to the pure bash functions above —
+# which stay as the golden contract until bash is dropped entirely (R3d).
+pokemon_engine_available() {
+  [ -f "$POKEMON_ENGINE" ] && command -v node >/dev/null 2>&1
+}
+
+# Batch derive via the TS engine. Echoes the engine's JSON on stdout (rc 0), or
+# returns non-zero on any failure so the caller can fall back to bash.
+# Args: total_xp, lineage, used_pct (empty → null = neutral multipliers).
+pokemon_engine_derive() {
+  local total_xp="$1" lineage="$2" used_pct="${3:-}"
+  pokemon_engine_available || return 1
+  local thresholds used_json req out
+  thresholds=$(jq -c '.thresholds' "$POKEMON_DATA" 2>/dev/null) || return 1
+  if [ -z "$used_pct" ] || [ "$used_pct" = "null" ]; then
+    used_json="null"
+  else
+    used_json=$(printf '%.0f' "$used_pct" 2>/dev/null) || used_json="null"
+  fi
+  req=$(jq -cn --argjson th "$thresholds" --argjson xp "${total_xp:-0}" \
+              --arg lin "$lineage" --argjson up "$used_json" \
+              '{thresholds: $th, total_xp: $xp, lineage: $lin, used_pct: $up}' 2>/dev/null) || return 1
+  out=$(printf '%s' "$req" | node "$POKEMON_ENGINE" derive 2>/dev/null) || return 1
+  [ -n "$out" ] || return 1
+  printf '%s' "$out"
 }
 
 # ── Lineage & shiny resolution ───────────────────────────────────────────────
@@ -693,8 +729,16 @@ pokemon_tick() {
     state=$(jq --arg sid "$session_id" --argjson p "$pending_tokens" \
       '.sessions[$sid].pending_tokens = $p' <<<"$state")
 
-    xp_multiplier=$(pokemon_xp_multiplier "$used_pct")
-    type_match_mult=$(pokemon_type_match_mult "$lineage" "$used_pct")
+    # Context + type multipliers via the TS engine (Phase R3b), bash fallback.
+    # One spawn; multipliers are independent of total_xp so 0 is a safe input.
+    local _derive
+    if _derive=$(pokemon_engine_derive 0 "$lineage" "$used_pct"); then
+      xp_multiplier=$(jq -r '.xp_multiplier' <<<"$_derive")
+      type_match_mult=$(jq -r '.type_match_mult' <<<"$_derive")
+    else
+      xp_multiplier=$(pokemon_xp_multiplier "$used_pct")
+      type_match_mult=$(pokemon_type_match_mult "$lineage" "$used_pct")
+    fi
 
     # Daily bonus: +50% XP on the first tick of a new calendar day (UTC).
     local today daily_mult
@@ -923,7 +967,12 @@ pokemon_tick() {
     ' <<<"$state")
 
     total_xp=$(jq -r '.total_xp' <<<"$state")
-    new_level=$(pokemon_compute_level_from_xp "$total_xp")
+    # Post-credit level via the TS engine (Phase R3b), bash fallback.
+    if _derive=$(pokemon_engine_derive "$total_xp" "$lineage" "$used_pct"); then
+      new_level=$(jq -r '.level' <<<"$_derive")
+    else
+      new_level=$(pokemon_compute_level_from_xp "$total_xp")
+    fi
 
     if [ "$new_level" -gt "$prev_level" ]; then
       # Hatching moment (Lv.0 → Lv.1) is when the shiny roll happens.

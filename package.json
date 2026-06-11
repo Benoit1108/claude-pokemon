@@ -29,7 +29,7 @@
   },
   "scripts": {
     "dev": "concurrently -n api,web -c blue,green \"npm run -w api dev\" \"npm run -w web dev\"",
-    "build:data": "bash lib/build-data.sh && npm run -s -w shared build:gen",
+    "build:data": "bash lib/build-data.sh && npm run -s -w shared build:gen && npm run -s -w shared build:engine",
     "test": "bats tests/cli/",
     "ci:pre-push": "bash scripts/ci-pre-push.sh"
   },
