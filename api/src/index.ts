@@ -45,6 +45,7 @@ import { handleArenaWhoami } from './handlers/arena/whoami'
 import { handleAuthSession } from './handlers/auth/session'
 import { handleGithubExchange } from './handlers/auth/github-exchange'
 import { handleLinkAnon } from './handlers/auth/link-anon'
+import { handleAuthLogout } from './handlers/auth/logout'
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -97,6 +98,9 @@ export default {
       }
       if (url.pathname === '/v1/auth/link-anon' && request.method === 'POST') {
         return await handleLinkAnon(request, env)
+      }
+      if (url.pathname === '/v1/auth/logout' && request.method === 'POST') {
+        return await handleAuthLogout(request, env)
       }
       if (url.pathname === '/v1/arena/disable' && request.method === 'DELETE') {
         return await handleArenaDisable(request, url, env)

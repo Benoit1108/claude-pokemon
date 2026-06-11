@@ -271,4 +271,13 @@ export class ApiClient {
       headers: { authorization: `Bearer ${sessionToken}` },
     })
   }
+
+  /** Revoke a session server-side (idempotent). */
+  authLogout(sessionToken: string): Promise<{ ok: true }> {
+    return this.fetcher('/v1/auth/logout', {
+      method: 'POST',
+      baseURL: this.baseUrl,
+      headers: { authorization: `Bearer ${sessionToken}` },
+    })
+  }
 }

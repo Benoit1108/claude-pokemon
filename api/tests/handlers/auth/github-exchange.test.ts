@@ -24,14 +24,26 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe('POST /v1/auth/github/exchange', () => {
   it('400 missing_code', async () => {
-    const res = await handleGithubExchange(req({ redirect_uri: 'https://w/cb' }), envWithGithub())
+    const res = await handleGithubExchange(
+      req({ redirect_uri: 'http://localhost:3000/auth/github/callback' }),
+      envWithGithub(),
+    )
     expect(res.status).toBe(400)
     expect(await res.json()).toEqual({ error: 'missing_code' })
   })
 
+  it('400 invalid_redirect_uri for a non-allowlisted callback', async () => {
+    const res = await handleGithubExchange(
+      req({ code: 'c', redirect_uri: 'https://evil.example.com/auth/github/callback' }),
+      envWithGithub(),
+    )
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'invalid_redirect_uri' })
+  })
+
   it('503 when GitHub OAuth is unconfigured', async () => {
     const res = await handleGithubExchange(
-      req({ code: 'c', redirect_uri: 'https://w/cb' }),
+      req({ code: 'c', redirect_uri: 'http://localhost:3000/auth/github/callback' }),
       makeEnv(new MockKV()),
     )
     expect(res.status).toBe(503)
@@ -44,7 +56,7 @@ describe('POST /v1/auth/github/exchange', () => {
       vi.fn(async () => jsonRes({ error: 'bad_verification_code' })),
     )
     const res = await handleGithubExchange(
-      req({ code: 'bad', redirect_uri: 'https://w/cb' }),
+      req({ code: 'bad', redirect_uri: 'http://localhost:3000/auth/github/callback' }),
       envWithGithub(),
     )
     expect(res.status).toBe(401)
@@ -62,7 +74,10 @@ describe('POST /v1/auth/github/exchange', () => {
       ),
     )
 
-    const res = await handleGithubExchange(req({ code: 'good', redirect_uri: 'https://w/cb' }), env)
+    const res = await handleGithubExchange(
+      req({ code: 'good', redirect_uri: 'http://localhost:3000/auth/github/callback' }),
+      env,
+    )
     expect(res.status).toBe(200)
     const body = (await res.json()) as Record<string, unknown>
     expect(body.ok).toBe(true)
@@ -73,7 +88,7 @@ describe('POST /v1/auth/github/exchange', () => {
     expect(user?.user_id).toBe(body.user_id)
 
     const res2 = await handleGithubExchange(
-      req({ code: 'good2', redirect_uri: 'https://w/cb' }),
+      req({ code: 'good2', redirect_uri: 'http://localhost:3000/auth/github/callback' }),
       env,
     )
     const body2 = (await res2.json()) as Record<string, unknown>

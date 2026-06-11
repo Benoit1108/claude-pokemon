@@ -9,6 +9,7 @@ import {
   buildGithubAuthorizeUrl,
   parseStoredAuth,
   randomOauthState,
+  SESSION_TOKEN_RE,
   type AuthUser,
   type StoredAuth,
 } from '~/utils/auth'
@@ -47,6 +48,9 @@ export function useAuthSession() {
   }
 
   function signOut(): void {
+    // Best-effort server-side revocation (idempotent) before clearing locally.
+    const token = auth.value?.session_token
+    if (token) void api.authLogout(token).catch(() => {})
     auth.value = null
     try {
       localStorage.removeItem(STORAGE_KEY)
@@ -72,6 +76,7 @@ export function useAuthSession() {
     sessionStorage.removeItem(OAUTH_STATE_KEY)
     if (!expected || expected !== state) throw new Error('state_mismatch')
     const res = await api.githubExchange({ code, redirectUri: callbackUrl() })
+    if (!SESSION_TOKEN_RE.test(res.session_token)) throw new Error('bad_response')
     persist({
       session_token: res.session_token,
       user: {
