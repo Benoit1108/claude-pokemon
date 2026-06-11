@@ -41,17 +41,17 @@ function jqStr(v: unknown): string {
 
 // pokemon_t_pad pads by CHARACTER count (wc -m), unlike bashPrintf's %-Ns which
 // pads by bytes. Code-point count matches `wc -m` for these locale strings.
-function padChars(s: string, width: number): string {
+export function padChars(s: string, width: number): string {
   const len = [...s].length
   return s + ' '.repeat(Math.max(0, width - len))
 }
 
-function tPad(locale: Locale, key: string, width: number): string {
+export function tPad(locale: Locale, key: string, width: number): string {
   return padChars(t(locale, key), width)
 }
 
 // fmt_int: group digits in 3s with a SPACE separator (matches the awk version).
-function fmtInt(n: number | string): string {
+export function fmtInt(n: number | string): string {
   let s = String(Math.trunc(Number(n) || 0))
   let neg = ''
   if (s.startsWith('-')) {
@@ -257,7 +257,7 @@ const LINEAGE_EMOJI: Record<string, string> = {
   cyndaquil: '🦔',
   totodile: '🐊',
 }
-function lineageEmoji(lineage: string): string {
+export function lineageEmoji(lineage: string): string {
   return LINEAGE_EMOJI[lineage] ?? '❓'
 }
 

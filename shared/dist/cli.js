@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { renderView } from './render/index.js';
 import { tick } from './tick.js';
+import { renderLeaderboard, renderAggregate } from './render/net.js';
 import { teamToPc, pcToTeamOrActive, releaseSlot, switchCompanion, hatch, ceremonialReset, } from './collection.js';
 import { thresholdFor, levelFromXp, xpToNext, progressPct, xpMultiplier, typeMatchMultiplier, } from './index.js';
 export function derive(input) {
@@ -69,14 +70,47 @@ function mutate(input) {
             return null;
     }
 }
+// Network views (Phase R3d-4): GET the worker + render. Returns the rendered
+// string, or null for an unknown view (→ exit 3 → bash fallback).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function net(view, args, input) {
+    const data = input.data;
+    const locale = input.locale;
+    const endpoint = data?.stats_share?.endpoint ?? '';
+    const get = async (path) => {
+        if (!endpoint)
+            return { endpoint: false };
+        try {
+            const r = await fetch(`${endpoint}${path}`);
+            if (!r.ok)
+                return { fetchFailed: true };
+            return { resp: await r.json() };
+        }
+        catch {
+            return { fetchFailed: true };
+        }
+    };
+    switch (view) {
+        case 'leaderboard': {
+            const metric = args[0] || 'total_tokens';
+            const limit = args[1] || '10';
+            return renderLeaderboard(data, locale, metric, await get(`/v1/leaderboard?metric=${metric}&limit=${limit}`));
+        }
+        case 'aggregate':
+            return renderAggregate(data, locale, await get('/v1/aggregate'));
+        default:
+            return null;
+    }
+}
 async function main() {
     const command = process.argv[2];
     const isRender = command === 'render';
     const isMutate = command === 'mutate';
     const isTick = command === 'tick';
+    const isNet = command === 'net';
     const handler = command ? COMMANDS[command] : undefined;
-    if (!handler && !isRender && !isMutate && !isTick) {
-        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick'].join(', ')})\n`);
+    if (!handler && !isRender && !isMutate && !isTick && !isNet) {
+        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net'].join(', ')})\n`);
         process.exit(2);
     }
     const raw = await readStdin();
@@ -117,6 +151,14 @@ async function main() {
     }
     if (isTick) {
         process.stdout.write(JSON.stringify(tick(input)));
+        return;
+    }
+    if (isNet) {
+        const view = process.argv[3];
+        const out = await net(view, process.argv.slice(4), input);
+        if (out === null)
+            process.exit(3); // unknown view → bash fallback
+        process.stdout.write(out);
         return;
     }
     process.stdout.write(JSON.stringify(handler(input)));
