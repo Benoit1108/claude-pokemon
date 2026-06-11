@@ -114,14 +114,19 @@ export async function linkAnonToUser(
   if (user.linked_anon_ids.includes(anonId)) return user
   const existingOwner = await getAnonLink(env, anonId)
   if (existingOwner && existingOwner !== user.user_id) {
-    throw new Error('already_linked')
+    // A dangling pointer (owner purged) is claimable ; a live owner is not.
+    if (await getUser(env, existingOwner)) throw new Error('already_linked')
   }
+  // Claim the anon (the "lock") BEFORE mutating the user, so the loser of a
+  // concurrent race never keeps an anon_id that anonlink: says is someone
+  // else's. KV has no CAS, so a sub-ms simultaneous race can't be fully closed
+  // — acceptable here (same anon_id + two distinct users at once is pathological).
+  await putAnonLink(env, anonId, user.user_id)
   const updated: UserRecord = {
     ...user,
     linked_anon_ids: [...user.linked_anon_ids, anonId],
     updated_at: now,
   }
   await putUser(env, updated)
-  await putAnonLink(env, anonId, user.user_id)
   return updated
 }
