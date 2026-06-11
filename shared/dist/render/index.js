@@ -25,6 +25,7 @@ export function renderView(input) {
         lang: input.lang ?? 'fr',
         scriptName: input.scriptName ?? 'pokemon-status.sh',
         nowEpoch: input.nowEpoch,
+        sprite: input.sprite,
     };
     return { supported: true, output: renderer(ctx, input) };
 }

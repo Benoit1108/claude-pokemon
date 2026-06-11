@@ -301,7 +301,13 @@ export function renderMain(ctx) {
     const nextLvl = nextStages.length === 0 ? null : Math.min(...nextStages.map((s) => Number(s.min_level)));
     out += '\n';
     out += boxTop(t(locale, 'main.companion'), 64);
-    // Sprites are OFF in the render contract → no sprite block.
+    // Sprite (when the cached file exists). bash: `printf '  %s\n' "$line"` per
+    // line + a trailing newline. Absent → no block (matches the R3a fixtures).
+    if (ctx.sprite && ctx.sprite.length > 0) {
+        for (const line of ctx.sprite)
+            out += `  ${line}\n`;
+        out += '\n';
+    }
     const shinyBadge = isShiny ? `${GOLD}★ SHINY${RESET}  ` : '';
     out += bashPrintf(`  %s%s${t(locale, 'main.companion')}%s   %s%s%s%s   %sdepuis %s%s\n\n`, BOLD, '', RESET, shinyBadge, DIM, lineageLabel, RESET, DIM, createdAt.slice(0, 10), RESET);
     if (level >= maxLevel) {

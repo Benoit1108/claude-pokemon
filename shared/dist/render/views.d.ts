@@ -11,6 +11,9 @@ export interface RenderContext {
     /** Unix epoch seconds for the recap session/today duration (bash used `date`).
      *  Optional: the deterministic recap path (no active session) never reads it. */
     nowEpoch?: number;
+    /** Pre-rendered sprite lines (main view). Absent → no sprite block, matching
+     *  the R3a fixtures (captured with no sprite files on disk). */
+    sprite?: string[] | null;
 }
 export declare function renderBadges(ctx: RenderContext): string;
 export declare function renderInventory(ctx: RenderContext): string;
