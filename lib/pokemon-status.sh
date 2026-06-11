@@ -1895,8 +1895,9 @@ _arena_load_secret() {
 
 _arena_save_secret() {
   local secret="$1"
-  printf '%s' "$secret" > "$POKEMON_ARENA_SECRET_FILE"
-  chmod 600 "$POKEMON_ARENA_SECRET_FILE"
+  # umask 077 so the secret file is created 600 from the start (no world-
+  # readable window between the redirect and a separate chmod).
+  (umask 077; printf '%s' "$secret" > "$POKEMON_ARENA_SECRET_FILE")
 }
 
 _arena_clear_secret() {
@@ -1911,7 +1912,9 @@ _arena_clear_secret() {
 POKEMON_SESSION_FILE="$POKEMON_DIR/.session"
 
 _session_load() { [ -f "$POKEMON_SESSION_FILE" ] && cat "$POKEMON_SESSION_FILE"; }
-_session_save() { printf '%s' "$1" > "$POKEMON_SESSION_FILE"; chmod 600 "$POKEMON_SESSION_FILE"; }
+# umask 077 in a subshell so the file is created 600 from the start (no
+# world-readable window between create and chmod).
+_session_save() { (umask 077; printf '%s' "$1" > "$POKEMON_SESSION_FILE"); }
 _session_clear() { rm -f "$POKEMON_SESSION_FILE"; }
 
 view_login() {
@@ -1932,6 +1935,10 @@ view_login() {
   user_code=$(jq -r '.user_code // empty' <<<"$resp" 2>/dev/null)
   verification_uri=$(jq -r '.verification_uri // empty' <<<"$resp" 2>/dev/null)
   interval=$(jq -r '.interval // 5' <<<"$resp" 2>/dev/null)
+  # Coerce to a sane integer ≥1 — a garbage/non-numeric value would crash the
+  # arithmetic / sleep below, or busy-spin curl at interval=0.
+  case "$interval" in '' | *[!0-9]*) interval=5 ;; esac
+  [ "$interval" -lt 1 ] && interval=5
   if [ -z "$device_code" ]; then
     printf '  GitHub device-flow request failed (is Device Flow enabled on the OAuth app?).\n'
     return 1
