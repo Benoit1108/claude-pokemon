@@ -283,4 +283,62 @@ describe('ApiClient', () => {
       headers: { authorization: `Bearer ${'9'.repeat(32)}` },
     })
   })
+
+  // ── Auth (R2) ──────────────────────────────────────────────────────────────
+
+  it('githubExchange() POSTs code + redirect_uri', async () => {
+    const { client, fetchMock } = makeClient({
+      ok: true,
+      session_token: 't',
+      user_id: 'u',
+      github: null,
+    })
+    await client.githubExchange({
+      code: 'abc',
+      redirectUri: 'http://localhost:3000/auth/github/callback',
+    })
+    expect(fetchMock).toHaveBeenCalledWith('/v1/auth/github/exchange', {
+      method: 'POST',
+      baseURL: 'https://example.test',
+      body: { code: 'abc', redirect_uri: 'http://localhost:3000/auth/github/callback' },
+    })
+  })
+
+  it('authSession() GETs with the Bearer session token', async () => {
+    const { client, fetchMock } = makeClient({ ok: true })
+    await client.authSession('s'.repeat(48))
+    expect(fetchMock).toHaveBeenCalledWith('/v1/auth/session', {
+      baseURL: 'https://example.test',
+      headers: { authorization: `Bearer ${'s'.repeat(48)}` },
+    })
+  })
+
+  it('authLogout() POSTs with the Bearer session token', async () => {
+    const { client, fetchMock } = makeClient({ ok: true })
+    await client.authLogout('s'.repeat(48))
+    expect(fetchMock).toHaveBeenCalledWith('/v1/auth/logout', {
+      method: 'POST',
+      baseURL: 'https://example.test',
+      headers: { authorization: `Bearer ${'s'.repeat(48)}` },
+    })
+  })
+
+  it('linkAnon() POSTs anon_id + arena_secret with the Bearer session token', async () => {
+    const { client, fetchMock } = makeClient({
+      ok: true,
+      user_id: 'u',
+      linked_anon_ids: ['a1b2c3d4'],
+    })
+    await client.linkAnon({
+      sessionToken: 's'.repeat(48),
+      anonId: 'a1b2c3d4',
+      arenaSecret: '9'.repeat(32),
+    })
+    expect(fetchMock).toHaveBeenCalledWith('/v1/auth/link-anon', {
+      method: 'POST',
+      baseURL: 'https://example.test',
+      headers: { authorization: `Bearer ${'s'.repeat(48)}` },
+      body: { anon_id: 'a1b2c3d4', arena_secret: '9'.repeat(32) },
+    })
+  })
 })

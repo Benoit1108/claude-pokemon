@@ -637,6 +637,21 @@
     "or": "or",
     "signed_in_as": "Signed in as",
     "sign_out": "Sign out",
+    "link": {
+      "menu_cta": "Link my CLI account",
+      "title": "Link your CLI account",
+      "subtitle": "Attach your terminal Pokémon account to this GitHub login so they're one and the same.",
+      "anon_id_placeholder": "your anon_id",
+      "secret_placeholder": "your arena_secret",
+      "submit": "Link account",
+      "submitting": "Linking…",
+      "hint": "Find these with `/pokemon arena status` in your terminal (the arena_secret was shown once on enable).",
+      "err_format": "anon_id and arena_secret look malformed.",
+      "err_invalid_secret": "The arena_secret doesn't match this anon_id.",
+      "err_already_linked": "This CLI account is already linked to another login.",
+      "err_not_found": "No arena account found for this anon_id.",
+      "err_generic": "Linking failed. Please try again."
+    },
     "callback": {
       "working": "Signing you in…",
       "error_missing": "Missing authorization data — try signing in again.",

@@ -280,4 +280,19 @@ export class ApiClient {
       headers: { authorization: `Bearer ${sessionToken}` },
     })
   }
+
+  /** Link a legacy anon account (proves ownership via arena_secret) to the
+   * GitHub-authenticated user. */
+  linkAnon(args: {
+    sessionToken: string
+    anonId: string
+    arenaSecret: string
+  }): Promise<{ ok: true; user_id: string; linked_anon_ids: string[] }> {
+    return this.fetcher('/v1/auth/link-anon', {
+      method: 'POST',
+      baseURL: this.baseUrl,
+      headers: { authorization: `Bearer ${args.sessionToken}` },
+      body: { anon_id: args.anonId, arena_secret: args.arenaSecret },
+    })
+  }
 }

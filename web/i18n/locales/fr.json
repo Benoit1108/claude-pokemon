@@ -637,6 +637,21 @@
     "or": "ou",
     "signed_in_as": "Connecté en tant que",
     "sign_out": "Se déconnecter",
+    "link": {
+      "menu_cta": "Lier mon compte CLI",
+      "title": "Lier ton compte CLI",
+      "subtitle": "Rattache ton compte Pokémon du terminal à cette connexion GitHub pour n'en faire qu'un.",
+      "anon_id_placeholder": "ton anon_id",
+      "secret_placeholder": "ton arena_secret",
+      "submit": "Lier le compte",
+      "submitting": "Liaison…",
+      "hint": "Retrouve-les avec `/pokemon arena status` dans ton terminal (l'arena_secret n'est affiché qu'une fois, à l'activation).",
+      "err_format": "anon_id et arena_secret semblent mal formés.",
+      "err_invalid_secret": "L'arena_secret ne correspond pas à cet anon_id.",
+      "err_already_linked": "Ce compte CLI est déjà lié à une autre connexion.",
+      "err_not_found": "Aucun compte arène trouvé pour cet anon_id.",
+      "err_generic": "Échec de la liaison. Réessaie."
+    },
     "callback": {
       "working": "Connexion en cours…",
       "error_missing": "Données d'autorisation manquantes — réessaie de te connecter.",
