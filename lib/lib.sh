@@ -591,6 +591,149 @@ pokemon_init_state_if_missing() {
   }' > "$POKEMON_STATE"
 }
 
+# Auto-submit shared stats (opt-in, every 24h, fire-and-forget). Takes the
+# state JSON + now, echoes the (possibly updated) state. Network side-effect
+# via background curl. Shared by the bash tick and the engine fast-path.
+_pokemon_maybe_autosubmit() {
+  local state="$1" now="$2"
+  local lineage share_enabled
+  lineage=$(jq -r '.lineage // ""' <<<"$state")
+  share_enabled=$(jq -r '.stats_share.enabled // false' "$POKEMON_DATA" 2>/dev/null || echo "false")
+  if [ "$share_enabled" = "true" ] && [ -n "$lineage" ] && [ "$lineage" != "null" ]; then
+    local share_anon_id share_endpoint share_display_name share_quote last_share
+    share_anon_id=$(jq -r '.stats_share.anon_id // ""' "$POKEMON_DATA")
+    share_endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
+    share_display_name=$(jq -r '.stats_share.display_name // ""' "$POKEMON_DATA")
+    share_quote=$(jq -r '.stats_share.quote // ""' "$POKEMON_DATA")
+    last_share=$(jq -r '.last_stats_submit_at // ""' <<<"$state")
+    if [ -n "$share_anon_id" ] && [ -n "$share_endpoint" ]; then
+      local should_submit=false
+      if [ -z "$last_share" ]; then
+        should_submit=true
+      else
+        local last_share_epoch now_epoch hours_passed
+        now_epoch=$(date -u +%s)
+        last_share_epoch=$(date -u -d "$last_share" +%s 2>/dev/null || echo 0)
+        hours_passed=$(( (now_epoch - last_share_epoch) / 3600 ))
+        [ "$hours_passed" -ge 24 ] && should_submit=true
+      fi
+      if [ "$should_submit" = "true" ]; then
+        state=$(jq --arg now "$now" '.last_stats_submit_at = $now' <<<"$state")
+        local pkg_ver auto_payload
+        pkg_ver=$(jq -r '.version // "unknown"' "$POKEMON_DATA")
+        auto_payload=$(jq -n \
+          --arg id "$share_anon_id" --arg name "$share_display_name" \
+          --arg quote "$share_quote" --arg ver "$pkg_ver" --arg at "$now" \
+          --argjson st "$state" '
+          {
+            anon_id: $id,
+            display_name: (if $name == "" then null else $name end),
+            quote:        (if $quote == "" then null else $quote end),
+            schema_version: 1, client_version: $ver, submitted_at: $at,
+            stats: {
+              lifetime: {
+                total_tokens:       ($st.lifetime_stats.total_tokens // 0),
+                total_evolutions:   ($st.lifetime_stats.total_evolutions // 0),
+                total_shinies:      ($st.lifetime_stats.total_shinies // 0),
+                max_level:          ($st.lifetime_stats.max_level // 0),
+                total_compagnons:   ($st.lifetime_stats.total_compagnons // 0),
+                lineages_completed: ($st.lifetime_stats.lineages_completed // []),
+                games_won:          ($st.lifetime_stats.games_won // 0),
+                games_played:       ($st.lifetime_stats.games_played // 0)
+              },
+              active: {
+                lineage:       ($st.lineage // null),
+                current_level: ($st.current_level // 0),
+                is_shiny:      ($st.is_shiny // false)
+              },
+              badges:             ($st.badges // [] | map(.id)),
+              pokedex_seen_count: (($st.pokedex_wild // {}) | keys | length)
+            }
+          }')
+        (
+          curl -s --max-time 5 -X POST "$share_endpoint/v1/submit" \
+            -H "content-type: application/json" \
+            --data "$auto_payload" >/dev/null 2>&1
+        ) 200>&- </dev/null >/dev/null 2>&1 &
+        disown 2>/dev/null || true
+      fi
+    fi
+  fi
+  printf '%s' "$state"
+}
+
+# Compute the tick's random decisions using bash's current RNG (awk srand /
+# $RANDOM). Echoes a decisions JSON consumed by the engine `tick` command.
+# Pre-rolls everything in one place (consumption order differs from the legacy
+# inline tick — invisible to users, only "which berry/wild" changes).
+_pokemon_tick_decisions() {
+  local state="$1"
+  local lineage starter shiny eev_fb
+  lineage=$(jq -r '.lineage // ""' <<<"$state")
+  starter='null'
+  [ -z "$lineage" ] && starter="\"$(pokemon_pick_starter)\""
+  shiny=$(pokemon_roll_shiny)
+  eev_fb=$(( RANDOM % 3 ))
+  local bc ec batc itc bl wl il bxmin bxmax
+  bc=$(jq -r '.event_chances.berry // 0.005' "$POKEMON_DATA")
+  ec=$(jq -r '.event_chances.encounter // 0.001' "$POKEMON_DATA")
+  batc=$(jq -r '.battle_chance_on_encounter // 0.3' "$POKEMON_DATA")
+  itc=$(jq -r '.item_drop_chance_on_encounter // 0.3' "$POKEMON_DATA")
+  bl=$(jq -r '.berries | length' "$POKEMON_DATA")
+  wl=$(jq -r '.wild_pool | length' "$POKEMON_DATA")
+  il=$(jq -r '.items | length' "$POKEMON_DATA")
+  bxmin=$(jq -r '.battle_xp_min // 500' "$POKEMON_DATA")
+  bxmax=$(jq -r '.battle_xp_max // 5000' "$POKEMON_DATA")
+  local bf ef batf itf bi ei ii wlv braw
+  bf=$(awk -v c="$bc"   'BEGIN{srand();print (rand()<c)?"true":"false"}')
+  ef=$(awk -v c="$ec"   'BEGIN{srand();print (rand()<c)?"true":"false"}')
+  batf=$(awk -v c="$batc" 'BEGIN{srand();print (rand()<c)?"true":"false"}')
+  itf=$(awk -v c="$itc" 'BEGIN{srand();print (rand()<c)?"true":"false"}')
+  bi=$(( RANDOM % bl )); ei=$(( RANDOM % wl )); ii=$(( RANDOM % il ))
+  wlv=$(( RANDOM % 46 + 5 ))
+  braw=$(( RANDOM % (bxmax - bxmin + 1) + bxmin ))
+  jq -cn --argjson starter "$starter" --argjson shiny "$shiny" --argjson efb "$eev_fb" \
+    --argjson bf "$bf" --argjson bi "$bi" --argjson ef "$ef" --argjson ei "$ei" \
+    --argjson batf "$batf" --argjson wlv "$wlv" --argjson braw "$braw" \
+    --argjson itf "$itf" --argjson ii "$ii" '{
+    starter: $starter, shiny: $shiny, eevee_fallback_index: $efb,
+    berry: {fired: $bf, index: $bi}, encounter: {fired: $ef, index: $ei},
+    battle: {fired: $batf, wild_level: $wlv, bonus_xp_raw: $braw},
+    item: {fired: $itf, index: $ii}
+  }'
+}
+
+# Engine fast-path for the tick (Phase R3d-3b). Acquires the lock, runs the TS
+# `tick` (RNG decisions computed in bash), auto-submits, writes. Returns 0 on
+# success / non-zero → caller falls back to the bash tick.
+_pokemon_tick_via_engine() {
+  local session_id="$1" current_tokens="$2" used_pct="$3"
+  (
+    flock -x 200
+    pokemon_init_state_if_missing
+    local now now_epoch state decisions req out new_state
+    now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    now_epoch=$(date -u +%s)
+    state=$(cat "$POKEMON_STATE") || exit 1
+    decisions=$(_pokemon_tick_decisions "$state") || exit 1
+    # Pre-round used_pct to an integer with printf '%.0f' (same rounding the bash
+    # fallback uses) so the engine's Math.round can't diverge on .5 values.
+    local pct_json='null'
+    if [ -n "$used_pct" ]; then pct_json=$(printf '%.0f' "$used_pct" 2>/dev/null) || pct_json='null'; fi
+    req=$(jq -cn --argjson state "$state" --slurpfile dt "$POKEMON_DATA" \
+      --arg now "$now" --argjson ep "$now_epoch" --arg sid "$session_id" \
+      --argjson tok "$current_tokens" --argjson pct "$pct_json" --argjson dec "$decisions" '
+      {state: $state, data: $dt[0], now: $now, now_epoch: $ep, session_id: $sid,
+       current_tokens: $tok, used_pct: $pct, decisions: $dec}' 2>/dev/null) || exit 1
+    out=$(printf '%s' "$req" | node "$POKEMON_ENGINE" tick 2>/dev/null) || exit 1
+    [ -n "$out" ] || exit 1
+    new_state=$(jq -c '.state' <<<"$out" 2>/dev/null) || exit 1
+    [ -n "$new_state" ] && [ "$new_state" != "null" ] || exit 1
+    new_state=$(_pokemon_maybe_autosubmit "$new_state" "$now")
+    printf '%s\n' "$new_state" > "$POKEMON_STATE.tmp" && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
+  ) 200>"$POKEMON_LOCK"
+}
+
 # Tick: update state with current session's context tokens.
 # Args: session_id, current_tokens, used_percentage (0-100, optional)
 # Side effects: writes state.json. Uses flock to serialize concurrent calls.
@@ -601,6 +744,12 @@ pokemon_tick() {
 
   mkdir -p "$POKEMON_DIR"
   touch "$POKEMON_LOCK"
+
+  # Engine fast-path (R3d-3b): the TS tick owns the logic; bash supplies the
+  # RNG decisions. Falls through to the original bash tick on any failure.
+  if pokemon_engine_available && _pokemon_tick_via_engine "$session_id" "$current_tokens" "$used_pct"; then
+    return 0
+  fi
 
   (
     flock -x 200
@@ -1104,83 +1253,9 @@ pokemon_tick() {
     # Run badge checks against the latest state (idempotent)
     state=$(pokemon_check_badges "$state" "$now")
 
-    # ── Auto-submit shared stats (fire-and-forget, every 24h) ──────────────
-    # Opt-in only. If user enabled stats_share + has anon_id + last submit > 24h ago
-    # (or never), POST stats to the Worker in background. Server has its own
-    # cooldown so worst case = 429 ignored. Optimistically updates
-    # last_stats_submit_at to throttle local retries.
-    local share_enabled
-    share_enabled=$(jq -r '.stats_share.enabled // false' "$POKEMON_DATA" 2>/dev/null || echo "false")
-    if [ "$share_enabled" = "true" ] && [ -n "$lineage" ] && [ "$lineage" != "null" ]; then
-      local share_anon_id share_endpoint share_display_name share_quote last_share
-      share_anon_id=$(jq -r '.stats_share.anon_id // ""' "$POKEMON_DATA")
-      share_endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
-      share_display_name=$(jq -r '.stats_share.display_name // ""' "$POKEMON_DATA")
-      share_quote=$(jq -r '.stats_share.quote // ""' "$POKEMON_DATA")
-      last_share=$(jq -r '.last_stats_submit_at // ""' <<<"$state")
-
-      if [ -n "$share_anon_id" ] && [ -n "$share_endpoint" ]; then
-        local should_submit=false
-        if [ -z "$last_share" ]; then
-          should_submit=true
-        else
-          local last_share_epoch now_epoch hours_passed
-          now_epoch=$(date -u +%s)
-          last_share_epoch=$(date -u -d "$last_share" +%s 2>/dev/null || echo 0)
-          hours_passed=$(( (now_epoch - last_share_epoch) / 3600 ))
-          [ "$hours_passed" -ge 24 ] && should_submit=true
-        fi
-
-        if [ "$should_submit" = "true" ]; then
-          state=$(jq --arg now "$now" '.last_stats_submit_at = $now' <<<"$state")
-          local pkg_ver auto_payload
-          pkg_ver=$(jq -r '.version // "unknown"' "$POKEMON_DATA")
-          auto_payload=$(jq -n \
-            --arg id "$share_anon_id" \
-            --arg name "$share_display_name" \
-            --arg quote "$share_quote" \
-            --arg ver "$pkg_ver" \
-            --arg at "$now" \
-            --argjson st "$state" '
-            {
-              anon_id: $id,
-              display_name: (if $name == "" then null else $name end),
-              quote:        (if $quote == "" then null else $quote end),
-              schema_version: 1,
-              client_version: $ver,
-              submitted_at: $at,
-              stats: {
-                lifetime: {
-                  total_tokens:       ($st.lifetime_stats.total_tokens // 0),
-                  total_evolutions:   ($st.lifetime_stats.total_evolutions // 0),
-                  total_shinies:      ($st.lifetime_stats.total_shinies // 0),
-                  max_level:          ($st.lifetime_stats.max_level // 0),
-                  total_compagnons:   ($st.lifetime_stats.total_compagnons // 0),
-                  lineages_completed: ($st.lifetime_stats.lineages_completed // []),
-                  games_won:          ($st.lifetime_stats.games_won // 0),
-                  games_played:       ($st.lifetime_stats.games_played // 0)
-                },
-                active: {
-                  lineage:       ($st.lineage // null),
-                  current_level: ($st.current_level // 0),
-                  is_shiny:      ($st.is_shiny // false)
-                },
-                badges:             ($st.badges // [] | map(.id)),
-                pokedex_seen_count: (($st.pokedex_wild // {}) | keys | length)
-              }
-            }
-          ')
-          # Background curl, fd 200 closed to release the flock immediately on
-          # parent subshell exit (don't hold the lock during the HTTP request).
-          (
-            curl -s --max-time 5 -X POST "$share_endpoint/v1/submit" \
-              -H "content-type: application/json" \
-              --data "$auto_payload" >/dev/null 2>&1
-          ) 200>&- </dev/null >/dev/null 2>&1 &
-          disown 2>/dev/null || true
-        fi
-      fi
-    fi
+    # Auto-submit shared stats (network, fire-and-forget). Shared with the
+    # engine fast-path; see _pokemon_maybe_autosubmit.
+    state=$(_pokemon_maybe_autosubmit "$state" "$now")
 
     cutoff=$(date -u -d '30 days ago' +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null \
           || date -u -v-30d +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null \
