@@ -17,6 +17,7 @@ import { realpathSync } from 'node:fs';
 import { renderView } from './render/index.js';
 import { tick } from './tick.js';
 import { renderLeaderboard, renderAggregate } from './render/net.js';
+import { runConfig } from './config.js';
 import { teamToPc, pcToTeamOrActive, releaseSlot, switchCompanion, hatch, ceremonialReset, } from './collection.js';
 import { thresholdFor, levelFromXp, xpToNext, progressPct, xpMultiplier, typeMatchMultiplier, } from './index.js';
 export function derive(input) {
@@ -108,9 +109,10 @@ async function main() {
     const isMutate = command === 'mutate';
     const isTick = command === 'tick';
     const isNet = command === 'net';
+    const isConfig = command === 'config';
     const handler = command ? COMMANDS[command] : undefined;
-    if (!handler && !isRender && !isMutate && !isTick && !isNet) {
-        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net'].join(', ')})\n`);
+    if (!handler && !isRender && !isMutate && !isTick && !isNet && !isConfig) {
+        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config'].join(', ')})\n`);
         process.exit(2);
     }
     const raw = await readStdin();
@@ -159,6 +161,21 @@ async function main() {
         if (out === null)
             process.exit(3); // unknown view → bash fallback
         process.stdout.write(out);
+        return;
+    }
+    if (isConfig) {
+        const cmd = process.argv[3];
+        if (cmd !== 'quote' && cmd !== 'bio' && cmd !== 'pins')
+            process.exit(3);
+        const inp = input;
+        const result = runConfig({
+            cmd,
+            args: process.argv.slice(4),
+            data: inp.data,
+            state: inp.state,
+            locale: inp.locale,
+        });
+        process.stdout.write(JSON.stringify(result));
         return;
     }
     process.stdout.write(JSON.stringify(handler(input)));
