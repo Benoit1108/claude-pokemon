@@ -2987,6 +2987,31 @@ _render_net() {
   return "${PIPESTATUS[1]}"
 }
 
+# Trainer-profile config command via the TS engine (Phase R3d-4b): quote / bio /
+# pins. The engine validates + renders + returns {data, output, changed}; bash
+# persists data.json only when changed (show actions mustn't reformat it) and
+# prints the output. rc!=0 → caller falls back to the bash view.
+_config() {
+  local cmd="$1"; shift
+  pokemon_engine_available || return 1
+  local lang locale req out rc changed
+  lang=$(jq -r '.language // "fr"' "$POKEMON_DATA" 2>/dev/null || echo fr)
+  locale="$POKEMON_LOCALES_DIR/$lang.json"
+  [ -f "$locale" ] || locale="$POKEMON_LOCALES_DIR/fr.json"
+  req=$(jq -cn --slurpfile dt "$POKEMON_DATA" --slurpfile st "$POKEMON_STATE" --slurpfile lc "$locale" \
+    '{data: $dt[0], state: $st[0], locale: $lc[0]}' 2>/dev/null) || return 1
+  out=$(printf '%s' "$req" | node "$POKEMON_ENGINE" config "$cmd" "$@" 2>/dev/null); rc=$?
+  [ "$rc" -ne 0 ] && return 1
+  [ -n "$out" ] || return 1
+  changed=$(jq -r '.changed' <<<"$out" 2>/dev/null) || return 1
+  if [ "$changed" = "true" ]; then
+    jq '.data' <<<"$out" > "$POKEMON_DATA.tmp" 2>/dev/null || return 1
+    [ -s "$POKEMON_DATA.tmp" ] || { rm -f "$POKEMON_DATA.tmp"; return 1; }
+    mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+  fi
+  jq -j '.output' <<<"$out"
+}
+
 # Apply a single collection transform via the TS engine (Phase R3d-2). Reads
 # $POKEMON_STATE; on success echoes the NEW state JSON (rc 0). rc 4 = op refused
 # (e.g. team full). rc 1 = engine unavailable / error → caller falls back to the
@@ -3035,9 +3060,9 @@ case "${1:-}" in
   recap|summary)      _render_view_live recap "${2:-}" || view_recap "${2:-}" ;;
   trainer-card|card)  _render_view_live trainer-card || view_trainer_card ;;
   stats-share|share)  view_stats_share "${2:-}" "${3:-}" ;;
-  quote)              view_quote "${@:2}" ;;
-  bio)                view_bio "${@:2}" ;;
-  pins|pinned)        view_pins "${@:2}" ;;
+  quote)              _config quote "${@:2}" || view_quote "${@:2}" ;;
+  bio)                _config bio "${@:2}"   || view_bio "${@:2}" ;;
+  pins|pinned)        _config pins "${@:2}"  || view_pins "${@:2}" ;;
   arena)              view_arena "${2:-status}" "${3:-}" ;;
   login)              view_login ;;
   logout)             view_logout ;;

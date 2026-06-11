@@ -17,6 +17,7 @@ import { realpathSync } from 'node:fs'
 import { renderView, type RenderInput } from './render/index.js'
 import { tick, type TickInput } from './tick.js'
 import { renderLeaderboard, renderAggregate, type NetResult } from './render/net.js'
+import { runConfig, type ConfigInput } from './config.js'
 import type { Locale } from './render/i18n.js'
 import {
   teamToPc,
@@ -148,10 +149,11 @@ async function main(): Promise<void> {
   const isMutate = command === 'mutate'
   const isTick = command === 'tick'
   const isNet = command === 'net'
+  const isConfig = command === 'config'
   const handler = command ? COMMANDS[command] : undefined
-  if (!handler && !isRender && !isMutate && !isTick && !isNet) {
+  if (!handler && !isRender && !isMutate && !isTick && !isNet && !isConfig) {
     process.stderr.write(
-      `engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net'].join(', ')})\n`,
+      `engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config'].join(', ')})\n`,
     )
     process.exit(2)
   }
@@ -195,6 +197,20 @@ async function main(): Promise<void> {
     const out = await net(view, process.argv.slice(4), input)
     if (out === null) process.exit(3) // unknown view → bash fallback
     process.stdout.write(out)
+    return
+  }
+  if (isConfig) {
+    const cmd = process.argv[3]
+    if (cmd !== 'quote' && cmd !== 'bio' && cmd !== 'pins') process.exit(3)
+    const inp = input as { data: unknown; state: unknown; locale: Locale }
+    const result = runConfig({
+      cmd,
+      args: process.argv.slice(4),
+      data: inp.data,
+      state: inp.state,
+      locale: inp.locale,
+    } as ConfigInput)
+    process.stdout.write(JSON.stringify(result))
     return
   }
   process.stdout.write(JSON.stringify(handler!(input)))
