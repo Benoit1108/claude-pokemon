@@ -13,7 +13,7 @@
 load '../helpers/setup.bash'
 
 # Views ported to TS so far (grows each R3c slice).
-PORTED_VIEWS=(badges inventory team pc)
+PORTED_VIEWS=(badges inventory team pc stats pokedex)
 
 strip_ansi_file() { sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'; }
 
@@ -51,6 +51,51 @@ strip_ansi_file() { sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'; }
 @test "engine render exits 3 for an unported view (bash fallback signal)" {
   run bash -c "printf '%s' '{\"view\":\"main\",\"state\":{},\"data\":{},\"locale\":{}}' | node '$REPO_ROOT/lib/engine.mjs' render main"
   [ "$status" -eq 3 ]
+}
+
+# Differential test: for branches the 4 frozen fixtures DON'T cover (stats
+# multipliers/tired/shiny-charm, pokedex seen lineages/shiny + seen multibyte
+# wild names padded by awk), compare the engine directly against fresh bash.
+# Pinned to a UTF-8 locale so awk's %-12s char-padding is deterministic.
+@test "engine matches fresh bash on fixture-uncovered branches (stats, pokedex)" {
+  export LC_ALL=C.UTF-8
+  local tmp; tmp=$(mktemp -d)
+  export HOME="$tmp"
+  local pdir="$tmp/.claude/pokemon"
+  mkdir -p "$pdir/locales"
+  cp "$REPO_ROOT/lib/data.default.json" "$pdir/data.json"
+  cp "$REPO_ROOT"/lib/locales/*.json "$pdir/locales/"
+  cp "$REPO_ROOT/lib/lib.sh" "$pdir/lib.sh"
+  cp "$REPO_ROOT/lib/pokemon-status.sh" "$tmp/.claude/pokemon-status.sh"
+  jq '.language="fr" | .display_sprite_in_statusline="off"' "$pdir/data.json" > "$pdir/d.tmp"
+  mv "$pdir/d.tmp" "$pdir/data.json"
+
+  # Seen wild ids with multibyte names (accent / ♀ / ♂) → exercise awk char-pad.
+  local ids seen
+  ids=$(jq -c '[.wild_pool[] | select(.name_fr | test("[éèêàùçâîôûÉ♀♂]")) | .id][:5]' "$pdir/data.json")
+  seen=$(jq -cn --argjson ids "$ids" 'reduce $ids[] as $i ({}; .[$i]={count:1})')
+  jq -cn --argjson w "$seen" '{
+    version:2, lineage:"fire", is_shiny:true, current_level:40, total_xp:60000000,
+    evolution_history:[], sessions:{}, badges:[], team:[], pc_storage:[],
+    pokedex:{fire:{seen:true,shiny_seen:true,count:3,shiny_count:1},water:{seen:true,shiny_seen:false,count:2,shiny_count:0}},
+    pokedex_wild:$w, items:{}, status:"tired", high_context_streak:7,
+    last_xp_multipliers:{context:"2.0",type_match:"1.2",daily_bonus:"1.5",status:"0.75"},
+    lifetime_stats:{total_tokens:123456789,total_evolutions:3,total_shinies:4,max_level:40,lineages_completed:["fire","water"],total_compagnons:2,first_shiny_at:"2026-05-08T12:00:00Z"}
+  }' > "$pdir/state.json"
+
+  local data locale state
+  data=$(cat "$pdir/data.json"); locale=$(cat "$pdir/locales/fr.json"); state=$(cat "$pdir/state.json")
+  for view in stats pokedex; do
+    bash "$tmp/.claude/pokemon-status.sh" "$view" 2>/dev/null | strip_ansi_file > "$tmp/bash.txt"
+    jq -cn --argjson s "$state" --argjson d "$data" --argjson l "$locale" --arg v "$view" \
+      '{view:$v, state:$s, data:$d, locale:$l, lang:"fr", scriptName:"pokemon-status.sh"}' \
+      | node "$REPO_ROOT/lib/engine.mjs" render "$view" | strip_ansi_file > "$tmp/engine.txt"
+    if ! diff -q "$tmp/bash.txt" "$tmp/engine.txt" >/dev/null; then
+      echo "DIFFERENTIAL MISMATCH ($view):"; diff "$tmp/bash.txt" "$tmp/engine.txt" || true
+      rm -rf "$tmp"; false; return
+    fi
+  done
+  rm -rf "$tmp"
 }
 
 @test "the positional <view> is authoritative over a stdin view" {

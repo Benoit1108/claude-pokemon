@@ -33,6 +33,33 @@ function jqStr(v: unknown): string {
   return v === null || v === undefined ? 'null' : String(v)
 }
 
+// pokemon_t_pad pads by CHARACTER count (wc -m), unlike bashPrintf's %-Ns which
+// pads by bytes. Code-point count matches `wc -m` for these locale strings.
+function padChars(s: string, width: number): string {
+  const len = [...s].length
+  return s + ' '.repeat(Math.max(0, width - len))
+}
+
+function tPad(locale: Locale, key: string, width: number): string {
+  return padChars(t(locale, key), width)
+}
+
+// fmt_int: group digits in 3s with a SPACE separator (matches the awk version).
+function fmtInt(n: number | string): string {
+  let s = String(Math.trunc(Number(n) || 0))
+  let neg = ''
+  if (s.startsWith('-')) {
+    neg = '-'
+    s = s.slice(1)
+  }
+  let out = ''
+  while (s.length > 3) {
+    out = ' ' + s.slice(-3) + out
+    s = s.slice(0, -3)
+  }
+  return neg + s + out
+}
+
 // ── badges ───────────────────────────────────────────────────────────────────
 const BADGE_EMOJI: Record<string, string> = {
   hatch: '🥚',
@@ -211,4 +238,152 @@ export function renderTeam(ctx: RenderContext): string {
 
 export function renderPc(ctx: RenderContext): string {
   return renderRoster(ctx, 'pc_storage', t(ctx.locale, 'pc.title'))
+}
+
+// ── stats ──────────────────────────────────────────────────────────────────────
+export function renderStats(ctx: RenderContext): string {
+  const { state, data, locale } = ctx
+  const ls: Json = state.lifetime_stats ?? {}
+  let out = bashPrintf(`\n  %s%s${t(locale, 'stats.title')}%s\n\n`, BOLD, GOLD, RESET)
+
+  const shinies = Number(ls.total_shinies ?? 0)
+  const completed = Array.isArray(ls.lineages_completed) ? ls.lineages_completed.length : 0
+  const totalLineages = Object.keys(data.lineages ?? {}).length
+  const firstShiny = ls.first_shiny_at ?? '—'
+
+  out += bashPrintf(`  %s${tPad(locale, 'stats.total_tokens', 22)}%s :  %s\n`, DIM, RESET, fmtInt(ls.total_tokens))
+  out += bashPrintf(
+    `  %s${tPad(locale, 'stats.total_evolutions', 22)}%s :  %s\n`,
+    DIM,
+    RESET,
+    fmtInt(ls.total_evolutions),
+  )
+  out += bashPrintf(`  %s${tPad(locale, 'stats.total_shinies', 22)}%s :  %s\n`, DIM, RESET, fmtInt(shinies))
+  out += bashPrintf(`  %s${tPad(locale, 'stats.max_level', 22)}%s :  Lv.%s\n`, DIM, RESET, jqStr(ls.max_level))
+  out += bashPrintf(
+    `  %s${tPad(locale, 'stats.total_compagnons', 22)}%s :  %s\n`,
+    DIM,
+    RESET,
+    fmtInt(ls.total_compagnons),
+  )
+  out += bashPrintf(
+    `  %s${tPad(locale, 'stats.lineages_completed', 22)}%s :  %s / %s\n`,
+    DIM,
+    RESET,
+    completed,
+    totalLineages,
+  )
+  out += bashPrintf(
+    `  %s${tPad(locale, 'stats.first_shiny', 22)}%s :  %s\n\n`,
+    DIM,
+    RESET,
+    String(firstShiny).slice(0, 10),
+  )
+
+  const mults: Json = state.last_xp_multipliers
+  if (mults != null) {
+    out += bashPrintf(`  %s%s${t(locale, 'stats.multipliers_title')}%s\n\n`, BOLD, GOLD, RESET)
+    const ctxM = mults.context
+    const tm = mults.type_match
+    const db = mults.daily_bonus
+    const st = mults.status
+    out += bashPrintf(`  %s${tPad(locale, 'stats.context', 22)}%s : ×%s\n`, DIM, RESET, ctxM)
+    out += bashPrintf(`  %s${tPad(locale, 'stats.type_match', 22)}%s : ×%s\n`, DIM, RESET, tm)
+    out += bashPrintf(`  %s${tPad(locale, 'stats.daily_bonus', 22)}%s : ×%s\n`, DIM, RESET, db)
+    out += bashPrintf(`  %s${tPad(locale, 'stats.status', 22)}%s : ×%s\n`, DIM, RESET, st)
+    const combined = (Number(ctxM) * Number(tm) * Number(db) * Number(st)).toFixed(2)
+    out += bashPrintf(`  %s${tPad(locale, 'stats.combined', 22)}%s : %s×%s%s\n\n`, DIM, RESET, BOLD, combined, RESET)
+  }
+
+  const status = state.status ?? 'ok'
+  const streak = Number(state.high_context_streak ?? 0)
+  if (status === 'tired') {
+    out += bashPrintf(`  %s${t(locale, 'stats.tired_warning', streak)}%s\n\n`, BOLD, RESET)
+  }
+  if (shinies > 0) {
+    out += bashPrintf(`  %s${t(locale, 'stats.shiny_charm')}%s\n\n`, GOLD, RESET)
+  }
+  return out
+}
+
+// ── pokedex ──────────────────────────────────────────────────────────────────────
+export function renderPokedex(ctx: RenderContext): string {
+  const { state, data, locale } = ctx
+  let out = bashPrintf(`\n  %s%s${t(locale, 'pokedex.title_lineages')}%s\n\n`, BOLD, GOLD, RESET)
+
+  const dex: Json = state.pokedex ?? {}
+  for (const [lin, info] of Object.entries(data.lineages ?? {}) as [string, Json][]) {
+    const label = info.label
+    const entry: Json = dex[lin] ?? {}
+    const seen = entry.seen ?? false
+    const shiny = entry.shiny_seen ?? false
+    const count = Number(entry.count ?? 0)
+    const shinyCount = Number(entry.shiny_count ?? 0)
+    if (seen === true) {
+      const shinyStr = shiny === true ? `  ${GOLD}${t(locale, 'pokedex.shiny_seen')}${RESET}` : ''
+      out += bashPrintf(
+        '   %s✓%s  %-20s %s×%d   %s: %d%s\n',
+        BOLD,
+        RESET,
+        label,
+        DIM,
+        count,
+        t(locale, 'pokedex.shinies'),
+        shinyCount,
+        shinyStr,
+      )
+    } else {
+      out += bashPrintf('   ▢  %s%-20s%s  %s—%s\n', DIM, label, RESET, DIM, RESET)
+    }
+  }
+
+  // Wild encounters — language comes from data.json (as in the bash view).
+  const wild: Json = state.pokedex_wild ?? {}
+  const wildSeen = Object.keys(wild).length
+  const pool: Json[] = Array.isArray(data.wild_pool) ? data.wild_pool : []
+  const totalWild = pool.length
+  const lang = data.language ?? 'fr'
+
+  out += bashPrintf(
+    `\n  %s%s${t(locale, 'pokedex.title_wild')}%s   %s(%d / %d)%s\n\n`,
+    BOLD,
+    GOLD,
+    RESET,
+    DIM,
+    wildSeen,
+    totalWild,
+    RESET,
+  )
+
+  const sorted = [...pool].sort((a, b) => Number(a.national_dex) - Number(b.national_dex))
+  let col = 0
+  for (const w of sorted) {
+    const id = w.id
+    const seen = Object.prototype.hasOwnProperty.call(wild, id)
+    const marker = seen ? `${BOLD}✓${RESET}` : `${DIM}▢${RESET}`
+    const style = seen ? '' : DIM
+    const nameDisp = seen ? jqStr(w[`name_${lang}`]) : '???'
+    const rarity = w.rarity ?? 'common'
+    const rarityMarker = rarity === 'legendary' ? `${GOLD}★${RESET}` : ' '
+    // The wild-grid name field is padded by AWK %-12s (lib/pokemon-status.sh),
+    // which counts CHARACTERS in a UTF-8 locale — unlike bash printf's byte
+    // %-Ns. So pre-pad by char count, then emit with a plain %s.
+    out += bashPrintf(
+      '  %s #%03d %s %s%s%s',
+      marker,
+      Number(w.national_dex),
+      rarityMarker,
+      style,
+      padChars(nameDisp, 12),
+      RESET,
+    )
+    col++
+    if (col >= 4) {
+      out += '\n'
+      col = 0
+    }
+  }
+  if (col > 0) out += '\n'
+  out += '\n'
+  return out
 }
