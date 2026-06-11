@@ -10,6 +10,7 @@ import {
   renderPokedex,
   renderMain,
   renderTrainerCard,
+  renderRecap,
   type RenderContext,
 } from './views.js'
 import type { Locale } from './i18n.js'
@@ -23,9 +24,12 @@ export interface RenderInput {
   locale: Locale
   lang?: string
   scriptName?: string
+  /** recap scope (session|today|…) and clock for the duration line. */
+  scope?: string
+  nowEpoch?: number
 }
 
-const RENDERERS: Record<string, (ctx: RenderContext) => string> = {
+const RENDERERS: Record<string, (ctx: RenderContext, input: RenderInput) => string> = {
   badges: renderBadges,
   inventory: renderInventory,
   team: renderTeam,
@@ -34,6 +38,7 @@ const RENDERERS: Record<string, (ctx: RenderContext) => string> = {
   pokedex: renderPokedex,
   main: renderMain,
   'trainer-card': renderTrainerCard,
+  recap: (ctx, input) => renderRecap(ctx, input.scope ?? 'session'),
 }
 
 export const SUPPORTED_VIEWS = Object.keys(RENDERERS)
@@ -47,6 +52,7 @@ export function renderView(input: RenderInput): { supported: boolean; output: st
     locale: input.locale,
     lang: input.lang ?? 'fr',
     scriptName: input.scriptName ?? 'pokemon-status.sh',
+    nowEpoch: input.nowEpoch,
   }
-  return { supported: true, output: renderer(ctx) }
+  return { supported: true, output: renderer(ctx, input) }
 }
