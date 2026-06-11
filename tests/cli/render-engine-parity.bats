@@ -13,7 +13,7 @@
 load '../helpers/setup.bash'
 
 # Views ported to TS so far (grows each R3c slice).
-PORTED_VIEWS=(badges inventory team pc stats pokedex main trainer-card)
+PORTED_VIEWS=(badges inventory team pc stats pokedex main trainer-card recap)
 
 strip_ansi_file() { sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'; }
 
@@ -48,8 +48,8 @@ strip_ansi_file() { sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'; }
   [ "$fails" -eq 0 ]
 }
 
-@test "engine render exits 3 for an unported view (bash fallback signal)" {
-  run bash -c "printf '%s' '{\"view\":\"main\",\"state\":{},\"data\":{},\"locale\":{}}' | node '$REPO_ROOT/lib/engine.mjs' render recap"
+@test "engine render exits 3 for an unknown view (bash fallback signal)" {
+  run bash -c "printf '%s' '{\"view\":\"switch\",\"state\":{},\"data\":{},\"locale\":{}}' | node '$REPO_ROOT/lib/engine.mjs' render switch"
   [ "$status" -eq 3 ]
 }
 
@@ -109,6 +109,68 @@ strip_ansi_file() { sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'; }
       | node "$REPO_ROOT/lib/engine.mjs" render "$view" | strip_ansi_file > "$tmp/engine.txt"
     if ! diff -q "$tmp/bash.txt" "$tmp/engine.txt" >/dev/null; then
       echo "DIFFERENTIAL MISMATCH ($view):"; diff "$tmp/bash.txt" "$tmp/engine.txt" || true
+      rm -rf "$tmp"; false; return
+    fi
+  done
+  rm -rf "$tmp"
+}
+
+# recap's session/today paths depend on the wall clock, so they can't be frozen
+# as fixtures. Gate them against fresh bash with a `date` shim that fixes "now"
+# (delegating -d ISO parsing to the real date). Covers all 5 event types +
+# evolutions + badges + today scope.
+@test "engine matches fresh bash on recap session/today paths (date-shim differential)" {
+  export LC_ALL=C.UTF-8
+  local tmp; tmp=$(mktemp -d)
+  export HOME="$tmp"
+  local pdir="$tmp/.claude/pokemon"
+  mkdir -p "$pdir/locales" "$tmp/bin"
+  cp "$REPO_ROOT/lib/data.default.json" "$pdir/data.json"
+  cp "$REPO_ROOT"/lib/locales/*.json "$pdir/locales/"
+  cp "$REPO_ROOT/lib/lib.sh" "$pdir/lib.sh"
+  cp "$REPO_ROOT/lib/pokemon-status.sh" "$tmp/.claude/pokemon-status.sh"
+  jq '.language="fr" | .display_sprite_in_statusline="off"' "$pdir/data.json" > "$pdir/d.tmp"
+  mv "$pdir/d.tmp" "$pdir/data.json"
+
+  local now_iso="2026-05-08T12:05:00Z" now_epoch
+  now_epoch=$(date -u -d "$now_iso" +%s)
+  # Pin every "now" query to the fixed epoch; delegate explicit -d parsing to
+  # the real date (so since-ISO → epoch still works). Without pinning the
+  # today-scope's `date +%Y...` call, bash would use the real wall-clock date.
+  cat > "$tmp/bin/date" <<SHIM
+#!/usr/bin/env bash
+for a in "\$@"; do case "\$a" in -d*|--date*) exec /usr/bin/date "\$@";; esac; done
+fmt=""; for a in "\$@"; do case "\$a" in +*) fmt="\$a";; esac; done
+exec /usr/bin/date -u -d "@$now_epoch" "\$fmt"
+SHIM
+  chmod +x "$tmp/bin/date"
+
+  local wid; wid=$(jq -r '.wild_pool[0].id' "$pdir/data.json")
+  jq -cn --arg wid "$wid" '{
+    version:2, lineage:"fire", current_level:5, total_xp:2000000, friendship:50,
+    sessions:{s1:{first_seen:"2026-05-08T10:00:00Z", last_seen:"2026-05-08T12:05:00Z",
+      baseline:{total_xp:1000000, friendship:10, lifetime_tokens:1000, current_level:3}}},
+    recent_events:[
+      {type:"berry",name:"Baie",emoji:"🍒",xp:500,at:"2026-05-08T11:00:00Z"},
+      {type:"encounter",id:$wid,at:"2026-05-08T11:10:00Z"},
+      {type:"battle_won",id:$wid,xp:900,wild_level:12,at:"2026-05-08T11:20:00Z"},
+      {type:"battle_lost",id:$wid,wild_level:40,at:"2026-05-08T11:30:00Z"},
+      {type:"item",name:"Pierre Feu",emoji:"🔥",at:"2026-05-08T11:40:00Z"}
+    ],
+    evolution_history:[{level:16,name:"Reptincel",evolved_at:"2026-05-08T11:45:00Z"}],
+    badges:[{id:"first_evolution",earned_at:"2026-05-08T11:46:00Z"}],
+    lifetime_stats:{total_tokens:5000,total_shinies:0,max_level:5,lineages_completed:[]}
+  }' > "$pdir/state.json"
+
+  local data locale state
+  data=$(cat "$pdir/data.json"); locale=$(cat "$pdir/locales/fr.json"); state=$(cat "$pdir/state.json")
+  for scope in session today; do
+    PATH="$tmp/bin:$PATH" bash "$tmp/.claude/pokemon-status.sh" recap "$scope" 2>/dev/null | strip_ansi_file > "$tmp/bash.txt"
+    jq -cn --argjson s "$state" --argjson d "$data" --argjson l "$locale" --arg sc "$scope" --argjson now "$now_epoch" \
+      '{view:"recap", state:$s, data:$d, locale:$l, lang:"fr", scriptName:"pokemon-status.sh", scope:$sc, nowEpoch:$now}' \
+      | node "$REPO_ROOT/lib/engine.mjs" render recap | strip_ansi_file > "$tmp/engine.txt"
+    if ! diff -q "$tmp/bash.txt" "$tmp/engine.txt" >/dev/null; then
+      echo "RECAP DIFFERENTIAL MISMATCH (scope=$scope):"; diff "$tmp/bash.txt" "$tmp/engine.txt" || true
       rm -rf "$tmp"; false; return
     fi
   done

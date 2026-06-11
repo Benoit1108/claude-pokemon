@@ -6,6 +6,9 @@ export interface RenderInput {
     locale: Locale;
     lang?: string;
     scriptName?: string;
+    /** recap scope (session|today|…) and clock for the duration line. */
+    scope?: string;
+    nowEpoch?: number;
 }
 export declare const SUPPORTED_VIEWS: string[];
 export declare function renderView(input: RenderInput): {
