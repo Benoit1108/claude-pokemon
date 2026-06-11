@@ -15,6 +15,7 @@
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { renderView } from './render/index.js';
+import { tick } from './tick.js';
 import { teamToPc, pcToTeamOrActive, releaseSlot, switchCompanion, hatch, ceremonialReset, } from './collection.js';
 import { thresholdFor, levelFromXp, xpToNext, progressPct, xpMultiplier, typeMatchMultiplier, } from './index.js';
 export function derive(input) {
@@ -72,9 +73,10 @@ async function main() {
     const command = process.argv[2];
     const isRender = command === 'render';
     const isMutate = command === 'mutate';
+    const isTick = command === 'tick';
     const handler = command ? COMMANDS[command] : undefined;
-    if (!handler && !isRender && !isMutate) {
-        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate'].join(', ')})\n`);
+    if (!handler && !isRender && !isMutate && !isTick) {
+        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick'].join(', ')})\n`);
         process.exit(2);
     }
     const raw = await readStdin();
@@ -111,6 +113,10 @@ async function main() {
         if (result === null)
             process.exit(3); // unknown op → bash fallback
         process.stdout.write(JSON.stringify(result));
+        return;
+    }
+    if (isTick) {
+        process.stdout.write(JSON.stringify(tick(input)));
         return;
     }
     process.stdout.write(JSON.stringify(handler(input)));

@@ -19,6 +19,8 @@ export declare function renderBadges(ctx: RenderContext): string;
 export declare function renderInventory(ctx: RenderContext): string;
 export declare function renderTeam(ctx: RenderContext): string;
 export declare function renderPc(ctx: RenderContext): string;
+export declare function resolveStageDefault(data: Json, lineage: string, level: unknown): Json | null;
+export declare function evoField(data: Json, state: Json, lineage: string, level: unknown, field: string): string;
 export declare function renderMain(ctx: RenderContext): string;
 export declare function renderRecap(ctx: RenderContext, scope?: string): string;
 export declare function renderTrainerCard(ctx: RenderContext): string;

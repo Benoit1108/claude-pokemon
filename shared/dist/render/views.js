@@ -206,7 +206,7 @@ function boxBottom(width) {
 // Resolve the active stage by the default rule (highest min_level ≤ level),
 // reproducing jq semantics: `min_level <= null` is always FALSE (null is the
 // smallest value in jq), unlike JS where null coerces to 0.
-function resolveStageDefault(data, lineage, level) {
+export function resolveStageDefault(data, lineage, level) {
     const stages = data.lineages?.[lineage]?.stages ?? [];
     const n = Number(level);
     if (level === null || level === undefined || level === '' || !Number.isFinite(n))
@@ -222,7 +222,7 @@ function eeveeFormStage(data, form) {
     return stages.find((s) => s.showdown_id === form) ?? null;
 }
 // pokemon_evo_field: Eevee Lv.30+ resolves via state.eevee_form; else default.
-function evoField(data, state, lineage, level, field) {
+export function evoField(data, state, lineage, level, field) {
     const n = Number(level);
     const valid = level !== null && level !== undefined && level !== '' && Number.isFinite(n);
     if (lineage === 'eevee' && valid && n >= 30) {
