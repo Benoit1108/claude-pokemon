@@ -287,7 +287,7 @@ function boxBottom(width: number): string {
 // Resolve the active stage by the default rule (highest min_level ≤ level),
 // reproducing jq semantics: `min_level <= null` is always FALSE (null is the
 // smallest value in jq), unlike JS where null coerces to 0.
-function resolveStageDefault(data: Json, lineage: string, level: unknown): Json | null {
+export function resolveStageDefault(data: Json, lineage: string, level: unknown): Json | null {
   const stages: Json[] = data.lineages?.[lineage]?.stages ?? []
   const n = Number(level)
   if (level === null || level === undefined || level === '' || !Number.isFinite(n)) return null
@@ -303,7 +303,7 @@ function eeveeFormStage(data: Json, form: string): Json | null {
 }
 
 // pokemon_evo_field: Eevee Lv.30+ resolves via state.eevee_form; else default.
-function evoField(data: Json, state: Json, lineage: string, level: unknown, field: string): string {
+export function evoField(data: Json, state: Json, lineage: string, level: unknown, field: string): string {
   const n = Number(level)
   const valid = level !== null && level !== undefined && level !== '' && Number.isFinite(n)
   if (lineage === 'eevee' && valid && n >= 30) {

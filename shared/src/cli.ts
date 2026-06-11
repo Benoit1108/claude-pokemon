@@ -15,6 +15,7 @@
 import { fileURLToPath } from 'node:url'
 import { realpathSync } from 'node:fs'
 import { renderView, type RenderInput } from './render/index.js'
+import { tick, type TickInput } from './tick.js'
 import {
   teamToPc,
   pcToTeamOrActive,
@@ -113,10 +114,11 @@ async function main(): Promise<void> {
   const command = process.argv[2]
   const isRender = command === 'render'
   const isMutate = command === 'mutate'
+  const isTick = command === 'tick'
   const handler = command ? COMMANDS[command] : undefined
-  if (!handler && !isRender && !isMutate) {
+  if (!handler && !isRender && !isMutate && !isTick) {
     process.stderr.write(
-      `engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate'].join(', ')})\n`,
+      `engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick'].join(', ')})\n`,
     )
     process.exit(2)
   }
@@ -149,6 +151,10 @@ async function main(): Promise<void> {
     const result = mutate(inp)
     if (result === null) process.exit(3) // unknown op → bash fallback
     process.stdout.write(JSON.stringify(result))
+    return
+  }
+  if (isTick) {
+    process.stdout.write(JSON.stringify(tick(input as TickInput)))
     return
   }
   process.stdout.write(JSON.stringify(handler!(input)))

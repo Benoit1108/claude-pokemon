@@ -17,6 +17,19 @@ setup_dir() {
   cp "$REPO_ROOT/lib/pokemon-status.sh" "$TD/.claude/pokemon-status.sh"
   jq '.language="fr"' "$PD/data.json" > "$PD/d.tmp" && mv "$PD/d.tmp" "$PD/data.json"
   STATUS="$TD/.claude/pokemon-status.sh"
+  # Pin the clock: hatch/reset/switch stamp now into created_at/last_updated, and
+  # the engine path and bash path each call `date` independently — without a
+  # fixed clock they can straddle a second boundary → flaky diff.
+  mkdir -p "$TD/bin"
+  local ep; ep=$(date -u -d "2026-06-11T12:00:00Z" +%s)
+  cat > "$TD/bin/date" <<SHIM
+#!/usr/bin/env bash
+for a in "\$@"; do case "\$a" in -d*|--date*) exec /usr/bin/date "\$@";; esac; done
+fmt=""; for a in "\$@"; do case "\$a" in +*) fmt="\$a";; esac; done
+exec /usr/bin/date -u -d "@$ep" "\$fmt"
+SHIM
+  chmod +x "$TD/bin/date"
+  export PATH="$TD/bin:$PATH"
 }
 mon() { jq -cn --arg l "$1" --argjson lv "$2" --arg n "$3" '{lineage:$l,is_shiny:false,level:$lv,total_xp:1000000,max_stage:$n,evolution_history:[],eevee_form:null,items:{},created_at:"2026-05-01T00:00:00Z",completed_at:"2026-05-05T00:00:00Z"}'; }
 seed() { jq -cn --argjson team "$1" --argjson pc "$2" --arg lin "${3:-fire}" --argjson lvl "${4:-50}" '{version:2,lineage:$lin,is_shiny:false,current_level:$lvl,total_xp:5000000,evolution_history:[{level:1,name:"Salamèche"}],eevee_form:null,items:{},team:$team,pc_storage:$pc,pokedex:{},badges:[],friendship:0,created_at:"2026-05-01T00:00:00Z",lifetime_stats:{total_compagnons:0,lineages_completed:[],max_level:50,total_tokens:0,total_shinies:0}}' > "$PD/state.json"; }
