@@ -89,4 +89,23 @@ emit pc_to_team_or_active '[0]' "$(active_state fire 50 "$TEAM6" "$PC1")" "$(pok
 emit release_slot '["team",0]' "$(active_state fire 50 "$TEAM2" "[]")" "$(pokemon_release_slot "$(active_state fire 50 "$TEAM2" "[]")" team 0)"
 emit release_slot '["pc",0]'   "$(active_state fire 50 "[]" "$PC1")"   "$(pokemon_release_slot "$(active_state fire 50 "[]" "$PC1")" pc 0)"
 
+# ── check_badges ── (state in → state with new badges; data = POKEMON_DATA)
+cb() {  # $1 = jq fragment merged onto a base state
+  jq -cn --argjson over "$1" '{
+    version:2, lineage:"fire", is_shiny:false, current_level:50, total_xp:5000000,
+    evolution_history:[], badges:[], team:[], pc_storage:[], pokedex:{}, pokedex_wild:{},
+    lifetime_stats:{total_tokens:0,total_evolutions:0,total_shinies:0,max_level:50,
+      lineages_completed:[],total_compagnons:0,first_shiny_at:null}
+  } * $over'
+}
+CB_EVO=$(cb '{"evolution_history":[{"level":1,"name":"a"},{"level":16,"name":"b"}]}')
+emit check_badges '[]' "$CB_EVO" "$(pokemon_check_badges "$CB_EVO" "$NOW")"
+CB_LIFE=$(cb '{"lifetime_stats":{"max_level":100,"total_shinies":6,"total_tokens":200000000,"lineages_completed":["fire","eevee"]}}')
+emit check_badges '[]' "$CB_LIFE" "$(pokemon_check_badges "$CB_LIFE" "$NOW")"
+CB_DEX=$(cb '{"pokedex":{"fire":{"seen":true},"water":{"seen":true},"grass":{"seen":true},"electric":{"seen":true},"eevee":{"seen":true}},"pokedex_wild":{"a":{},"b":{}}}')
+emit check_badges '[]' "$CB_DEX" "$(pokemon_check_badges "$CB_DEX" "$NOW")"
+# idempotency: a state that already has the hatch badge
+CB_IDEM=$(cb '{"evolution_history":[{"level":1,"name":"a"}],"badges":[{"id":"hatch","earned_at":"2026-01-01T00:00:00Z"}]}')
+emit check_badges '[]' "$CB_IDEM" "$(pokemon_check_badges "$CB_IDEM" "$NOW")"
+
 echo "Wrote $OUT ($(wc -l < "$OUT") cases)"

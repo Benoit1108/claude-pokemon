@@ -136,9 +136,14 @@ ceremonial_reset() {
       return
     fi
 
-    # Archive even if not Lv.100 — ceremonial reset is voluntary
-    state=$(pokemon_archive_to_team "$now" "$state")
-    state=$(pokemon_check_badges "$state" "$now")
+    # Archive even if not Lv.100 — ceremonial reset is voluntary (TS engine, bash fallback).
+    local new_state
+    if new_state=$(_mutate_state ceremonial_reset); then
+      state="$new_state"
+    else
+      state=$(pokemon_archive_to_team "$now" "$state")
+      state=$(pokemon_check_badges "$state" "$now")
+    fi
     printf '%s\n' "$state" > "$POKEMON_STATE.tmp" && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
 
     printf "\\n  %s$(pokemon_t reset.archived)%s\\n" "$BOLD" "$RESET"
@@ -421,14 +426,14 @@ view_switch() {
     active_name=$(jq -r '(.evolution_history | last.name) // "Œuf"' <<<"$state")
     target_name=$(jq -r --argjson i "$target_slot" '.team[$i].max_stage // "Œuf"' <<<"$state")
 
-    # Save current active to team
-    state=$(pokemon_active_to_archive "$now" "$state")
-    # Re-fetch slot index (it may have shifted if active was archived)
-    # Active was appended at end of team, so target_slot is unchanged unless overflow happened
-    local current_team_size
-    current_team_size=$(jq '.team | length' <<<"$state")
-    # If team overflowed (now in PC), target_slot might be off — keep simple: assume not full case
-    state=$(pokemon_load_team_to_active "$now" "$state" "$target_slot")
+    # Archive active to team + load team[slot] into active (TS engine, bash fallback).
+    local new_state
+    if new_state=$(_mutate_state switch_companion "$target_slot"); then
+      state="$new_state"
+    else
+      state=$(pokemon_active_to_archive "$now" "$state")
+      state=$(pokemon_load_team_to_active "$now" "$state" "$target_slot")
+    fi
     printf '%s\n' "$state" > "$POKEMON_STATE.tmp" && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
 
     printf "  %s$(pokemon_t switch.swapped "$active_name" "$target_name")%s\n\n" "$BOLD" "$RESET"
@@ -459,12 +464,16 @@ view_hatch() {
     active_name=$(jq -r '(.evolution_history | last.name) // "Œuf"' <<<"$state")
     active_level=$(jq -r '.current_level' <<<"$state")
 
-    if [ "$active_level" -gt 0 ]; then
-      state=$(pokemon_active_to_archive "$now" "$state")
-      printf "  %s$(pokemon_t hatch.current_archived "$active_name")%s\n" "$DIM" "$RESET"
+    # Archive-if-active + reset to fresh egg + recheck badges (TS engine, bash fallback).
+    local new_state
+    if new_state=$(_mutate_state hatch "$target_lineage"); then
+      state="$new_state"
+    else
+      [ "$active_level" -gt 0 ] && state=$(pokemon_active_to_archive "$now" "$state")
+      state=$(pokemon_reset_active "$now" "$state" "$target_lineage")
+      state=$(pokemon_check_badges "$state" "$now")
     fi
-    state=$(pokemon_reset_active "$now" "$state" "$target_lineage")
-    state=$(pokemon_check_badges "$state" "$now")
+    [ "$active_level" -gt 0 ] && printf "  %s$(pokemon_t hatch.current_archived "$active_name")%s\n" "$DIM" "$RESET"
     printf '%s\n' "$state" > "$POKEMON_STATE.tmp" && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
 
     local lin_label="${target_lineage:-random}"

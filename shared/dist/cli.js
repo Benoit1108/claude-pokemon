@@ -15,7 +15,7 @@
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { renderView } from './render/index.js';
-import { teamToPc, pcToTeamOrActive, releaseSlot } from './collection.js';
+import { teamToPc, pcToTeamOrActive, releaseSlot, switchCompanion, hatch, ceremonialReset, } from './collection.js';
 import { thresholdFor, levelFromXp, xpToNext, progressPct, xpMultiplier, typeMatchMultiplier, } from './index.js';
 export function derive(input) {
     const { thresholds, lineage } = input;
@@ -47,7 +47,7 @@ async function readStdin() {
 // shows the appropriate message; null op → exit 3 (bash fallback).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mutate(input) {
-    const { op, state, now } = input;
+    const { op, state, now, data } = input;
     const args = Array.isArray(input.args) ? input.args : [];
     switch (op) {
         case 'team_to_pc':
@@ -58,6 +58,12 @@ function mutate(input) {
             const next = pcToTeamOrActive(state, now, Number(args[0]));
             return { ok: next !== null, state: next };
         }
+        case 'switch_companion':
+            return { ok: true, state: switchCompanion(state, now, Number(args[0])) };
+        case 'hatch':
+            return { ok: true, state: hatch(state, now, data, args[0] || undefined) };
+        case 'ceremonial_reset':
+            return { ok: true, state: ceremonialReset(state, now, data) };
         default:
             return null;
     }
