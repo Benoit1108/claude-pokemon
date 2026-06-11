@@ -1,0 +1,11 @@
+
+  STATISTIQUES DE VIE
+
+  Tokens cumulés         :  0
+  Évolutions totales     :  0
+  Shinies obtenus        :  0
+  Niveau max atteint     :  Lv.5
+  Compagnons élevés      :  0
+  Lignées complétées     :  0 / 8
+  Premier shiny          :  —
+

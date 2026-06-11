@@ -1,0 +1,42 @@
+
+╭─ 🔧 Courbe XP rééquilibrée ──────────────────────────────────────────╮
+  On a corrigé un bug : la courbe d'XP avait des deltas qui
+  diminuaient après Lv.16 (gain plus facile en mid-game qu'en early).
+  Ton total XP est préservé, mais ton niveau a pu redescendre.
+  Les level-ups sont maintenant monotones. Détails dans le CHANGELOG.
+
+  (Ce message ne s'affichera qu'une fois.)
+╰────────────────────────────────────────────────────────────────────╯
+
+
+╭─ COMPAGNON ───────────────────────────────────────────────────╮
+  COMPAGNON   Lignée Feu   depuis 2026-05-07
+
+  🦎   Salamèche   Lv.5
+
+  ██░░░░░░░░░░░░░░░░░░   11% vers 🔥 Reptincel
+
+  XP totale              :  2 000 000 tokens
+  Palier actuel          :  1 000 000 / 9 076 000
+  Restant                :  8 076 000 tokens (Lv.16)
+
+  Capacités              :  Griffe, Grondement
+
+  Type                   :  [ Feu ]
+
+  Pokédex                :  Préfère les endroits chauds. Sa flamme s'éteint si elle est blessée.
+
+╰──────────────────────────────────────────────────────────────╯
+
+╭─ CHAÎNE COMPLÈTE — Lignée Feu ────────────────────────────────╮
+   ✓  Lv.0    🥚  Œuf                    0 tokens
+   ►  Lv.1    🦎  Salamèche              1 000 000 tokens
+      Lv.16   🔥  Reptincel               10 076 000 tokens
+      Lv.36   🐉  Dracaufeu               42 954 000 tokens
+      Lv.55   🐲  Méga-Dracaufeu X       89 764 000 tokens
+      Lv.100  🌋  Méga-Dracaufeu Y       311 845 000 tokens
+╰──────────────────────────────────────────────────────────────╯
+
+  Sous-commandes         : team, pc, pokedex, stats, badges, switch, hatch, deposit, withdraw, give, take, trade, reset, --shiny
+  Exemple                : bash ~/.claude/pokemon-status.sh team
+

@@ -1,0 +1,8 @@
+
+  INVENTAIRE
+
+   🔮  Charme XP           ×1
+     Tenu : +10% XP gagné par tick.
+   🫐  Baie Oran (combat)  ×2
+     Consommée si blessé : retire le statut.
+
