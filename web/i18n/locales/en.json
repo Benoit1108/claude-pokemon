@@ -650,7 +650,8 @@
       "err_invalid_secret": "The arena_secret doesn't match this anon_id.",
       "err_already_linked": "This CLI account is already linked to another login.",
       "err_not_found": "No arena account found for this anon_id.",
-      "err_generic": "Linking failed. Please try again."
+      "err_generic": "Linking failed. Please try again.",
+      "err_saved": "Linked — but your browser refused to save the session. Sign in via /login."
     },
     "callback": {
       "working": "Signing you in…",
