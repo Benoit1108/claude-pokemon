@@ -83,3 +83,42 @@ base_state() { # $1 lineage, $2 level, $3 total_xp
   local dec; dec=$(echo "$DEC_OFF" | jq '.berry.fired=true|.encounter.fired=true|.item.fired=true')
   tick_diff '.event_chances.berry=1|.event_chances.encounter=1|.battle_chance_on_encounter=0|.item_drop_chance_on_encounter=1|.shiny_mode="never"|.berries=[.berries[0]]|.wild_pool=[.wild_pool[0]]|.items=({(.items|keys[0]):(.items[(.items|keys[0])])})' "$(base_state fire 5 2000000)" "$dec" 20
 }
+
+# Live wiring (R3d-3b): the real pokemon_tick via the engine fast-path vs the
+# bash fallback (POKEMON_ENGINE bogus), same seed + fixed clock + rolls off →
+# identical state. Proves the bash decision-computation + engine + fallback are
+# consistent end-to-end.
+@test "live: pokemon_tick engine fast-path == bash fallback" {
+  setup_tick_env
+  jq '.event_chances.berry=0|.event_chances.encounter=0|.shiny_mode="never"' \
+    "$REPO_ROOT/lib/data.default.json" > "$PD/data.json"
+  local st; st=$(base_state fire 5 2000000)
+
+  printf '%s' "$st" > "$PD/state.json"
+  PATH="$TD/bin:$PATH" bash -c "source '$PD/lib.sh'; pokemon_tick s1 50000 20" >/dev/null 2>&1
+  jq -S 'del(.last_updated)' "$PD/state.json" > "$TD/engine.json"
+
+  printf '%s' "$st" > "$PD/state.json"
+  PATH="$TD/bin:$PATH" POKEMON_ENGINE=/nope/e.mjs bash -c "source '$PD/lib.sh'; pokemon_tick s1 50000 20" >/dev/null 2>&1
+  jq -S 'del(.last_updated)' "$PD/state.json" > "$TD/bash.json"
+
+  run diff "$TD/bash.json" "$TD/engine.json"
+  [ "$status" -eq 0 ] || { echo "$output"; false; }
+}
+
+@test "live: fractional used_pct (.5 boundary) consistent engine vs fallback" {
+  setup_tick_env
+  jq '.event_chances.berry=0|.event_chances.encounter=0|.shiny_mode="never"' \
+    "$REPO_ROOT/lib/data.default.json" > "$PD/data.json"
+  local st; st=$(base_state fire 5 2000000)
+  # 25.5 sits on the xp-multiplier bucket edge (≤25 → 2.0, else 1.5). Both paths
+  # round via printf '%.0f' → must agree.
+  printf '%s' "$st" > "$PD/state.json"
+  PATH="$TD/bin:$PATH" bash -c "source '$PD/lib.sh'; pokemon_tick s1 50000 25.5" >/dev/null 2>&1
+  jq -S 'del(.last_updated)' "$PD/state.json" > "$TD/engine.json"
+  printf '%s' "$st" > "$PD/state.json"
+  PATH="$TD/bin:$PATH" POKEMON_ENGINE=/nope/e.mjs bash -c "source '$PD/lib.sh'; pokemon_tick s1 50000 25.5" >/dev/null 2>&1
+  jq -S 'del(.last_updated)' "$PD/state.json" > "$TD/bash.json"
+  run diff "$TD/bash.json" "$TD/engine.json"
+  [ "$status" -eq 0 ] || { echo "$output"; false; }
+}

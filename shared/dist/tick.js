@@ -10,7 +10,7 @@
 //
 // Out of scope here (stay bash until later phases): the auto-submit curl
 // (network → R3d-4) and the RNG roll computation itself.
-import { levelFromXp } from './xp.js';
+import { levelFromXp, xpMultiplier, typeMatchMultiplier } from './xp.js';
 import { evoField } from './render/views.js';
 import { archiveToTeam, checkBadges } from './collection.js';
 function clone(v) {
@@ -95,9 +95,11 @@ export function tick(input) {
         sess.last_xp_credit_at = now_epoch;
     }
     sess.pending_tokens = pending;
-    // ── Multipliers ──
-    const xpMultiplier = xpMultFor(usedPct);
-    const typeMatch = typeMatchFor(lineage, usedPct);
+    // ── Multipliers ── (bash pre-rounds used_pct to an integer before passing it,
+    // so xpMultiplier/typeMatchMultiplier's Math.round is a no-op and matches the
+    // bash fallback's printf '%.0f' rounding exactly.)
+    const xpMult = xpMultiplier(usedPct);
+    const typeMatch = typeMatchMultiplier(lineage, usedPct == null ? 50 : usedPct);
     const today = now.slice(0, 10);
     let dailyMult = 1.0;
     if ((s.last_daily_bonus_date ?? '') !== today) {
@@ -147,14 +149,14 @@ export function tick(input) {
     }
     let weightedDelta = 0;
     if (!shinyHunter) {
-        let m = xpMultiplier * typeMatch * dailyMult * statusMult * heldMult * injuredMult * seasonMult;
+        let m = xpMult * typeMatch * dailyMult * statusMult * heldMult * injuredMult * seasonMult;
         if (m > 2.0)
             m = 2.0;
         weightedDelta = Math.trunc(delta * m);
     }
     // Stored as strings, matching the bash printf values (e.g. "2.0", "0.75").
     s.last_xp_multipliers = {
-        context: xpMultiplier.toFixed(1),
+        context: xpMult.toFixed(1),
         type_match: typeMatch.toFixed(1),
         daily_bonus: dailyMult.toFixed(1),
         status: statusMult === 0.75 ? '0.75' : '1.0',
@@ -207,7 +209,9 @@ export function tick(input) {
             }
         }
         if (decisions.item.fired) {
-            const itemKeys = Object.keys(data.items ?? {});
+            // jq `.items | keys` is sorted lexicographically — match it (the index
+            // was rolled against the same sorted length on the bash side).
+            const itemKeys = Object.keys(data.items ?? {}).sort();
             const itemId = itemKeys[decisions.item.index];
             s.items ??= {};
             s.items[itemId] = (s.items[itemId] ?? 0) + 1;
@@ -340,36 +344,5 @@ export function tick(input) {
     }
     s.sessions = kept;
     return { state: s };
-}
-// xpMultiplier / typeMatchMultiplier inline (Math.round matches bash printf %.0f
-// for the integer used_pct values the statusline supplies).
-function xpMultFor(usedPct) {
-    if (usedPct == null)
-        return 1.0;
-    const p = Math.round(usedPct);
-    if (p <= 25)
-        return 2.0;
-    if (p <= 50)
-        return 1.5;
-    if (p <= 75)
-        return 1.0;
-    return 0.5;
-}
-function typeMatchFor(lineage, usedPct) {
-    const p = Math.round(usedPct ?? 50);
-    switch (lineage) {
-        case 'fire':
-            return p < 30 ? 1.2 : 1.0;
-        case 'water':
-            return p > 70 ? 1.2 : 1.0;
-        case 'grass':
-            return p >= 40 && p <= 60 ? 1.2 : 1.0;
-        case 'electric':
-            return 1.2;
-        case 'eevee':
-            return 1.1;
-        default:
-            return 1.0;
-    }
 }
 //# sourceMappingURL=tick.js.map
