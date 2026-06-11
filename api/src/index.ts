@@ -46,6 +46,7 @@ import { handleAuthSession } from './handlers/auth/session'
 import { handleGithubExchange } from './handlers/auth/github-exchange'
 import { handleLinkAnon } from './handlers/auth/link-anon'
 import { handleAuthLogout } from './handlers/auth/logout'
+import { handleGithubCliSession } from './handlers/auth/github-cli-session'
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -95,6 +96,9 @@ export default {
       }
       if (url.pathname === '/v1/auth/github/exchange' && request.method === 'POST') {
         return await handleGithubExchange(request, env)
+      }
+      if (url.pathname === '/v1/auth/github/cli-session' && request.method === 'POST') {
+        return await handleGithubCliSession(request, env)
       }
       if (url.pathname === '/v1/auth/link-anon' && request.method === 'POST') {
         return await handleLinkAnon(request, env)
