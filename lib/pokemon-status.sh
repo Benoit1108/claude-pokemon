@@ -1903,6 +1903,100 @@ _arena_clear_secret() {
   rm -f "$POKEMON_ARENA_SECRET_FILE"
 }
 
+# ── Auth : GitHub device-flow login (Phase R2d) ─────────────────────────────
+# Opaque session token from the Worker, stored in its own chmod-600 file (like
+# the arena secret). The CLI runs the GitHub device flow itself (public
+# client_id, no secret) then exchanges the GitHub token for our session via
+# POST /v1/auth/github/cli-session.
+POKEMON_SESSION_FILE="$POKEMON_DIR/.session"
+
+_session_load() { [ -f "$POKEMON_SESSION_FILE" ] && cat "$POKEMON_SESSION_FILE"; }
+_session_save() { printf '%s' "$1" > "$POKEMON_SESSION_FILE"; chmod 600 "$POKEMON_SESSION_FILE"; }
+_session_clear() { rm -f "$POKEMON_SESSION_FILE"; }
+
+view_login() {
+  local endpoint client_id
+  endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
+  if [ -z "$endpoint" ]; then
+    printf '  No API endpoint configured (data.json.stats_share.endpoint).\n'
+    return 1
+  fi
+  # Public client_id of the prod GitHub OAuth app ; override for local dev.
+  client_id="${POKEMON_GITHUB_CLIENT_ID:-Ov23liiZGFKFIT78EDcz}"
+
+  local resp device_code user_code verification_uri interval
+  resp=$(curl -s --max-time 10 -X POST 'https://github.com/login/device/code' \
+    -H 'Accept: application/json' \
+    --data-urlencode "client_id=$client_id" --data-urlencode 'scope=read:user' 2>/dev/null)
+  device_code=$(jq -r '.device_code // empty' <<<"$resp" 2>/dev/null)
+  user_code=$(jq -r '.user_code // empty' <<<"$resp" 2>/dev/null)
+  verification_uri=$(jq -r '.verification_uri // empty' <<<"$resp" 2>/dev/null)
+  interval=$(jq -r '.interval // 5' <<<"$resp" 2>/dev/null)
+  if [ -z "$device_code" ]; then
+    printf '  GitHub device-flow request failed (is Device Flow enabled on the OAuth app?).\n'
+    return 1
+  fi
+
+  printf '\n  Open %s\n  and enter the code:  %s\n\n  Waiting for authorization…\n' \
+    "$verification_uri" "$user_code"
+
+  local access_token='' deadline poll err
+  deadline=$(( $(date +%s) + 300 ))
+  while [ "$(date +%s)" -lt "$deadline" ]; do
+    sleep "$interval"
+    poll=$(curl -s --max-time 10 -X POST 'https://github.com/login/oauth/access_token' \
+      -H 'Accept: application/json' \
+      --data-urlencode "client_id=$client_id" \
+      --data-urlencode "device_code=$device_code" \
+      --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:device_code' 2>/dev/null)
+    access_token=$(jq -r '.access_token // empty' <<<"$poll" 2>/dev/null)
+    [ -n "$access_token" ] && break
+    err=$(jq -r '.error // empty' <<<"$poll" 2>/dev/null)
+    case "$err" in
+      authorization_pending | '') : ;;
+      slow_down) interval=$((interval + 5)) ;;
+      *)
+        printf '  Login aborted (%s).\n' "$err"
+        return 1
+        ;;
+    esac
+  done
+  if [ -z "$access_token" ]; then
+    printf '  Timed out waiting for authorization.\n'
+    return 1
+  fi
+
+  local sess session_token login_name
+  sess=$(curl -s --max-time 10 -X POST "$endpoint/v1/auth/github/cli-session" \
+    -H 'content-type: application/json' \
+    --data "$(jq -n --arg t "$access_token" '{access_token:$t}')" 2>/dev/null)
+  session_token=$(jq -r '.session_token // empty' <<<"$sess" 2>/dev/null)
+  login_name=$(jq -r '.github.login // empty' <<<"$sess" 2>/dev/null)
+  if [ -z "$session_token" ]; then
+    printf '  Session exchange with the arena failed.\n'
+    return 1
+  fi
+  _session_save "$session_token"
+  printf '  ✓ Logged in as @%s\n' "$login_name"
+}
+
+view_logout() {
+  local endpoint token
+  token=$(_session_load)
+  if [ -z "$token" ]; then
+    printf '  Not logged in.\n'
+    return 0
+  fi
+  endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
+  if [ -n "$endpoint" ]; then
+    # Fire-and-forget server-side revocation.
+    curl -s --max-time 5 -X POST "$endpoint/v1/auth/logout" \
+      -H "authorization: Bearer $token" >/dev/null 2>&1 &
+  fi
+  _session_clear
+  printf '  ✓ Logged out.\n'
+}
+
 # Build the team_snapshot JSON from current state.json.
 # Returns 1 if no active companion (caller should warn).
 _arena_build_team() {
@@ -2829,6 +2923,8 @@ case "${1:-}" in
   bio)                view_bio "${@:2}" ;;
   pins|pinned)        view_pins "${@:2}" ;;
   arena)              view_arena "${2:-status}" "${3:-}" ;;
+  login)              view_login ;;
+  logout)             view_logout ;;
   leaderboard|lb)     view_leaderboard "${2:-total_tokens}" "${3:-10}" ;;
   aggregate|global)   view_aggregate ;;
   *)                  view_main ;;
