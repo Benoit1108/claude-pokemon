@@ -142,3 +142,59 @@ export function releaseSlot(state: Json, area: string, idx: number): Json {
   else if (area === 'pc') s.pc_storage = removeAt(s.pc_storage, idx)
   return s
 }
+
+// pokemon_check_badges: award any newly-earned achievement badges (idempotent).
+// Conditions mirror lib/lib.sh exactly; badges are appended in the same order.
+// `data` provides wild_pool for the regional-dex badges.
+export function checkBadges(state: Json, now: string, data: Json): Json {
+  const s = clone(state)
+  s.badges = Array.isArray(s.badges) ? s.badges : []
+  const add = (id: string): void => {
+    if (!s.badges.some((b: Json) => b && b.id === id)) s.badges.push({ id, earned_at: now })
+  }
+  const ls: Json = s.lifetime_stats ?? {}
+  const hist: Json[] = Array.isArray(s.evolution_history) ? s.evolution_history : []
+  const wildSeen = Object.keys(s.pokedex_wild ?? {})
+  const wildCount = wildSeen.length
+  const pool: Json[] = Array.isArray(data?.wild_pool) ? data.wild_pool : []
+  const kanto = pool.filter((w) => w.national_dex >= 1 && w.national_dex <= 151).map((w) => w.id)
+  const johto = pool.filter((w) => w.national_dex >= 152 && w.national_dex <= 251).map((w) => w.id)
+  const hasAllOf = (ids: string[]): boolean => ids.length > 0 && ids.every((id) => wildSeen.includes(id))
+  const completed: Json[] = Array.isArray(ls.lineages_completed) ? ls.lineages_completed : []
+  const pokedexSeen = Object.values(s.pokedex ?? {}).filter((v: Json) => v && v.seen).length
+
+  if (hist.some((e) => e.level === 1)) add('hatch')
+  if (hist.some((e) => e.level >= 16)) add('first_evolution')
+  if ((ls.total_shinies ?? 0) > 0) add('first_shiny')
+  if ((ls.max_level ?? 0) >= 100) add('champion')
+  if ((ls.total_tokens ?? 0) >= 100000000) add('centurion')
+  if ((ls.total_shinies ?? 0) >= 5) add('constellation')
+  if (pokedexSeen >= 5) add('master_pokedex')
+  if (wildCount >= 50) add('dex_50')
+  if (wildCount >= 100) add('dex_100')
+  if (hasAllOf(kanto)) add('regional_kanto')
+  if (hasAllOf(johto)) add('regional_johto')
+  for (const lin of ['fire', 'water', 'grass', 'electric', 'eevee', 'chikorita', 'cyndaquil', 'totodile']) {
+    if (completed.includes(lin)) add(`master_${lin}`)
+  }
+  return s
+}
+
+// ── Combined ops mirroring the bash subcommands (switch / hatch / reset) ─────
+// switch <slot>: archive active, then load team[slot] into active.
+export function switchCompanion(state: Json, now: string, slot: number): Json {
+  return loadTeamToActive(activeToArchive(state, now), now, slot)
+}
+
+// hatch <lineage?>: archive active if it exists, reset to a fresh egg, recheck badges.
+export function hatch(state: Json, now: string, data: Json, forcedLineage?: string | null): Json {
+  let s = state
+  if (Number(state.current_level) > 0) s = activeToArchive(s, now)
+  s = resetActive(s, now, forcedLineage)
+  return checkBadges(s, now, data)
+}
+
+// ceremonial reset: archive + reset, then recheck badges.
+export function ceremonialReset(state: Json, now: string, data: Json): Json {
+  return checkBadges(archiveToTeam(state, now), now, data)
+}

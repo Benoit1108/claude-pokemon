@@ -12,10 +12,13 @@ import {
   teamToPc,
   pcToTeamOrActive,
   releaseSlot,
+  checkBadges,
 } from '../src/collection.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const fixture = join(here, '..', '..', 'tests', 'golden', 'fixtures', 'state_transforms.jsonl')
+const root = join(here, '..', '..')
+const fixture = join(root, 'tests', 'golden', 'fixtures', 'state_transforms.jsonl')
+const data = JSON.parse(readFileSync(join(root, 'lib', 'data.default.json'), 'utf8'))
 
 interface Case {
   fn: string
@@ -44,6 +47,8 @@ function run(c: Case): unknown {
       return pcToTeamOrActive(c.input, c.now, c.args[0] as number)
     case 'release_slot':
       return releaseSlot(c.input, c.args[0] as string, c.args[1] as number)
+    case 'check_badges':
+      return checkBadges(c.input, c.now, data)
     default:
       throw new Error(`unknown fn ${c.fn}`)
   }

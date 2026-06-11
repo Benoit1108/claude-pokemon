@@ -72,3 +72,29 @@ assert_engine_eq_bash() {
   setup_dir
   assert_engine_eq_bash "[]" "[$(mon grass 8 X),$(mon water 9 Y)]" release pc 0 --confirm
 }
+
+@test "switch: engine path == bash fallback" {
+  setup_dir
+  assert_engine_eq_bash "[$(mon water 30 Carabaffe),$(mon grass 20 X)]" "[]" switch 0
+}
+
+@test "hatch (with active companion): engine path == bash fallback" {
+  setup_dir
+  assert_engine_eq_bash "[$(mon water 30 B)]" "[]" hatch water
+}
+
+@test "ceremonial reset (with active): engine path == bash fallback" {
+  setup_dir
+  assert_engine_eq_bash "[]" "[]" reset
+}
+
+@test "hatch from an egg (no active companion): engine path == bash fallback" {
+  setup_dir
+  local s_e st_e o_e st_b o_b
+  seed "[]" "[]" null 0
+  o_e=$(bash "$STATUS" hatch fire 2>/dev/null | sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'); st_e=$(jq -S . "$PD/state.json")
+  seed "[]" "[]" null 0
+  o_b=$(POKEMON_ENGINE=/nope/engine.mjs bash "$STATUS" hatch fire 2>/dev/null | sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'); st_b=$(jq -S . "$PD/state.json")
+  [ "$st_e" = "$st_b" ] || { echo "STATE DIFF:"; diff <(echo "$st_b") <(echo "$st_e"); return 1; }
+  [ "$o_e" = "$o_b" ] || { echo "OUT DIFF:"; diff <(echo "$o_b") <(echo "$o_e"); return 1; }
+}

@@ -15,7 +15,14 @@
 import { fileURLToPath } from 'node:url'
 import { realpathSync } from 'node:fs'
 import { renderView, type RenderInput } from './render/index.js'
-import { teamToPc, pcToTeamOrActive, releaseSlot } from './collection.js'
+import {
+  teamToPc,
+  pcToTeamOrActive,
+  releaseSlot,
+  switchCompanion,
+  hatch,
+  ceremonialReset,
+} from './collection.js'
 import {
   thresholdFor,
   levelFromXp,
@@ -80,7 +87,7 @@ async function readStdin(): Promise<string> {
 // shows the appropriate message; null op → exit 3 (bash fallback).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mutate(input: any): { ok: boolean; state: unknown } | null {
-  const { op, state, now } = input
+  const { op, state, now, data } = input
   const args: unknown[] = Array.isArray(input.args) ? input.args : []
   switch (op) {
     case 'team_to_pc':
@@ -91,6 +98,12 @@ function mutate(input: any): { ok: boolean; state: unknown } | null {
       const next = pcToTeamOrActive(state, now, Number(args[0]))
       return { ok: next !== null, state: next }
     }
+    case 'switch_companion':
+      return { ok: true, state: switchCompanion(state, now, Number(args[0])) }
+    case 'hatch':
+      return { ok: true, state: hatch(state, now, data, (args[0] as string) || undefined) }
+    case 'ceremonial_reset':
+      return { ok: true, state: ceremonialReset(state, now, data) }
     default:
       return null
   }
