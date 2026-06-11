@@ -387,3 +387,13 @@ export async function putSession(
 export async function deleteSession(env: Env, tokenHash: string): Promise<void> {
   await env.STATS.delete(`session:${tokenHash}`)
 }
+
+/** Reverse map `anonlink:<anon_id>` → user_id : which user has claimed a legacy
+ * anon account (ADR-010). Used for anti-takeover (one anon → at most one user). */
+export async function getAnonLink(env: Env, anonId: string): Promise<string | null> {
+  return await env.STATS.get(`anonlink:${anonId}`)
+}
+
+export async function putAnonLink(env: Env, anonId: string, userId: string): Promise<void> {
+  await env.STATS.put(`anonlink:${anonId}`, userId)
+}
