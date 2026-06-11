@@ -635,6 +635,8 @@
   "auth": {
     "sign_in_github": "Continuer avec GitHub",
     "or": "ou",
+    "signed_in_as": "Connecté en tant que",
+    "sign_out": "Se déconnecter",
     "callback": {
       "working": "Connexion en cours…",
       "error_missing": "Données d'autorisation manquantes — réessaie de te connecter.",

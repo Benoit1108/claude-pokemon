@@ -24,7 +24,9 @@ onMounted(async () => {
   }
   try {
     await completeGithubCallback(code, state)
-    await router.replace('/profile')
+    // Land on home, not /profile : /profile still gates on the legacy arena
+    // session (anon_id) and would bounce a GitHub-only user to /pair.
+    await router.replace('/')
   } catch (e) {
     status.value = 'error'
     errorKey.value =

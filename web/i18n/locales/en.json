@@ -635,6 +635,8 @@
   "auth": {
     "sign_in_github": "Continue with GitHub",
     "or": "or",
+    "signed_in_as": "Signed in as",
+    "sign_out": "Sign out",
     "callback": {
       "working": "Signing you in…",
       "error_missing": "Missing authorization data — try signing in again.",

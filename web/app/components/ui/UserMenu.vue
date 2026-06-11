@@ -14,11 +14,14 @@
 // AppHeader. Retro mode is reachable here, in the dropdown.
 
 import { useArenaSession } from '~/composables/useArenaSession'
+import { useAuthSession } from '~/composables/useAuthSession'
 import { useTrainerProfile } from '~/composables/useTrainerProfile'
 import { lineageLabel, lineageAccent, lineageEmoji } from '~/utils/lineage'
 
 const { t } = useI18n()
 const { session, isPaired, clear } = useArenaSession()
+const { user: authUser, isAuthenticated, signOut: authSignOut } = useAuthSession()
+const githubLogin = computed(() => authUser.value?.github?.login ?? null)
 const { trainer } = useTrainerProfile()
 const colorMode = useColorMode()
 
@@ -61,6 +64,12 @@ function cancelUnpair(): void {
 function goTo(path: string): void {
   open.value = false
   void router.push(path)
+}
+
+function signOutGithub(): void {
+  authSignOut()
+  open.value = false
+  void router.push('/')
 }
 
 function toggleRetro(): void {
@@ -111,6 +120,17 @@ onBeforeUnmount(() => {
             class="absolute right-0 mt-2 w-64 card-elevated rounded-lg py-1 z-50"
             role="menu"
           >
+            <div v-if="isAuthenticated" class="px-3 py-2 border-b surface-border">
+              <div class="text-xs text-muted">{{ t('auth.signed_in_as') }}</div>
+              <div class="font-bold text-primary">@{{ githubLogin }}</div>
+              <button
+                type="button"
+                class="mt-1 text-xs text-secondary hover:text-primary underline transition"
+                @click="signOutGithub"
+              >
+                {{ t('auth.sign_out') }}
+              </button>
+            </div>
             <NuxtLink
               to="/signup"
               class="block px-3 py-2 text-sm surface-card-hover text-primary transition-default"
