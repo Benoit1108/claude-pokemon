@@ -650,7 +650,8 @@
       "err_invalid_secret": "L'arena_secret ne correspond pas à cet anon_id.",
       "err_already_linked": "Ce compte CLI est déjà lié à une autre connexion.",
       "err_not_found": "Aucun compte arène trouvé pour cet anon_id.",
-      "err_generic": "Échec de la liaison. Réessaie."
+      "err_generic": "Échec de la liaison. Réessaie.",
+      "err_saved": "Lié — mais le navigateur a refusé d'enregistrer la session. Connecte-toi via /login."
     },
     "callback": {
       "working": "Connexion en cours…",

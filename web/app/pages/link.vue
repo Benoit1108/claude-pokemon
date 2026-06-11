@@ -34,7 +34,11 @@ const formValid = computed(
 )
 
 async function link(): Promise<void> {
-  if (!formValid.value || !sessionToken.value) {
+  if (!sessionToken.value) {
+    void router.replace('/login') // auth expired between load and submit
+    return
+  }
+  if (!formValid.value) {
     errorMsg.value = t('auth.link.err_format')
     return
   }
@@ -47,11 +51,16 @@ async function link(): Promise<void> {
       arenaSecret: arenaSecret.value.trim(),
     })
     // Linking proved ownership ; persist the arena session so /profile works.
-    set({
+    const stored = set({
       anon_id: anonId.value.trim(),
       arena_secret: arenaSecret.value.trim(),
       paired_at: new Date().toISOString(),
     })
+    if (!stored) {
+      // Server-side link succeeded, but localStorage refused the write.
+      errorMsg.value = t('auth.link.err_saved')
+      return
+    }
     await router.push('/profile')
   } catch (e) {
     const status =
@@ -60,6 +69,7 @@ async function link(): Promise<void> {
     if (status === 409) errorMsg.value = t('auth.link.err_already_linked')
     else if (status === 401) errorMsg.value = t('auth.link.err_invalid_secret')
     else if (status === 404) errorMsg.value = t('auth.link.err_not_found')
+    else if (status === 400) errorMsg.value = t('auth.link.err_format')
     else errorMsg.value = e instanceof Error ? e.message : t('auth.link.err_generic')
   } finally {
     submitting.value = false
