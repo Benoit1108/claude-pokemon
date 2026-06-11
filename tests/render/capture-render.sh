@@ -37,51 +37,13 @@ mv "$POKEMON_DIR/data.json.tmp" "$POKEMON_DIR/data.json"
 
 strip_ansi() { sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'; }
 
-# Write a state.json from a jq filter applied to a stable base.
-write_state() {
-  local filter="$1"
-  jq "$filter" > "$POKEMON_DIR/state.json" <<'BASE'
-{
-  "version": 2,
-  "lineage": "fire",
-  "is_shiny": false,
-  "current_level": 5,
-  "total_xp": 2000000,
-  "evolution_history": [],
-  "evolution_flash_remaining": 0,
-  "eevee_form": null,
-  "sessions": {},
-  "badges": [],
-  "team": [],
-  "pc_storage": [],
-  "pokedex": {},
-  "pokedex_wild": {},
-  "items": {},
-  "friendship": 0,
-  "lifetime_stats": {
-    "total_tokens": 0, "total_evolutions": 0, "total_shinies": 0,
-    "max_level": 5, "lineages_completed": [], "total_compagnons": 0,
-    "games_won": 0, "games_played": 0, "first_shiny_at": null
-  },
-  "created_at": "2026-05-07T00:00:00Z",
-  "last_updated": "2026-05-07T00:00:00Z"
-}
-BASE
-}
+# Scenario states + view list — shared with the TS-engine parity test.
+# shellcheck source=scenarios.sh
+source "$REPO_ROOT/tests/render/scenarios.sh"
 
-# Scenarios : (name, jq filter over the base state).
-declare -A SCENARIOS=(
-  [starter_lv5]='.'
-  [evolved_shiny]='.lineage="cyndaquil" | .current_level=40 | .total_xp=60000000 | .is_shiny=true | .evolution_history=[{"name":"Héricendre"},{"name":"Feurisson"}] | .badges=[{"id":"first_evo","earned_at":"2026-05-08T00:00:00Z"}] | .items={"xp_charm":1,"oran_berry":2} | .friendship=120'
-  [full_roster]='.lineage="eevee" | .current_level=30 | .eevee_form="vaporeon" | .team=[{"lineage":"fire","level":16,"total_xp":10000000,"is_shiny":false,"max_stage":"Reptincel","eevee_form":null,"created_at":"2026-05-07T00:00:00Z","completed_at":"2026-05-09T00:00:00Z"},{"lineage":"water","level":36,"total_xp":50000000,"is_shiny":true,"max_stage":"Tortank","eevee_form":null,"created_at":"2026-05-07T00:00:00Z","completed_at":"2026-05-10T00:00:00Z"}] | .pc_storage=[{"lineage":"grass","level":8,"total_xp":3000000,"is_shiny":false,"max_stage":"Bulbizarre","eevee_form":null,"created_at":"2026-05-07T00:00:00Z","completed_at":null}]'
-  [egg]='.lineage=null | .current_level=0 | .total_xp=0'
-)
-
-VIEWS=(main stats pokedex badges team pc inventory trainer-card recap)
-
-for scenario in "${!SCENARIOS[@]}"; do
-  write_state "${SCENARIOS[$scenario]}"
-  for view in "${VIEWS[@]}"; do
+for scenario in "${!RENDER_SCENARIOS[@]}"; do
+  render_write_state "${RENDER_SCENARIOS[$scenario]}" "$POKEMON_DIR/state.json"
+  for view in "${RENDER_VIEWS[@]}"; do
     # `main` is the default (no subcommand).
     if [ "$view" = "main" ]; then
       bash "$STATUS_SH" 2>/dev/null | strip_ansi > "$OUT_DIR/${scenario}__${view}.txt"
