@@ -14,6 +14,7 @@ export declare function renderInventory(ctx: RenderContext): string;
 export declare function renderTeam(ctx: RenderContext): string;
 export declare function renderPc(ctx: RenderContext): string;
 export declare function renderMain(ctx: RenderContext): string;
+export declare function renderTrainerCard(ctx: RenderContext): string;
 export declare function renderStats(ctx: RenderContext): string;
 export declare function renderPokedex(ctx: RenderContext): string;
 export {};

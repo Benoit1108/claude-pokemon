@@ -13,7 +13,7 @@
 load '../helpers/setup.bash'
 
 # Views ported to TS so far (grows each R3c slice).
-PORTED_VIEWS=(badges inventory team pc stats pokedex main)
+PORTED_VIEWS=(badges inventory team pc stats pokedex main trainer-card)
 
 strip_ansi_file() { sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'; }
 
@@ -67,7 +67,10 @@ strip_ansi_file() { sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'; }
   cp "$REPO_ROOT"/lib/locales/*.json "$pdir/locales/"
   cp "$REPO_ROOT/lib/lib.sh" "$pdir/lib.sh"
   cp "$REPO_ROOT/lib/pokemon-status.sh" "$tmp/.claude/pokemon-status.sh"
-  jq '.language="fr" | .display_sprite_in_statusline="off"' "$pdir/data.json" > "$pdir/d.tmp"
+  # Enable stats-share too → exercises trainer-card's share_active + pseudo label.
+  jq '.language="fr" | .display_sprite_in_statusline="off"
+      | .stats_share = {enabled:true, anon_id:"abcd1234ef", display_name:"Sacha", endpoint:"x"}' \
+    "$pdir/data.json" > "$pdir/d.tmp"
   mv "$pdir/d.tmp" "$pdir/data.json"
 
   # Seen wild ids with multibyte names (accent / ♀ / ♂) → exercise awk char-pad.
@@ -99,7 +102,7 @@ strip_ansi_file() { sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'; }
 
   local data locale state
   data=$(cat "$pdir/data.json"); locale=$(cat "$pdir/locales/fr.json"); state=$(cat "$pdir/state.json")
-  for view in stats pokedex main; do
+  for view in stats pokedex main trainer-card; do
     bash "$tmp/.claude/pokemon-status.sh" "$view" 2>/dev/null | strip_ansi_file > "$tmp/bash.txt"
     jq -cn --argjson s "$state" --argjson d "$data" --argjson l "$locale" --arg v "$view" \
       '{view:$v, state:$s, data:$d, locale:$l, lang:"fr", scriptName:"pokemon-status.sh"}' \
