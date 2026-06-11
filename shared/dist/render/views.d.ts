@@ -15,10 +15,14 @@ export interface RenderContext {
      *  the R3a fixtures (captured with no sprite files on disk). */
     sprite?: string[] | null;
 }
+export declare function padChars(s: string, width: number): string;
+export declare function tPad(locale: Locale, key: string, width: number): string;
+export declare function fmtInt(n: number | string): string;
 export declare function renderBadges(ctx: RenderContext): string;
 export declare function renderInventory(ctx: RenderContext): string;
 export declare function renderTeam(ctx: RenderContext): string;
 export declare function renderPc(ctx: RenderContext): string;
+export declare function lineageEmoji(lineage: string): string;
 export declare function resolveStageDefault(data: Json, lineage: string, level: unknown): Json | null;
 export declare function evoField(data: Json, state: Json, lineage: string, level: unknown, field: string): string;
 export declare function renderMain(ctx: RenderContext): string;

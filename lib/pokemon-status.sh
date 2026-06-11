@@ -2970,6 +2970,23 @@ _render_view_live() {
   return "${PIPESTATUS[1]}"
 }
 
+# Network view via the TS engine (Phase R3d-4): the engine does the HTTP fetch
+# (Node) + render. Streams output; rc 3 = unknown view / rc!=0 = engine
+# unavailable → caller falls back to the bash curl implementation. (Network
+# errors are handled IN the engine → it renders fetch_failed and exits 0.)
+_render_net() {
+  local view="$1"; shift
+  pokemon_engine_available || return 1
+  local lang locale req
+  lang=$(jq -r '.language // "fr"' "$POKEMON_DATA" 2>/dev/null || echo fr)
+  locale="$POKEMON_LOCALES_DIR/$lang.json"
+  [ -f "$locale" ] || locale="$POKEMON_LOCALES_DIR/fr.json"
+  req=$(jq -cn --slurpfile dt "$POKEMON_DATA" --slurpfile lc "$locale" --arg lang "$lang" \
+    '{data: $dt[0], locale: $lc[0], lang: $lang}' 2>/dev/null) || return 1
+  printf '%s' "$req" | node "$POKEMON_ENGINE" net "$view" "$@" 2>/dev/null
+  return "${PIPESTATUS[1]}"
+}
+
 # Apply a single collection transform via the TS engine (Phase R3d-2). Reads
 # $POKEMON_STATE; on success echoes the NEW state JSON (rc 0). rc 4 = op refused
 # (e.g. team full). rc 1 = engine unavailable / error → caller falls back to the
@@ -3024,7 +3041,7 @@ case "${1:-}" in
   arena)              view_arena "${2:-status}" "${3:-}" ;;
   login)              view_login ;;
   logout)             view_logout ;;
-  leaderboard|lb)     view_leaderboard "${2:-total_tokens}" "${3:-10}" ;;
-  aggregate|global)   view_aggregate ;;
+  leaderboard|lb)     _render_net leaderboard "${2:-total_tokens}" "${3:-10}" || view_leaderboard "${2:-total_tokens}" "${3:-10}" ;;
+  aggregate|global)   _render_net aggregate || view_aggregate ;;
   *)                  _render_view_live main || view_main ;;
 esac
