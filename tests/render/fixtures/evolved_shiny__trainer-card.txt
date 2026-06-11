@@ -1,0 +1,26 @@
+
+╭─ TRAINER CARD ────────────────────────────────────────────────╮
+
+  🎮 (no pseudo · enable stats-share) ✦
+  Dresseur depuis 2026-05-07
+
+  Compagnon actif        :  🌋 Typhlosion · Lv.40
+  Lignée                 :  🦔 Lignée Feu (Johto)
+
+  📊 Stats lifetime
+  Tokens consommés       :  0
+  XP cumulés (active)    :  60 000 000
+  Amitié (lifetime)      :  120
+  Shinies trouvés        :  0
+  Lignées complétées     :  0 / 8
+  Quizz gagnés           :  0 / 0
+  Pokédex sauvages       :  0 / 251
+
+  🏆 Badges acquis (1)
+  ? · badges.first_evo.0
+
+  📡 Stats partagées
+  Désactivé · /pokemon stats-share enable --confirm pour rejoindre le leaderboard
+  ⚔️  Arena : Phase 2 — coming soon (combats async, leaderboard ELO)
+╰──────────────────────────────────────────────────────────────╯
+

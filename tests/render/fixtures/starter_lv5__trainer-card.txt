@@ -1,0 +1,23 @@
+
+╭─ TRAINER CARD ────────────────────────────────────────────────╮
+
+  🎮 (no pseudo · enable stats-share)
+  Dresseur depuis 2026-05-07
+
+  Compagnon actif        :  🦎 Salamèche · Lv.5
+  Lignée                 :  🔥 Lignée Feu
+
+  📊 Stats lifetime
+  Tokens consommés       :  0
+  XP cumulés (active)    :  2 000 000
+  Amitié (lifetime)      :  0
+  Shinies trouvés        :  0
+  Lignées complétées     :  0 / 8
+  Quizz gagnés           :  0 / 0
+  Pokédex sauvages       :  0 / 251
+
+  📡 Stats partagées
+  Désactivé · /pokemon stats-share enable --confirm pour rejoindre le leaderboard
+  ⚔️  Arena : Phase 2 — coming soon (combats async, leaderboard ELO)
+╰──────────────────────────────────────────────────────────────╯
+
