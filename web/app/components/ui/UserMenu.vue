@@ -123,13 +123,22 @@ onBeforeUnmount(() => {
             <div v-if="isAuthenticated" class="px-3 py-2 border-b surface-border">
               <div class="text-xs text-muted">{{ t('auth.signed_in_as') }}</div>
               <div class="font-bold text-primary">@{{ githubLogin }}</div>
-              <button
-                type="button"
-                class="mt-1 text-xs text-secondary hover:text-primary underline transition"
-                @click="signOutGithub"
-              >
-                {{ t('auth.sign_out') }}
-              </button>
+              <div class="mt-1 flex items-center gap-3">
+                <button
+                  type="button"
+                  class="text-xs text-accent hover:underline transition"
+                  @click="goTo('/link')"
+                >
+                  {{ t('auth.link.menu_cta') }}
+                </button>
+                <button
+                  type="button"
+                  class="text-xs text-secondary hover:text-primary underline transition"
+                  @click="signOutGithub"
+                >
+                  {{ t('auth.sign_out') }}
+                </button>
+              </div>
             </div>
             <NuxtLink
               to="/signup"

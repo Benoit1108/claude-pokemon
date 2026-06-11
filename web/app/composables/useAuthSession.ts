@@ -32,6 +32,7 @@ export function useAuthSession() {
   const api = useApi()
 
   const user = computed<AuthUser | null>(() => auth.value?.user ?? null)
+  const sessionToken = computed<string | null>(() => auth.value?.session_token ?? null)
   const isAuthenticated = computed(() => auth.value !== null)
 
   function callbackUrl(): string {
@@ -109,5 +110,13 @@ export function useAuthSession() {
     }
   }
 
-  return { user, isAuthenticated, signInWithGitHub, completeGithubCallback, refresh, signOut }
+  return {
+    user,
+    sessionToken,
+    isAuthenticated,
+    signInWithGitHub,
+    completeGithubCallback,
+    refresh,
+    signOut,
+  }
 }
