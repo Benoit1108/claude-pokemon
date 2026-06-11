@@ -34,4 +34,14 @@ describe('bashPrintf — bash printf parity', () => {
   it('right-justifies %Nd', () => {
     expect(bashPrintf('[%5d]', 42)).toBe('[   42]')
   })
+
+  it('stops output at an invalid conversion (matches bash truncation)', () => {
+    // A lone `%` from a resolved %% re-fed into another printf → `% p` is
+    // invalid → bash emits text before it and stops. This is exactly the
+    // stats.tired_warning quirk.
+    expect(bashPrintf('A%pB%s', 'X')).toBe('A')
+    expect(bashPrintf('start%z end')).toBe('start')
+    expect(bashPrintf('tail%')).toBe('tail')
+    expect(bashPrintf('  %s>=90% pendant %d ticks%s\n', '', 7, '')).toBe('  >=90')
+  })
 })

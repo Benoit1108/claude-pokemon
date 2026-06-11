@@ -6,6 +6,8 @@ import {
   renderInventory,
   renderTeam,
   renderPc,
+  renderStats,
+  renderPokedex,
   type RenderContext,
 } from './views.js'
 import type { Locale } from './i18n.js'
@@ -26,6 +28,8 @@ const RENDERERS: Record<string, (ctx: RenderContext) => string> = {
   inventory: renderInventory,
   team: renderTeam,
   pc: renderPc,
+  stats: renderStats,
+  pokedex: renderPokedex,
 }
 
 export const SUPPORTED_VIEWS = Object.keys(RENDERERS)

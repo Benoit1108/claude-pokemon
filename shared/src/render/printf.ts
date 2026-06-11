@@ -14,26 +14,8 @@
 
 type Arg = string | number
 
-interface Token {
-  literal?: string
-  spec?: string
-}
-
-const SPEC_RE = /%[-+ 0]*\d*(?:\.\d+)?[sdi%]/g
-
-function tokenize(fmt: string): Token[] {
-  const tokens: Token[] = []
-  let last = 0
-  let m: RegExpExecArray | null
-  SPEC_RE.lastIndex = 0
-  while ((m = SPEC_RE.exec(fmt)) !== null) {
-    if (m.index > last) tokens.push({ literal: fmt.slice(last, m.index) })
-    tokens.push({ spec: m[0] })
-    last = SPEC_RE.lastIndex
-  }
-  if (last < fmt.length) tokens.push({ literal: fmt.slice(last) })
-  return tokens
-}
+// A valid conversion at the start of a slice (excluding %%, handled separately).
+const VALID_SPEC = /^%[-+ 0]*\d*(?:\.\d+)?[sdi]/
 
 function byteLen(s: string): number {
   return Buffer.byteLength(s, 'utf8')
@@ -88,20 +70,53 @@ function formatSpec(spec: string, raw: Arg | undefined): string {
   return s
 }
 
-export function bashPrintf(fmt: string, ...args: Arg[]): string {
-  const tokens = tokenize(fmt)
-  const numConv = tokens.filter((t) => t.spec !== undefined && t.spec !== '%%').length
+interface PassResult {
+  out: string
+  ai: number
+  truncated: boolean
+  hadConv: boolean
+}
 
+// One scan over the format. Bash stops output at the first INVALID conversion
+// (a `%` not forming `%%` or a valid spec) — e.g. a lone `%` from a resolved
+// `%%` re-fed into another printf. We model that with `truncated`.
+function onePass(fmt: string, args: Arg[], startAi: number): PassResult {
+  let out = ''
+  let ai = startAi
+  let hadConv = false
+  let i = 0
+  while (i < fmt.length) {
+    const ch = fmt[i]
+    if (ch !== '%') {
+      out += ch
+      i++
+      continue
+    }
+    if (fmt[i + 1] === '%') {
+      out += '%'
+      i += 2
+      continue
+    }
+    const m = VALID_SPEC.exec(fmt.slice(i))
+    if (!m) return { out, ai, truncated: true, hadConv } // invalid conversion → stop
+    const spec = m[0]
+    out += formatSpec(spec, args[ai++])
+    hadConv = true
+    i += spec.length
+  }
+  return { out, ai, truncated: false, hadConv }
+}
+
+export function bashPrintf(fmt: string, ...args: Arg[]): string {
   let out = ''
   let ai = 0
-  let firstPass = true
-  while (firstPass || (ai < args.length && numConv > 0)) {
-    firstPass = false
-    for (const t of tokens) {
-      if (t.literal !== undefined) out += t.literal
-      else if (t.spec === '%%') out += '%'
-      else out += formatSpec(t.spec as string, args[ai++])
-    }
+  for (;;) {
+    const r = onePass(fmt, args, ai)
+    out += r.out
+    ai = r.ai
+    if (r.truncated) break
+    // Bash reuses the format while args remain AND it has ≥1 conversion.
+    if (!(ai < args.length && r.hadConv)) break
   }
   return out
 }
