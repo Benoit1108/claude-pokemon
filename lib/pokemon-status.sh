@@ -492,10 +492,11 @@ view_deposit() {
   mkdir -p "$POKEMON_DIR"; touch "$POKEMON_LOCK"
   (
     flock -x 200
-    local state name
+    local state name new_state
     state=$(cat "$POKEMON_STATE")
     name=$(jq -r --argjson i "$slot" '.team[$i].max_stage // "Œuf"' <<<"$state")
-    state=$(pokemon_team_to_pc "$state" "$slot")
+    if new_state=$(_mutate_state team_to_pc "$slot"); then state="$new_state"
+    else state=$(pokemon_team_to_pc "$state" "$slot"); fi
     printf '%s\n' "$state" > "$POKEMON_STATE.tmp" && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
     printf "  %s$(pokemon_t deposit.success "$name")%s\n\n" "$BOLD" "$RESET"
   ) 200>"$POKEMON_LOCK"
@@ -520,11 +521,16 @@ view_withdraw() {
   mkdir -p "$POKEMON_DIR"; touch "$POKEMON_LOCK"
   (
     flock -x 200
-    local now state name new_state
+    local now state name new_state mrc
     now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
     state=$(cat "$POKEMON_STATE")
     name=$(jq -r --argjson i "$slot" '.pc_storage[$i].max_stage // "Œuf"' <<<"$state")
-    if new_state=$(pokemon_pc_to_team_or_active "$now" "$state" "$slot"); then
+    new_state=$(_mutate_state pc_to_team_or_active "$slot"); mrc=$?
+    if [ "$mrc" -eq 1 ]; then
+      # engine unavailable → bash fallback
+      if new_state=$(pokemon_pc_to_team_or_active "$now" "$state" "$slot"); then mrc=0; else mrc=4; fi
+    fi
+    if [ "$mrc" -eq 0 ]; then
       printf '%s\n' "$new_state" > "$POKEMON_STATE.tmp" && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
       printf "  %s$(pokemon_t withdraw.success "$name")%s\n\n" "$BOLD" "$RESET"
     else
@@ -569,9 +575,10 @@ view_release() {
   mkdir -p "$POKEMON_DIR"; touch "$POKEMON_LOCK"
   (
     flock -x 200
-    local state
+    local state new_state
     state=$(cat "$POKEMON_STATE")
-    state=$(pokemon_release_slot "$state" "$area" "$slot")
+    if new_state=$(_mutate_state release_slot "$area" "$slot"); then state="$new_state"
+    else state=$(pokemon_release_slot "$state" "$area" "$slot"); fi
     printf '%s\n' "$state" > "$POKEMON_STATE.tmp" && mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
     printf "  %s$(pokemon_t release.released "$name")%s\n\n" "$BOLD" "$RESET"
   ) 200>"$POKEMON_LOCK"
@@ -2952,6 +2959,33 @@ _render_view_live() {
   # `|| view_X` fallback renders cleanly.
   printf '%s' "$req" | node "$POKEMON_ENGINE" render "$view" 2>/dev/null
   return "${PIPESTATUS[1]}"
+}
+
+# Apply a single collection transform via the TS engine (Phase R3d-2). Reads
+# $POKEMON_STATE; on success echoes the NEW state JSON (rc 0). rc 4 = op refused
+# (e.g. team full). rc 1 = engine unavailable / error → caller falls back to the
+# bash transform. Args: op, then op-specific string args.
+_mutate_state() {
+  local op="$1"; shift
+  pokemon_engine_available || return 1
+  local now args_json req out rc ok
+  now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  if [ "$#" -eq 0 ]; then args_json='[]'; else args_json=$(printf '%s\n' "$@" | jq -R . | jq -cs .); fi
+  req=$(jq -cn --slurpfile st "$POKEMON_STATE" --slurpfile dt "$POKEMON_DATA" \
+    --arg op "$op" --arg now "$now" --argjson args "$args_json" \
+    '{op: $op, state: $st[0], data: $dt[0], now: $now, args: $args}' 2>/dev/null) || return 1
+  out=$(printf '%s' "$req" | node "$POKEMON_ENGINE" mutate "$op" 2>/dev/null); rc=$?
+  [ "$rc" -ne 0 ] && return 1
+  [ -n "$out" ] || return 1                 # empty stdout → fallback (never write a blank save)
+  ok=$(jq -r '.ok' <<<"$out" 2>/dev/null) || return 1
+  [ "$ok" = "false" ] && return 4           # op refused (e.g. team full)
+  [ "$ok" = "true" ]  || return 1           # malformed → fallback
+  local new
+  new=$(jq -c '.state' <<<"$out" 2>/dev/null) || return 1
+  # Guard the resulting state is a non-empty, non-null object before any caller
+  # writes it to state.json — a corrupted save is far worse than a fallback.
+  [ -n "$new" ] && [ "$new" != "null" ] || return 1
+  printf '%s' "$new"
 }
 
 case "${1:-}" in

@@ -15,6 +15,7 @@
 import { fileURLToPath } from 'node:url';
 import { realpathSync } from 'node:fs';
 import { renderView } from './render/index.js';
+import { teamToPc, pcToTeamOrActive, releaseSlot } from './collection.js';
 import { thresholdFor, levelFromXp, xpToNext, progressPct, xpMultiplier, typeMatchMultiplier, } from './index.js';
 export function derive(input) {
     const { thresholds, lineage } = input;
@@ -41,12 +42,33 @@ async function readStdin() {
         chunks.push(chunk);
     return Buffer.concat(chunks).toString('utf8');
 }
+// State mutation ops (Phase R3d-2). stdin {op, state, now, args} → stdout
+// {ok, state}. ok:false means the op is refused (e.g. team full) — the caller
+// shows the appropriate message; null op → exit 3 (bash fallback).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mutate(input) {
+    const { op, state, now } = input;
+    const args = Array.isArray(input.args) ? input.args : [];
+    switch (op) {
+        case 'team_to_pc':
+            return { ok: true, state: teamToPc(state, Number(args[0])) };
+        case 'release_slot':
+            return { ok: true, state: releaseSlot(state, args[0], Number(args[1])) };
+        case 'pc_to_team_or_active': {
+            const next = pcToTeamOrActive(state, now, Number(args[0]));
+            return { ok: next !== null, state: next };
+        }
+        default:
+            return null;
+    }
+}
 async function main() {
     const command = process.argv[2];
     const isRender = command === 'render';
+    const isMutate = command === 'mutate';
     const handler = command ? COMMANDS[command] : undefined;
-    if (!handler && !isRender) {
-        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render'].join(', ')})\n`);
+    if (!handler && !isRender && !isMutate) {
+        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate'].join(', ')})\n`);
         process.exit(2);
     }
     const raw = await readStdin();
@@ -72,6 +94,17 @@ async function main() {
         if (!supported)
             process.exit(3);
         process.stdout.write(output);
+        return;
+    }
+    if (isMutate) {
+        const argOp = process.argv[3];
+        const inp = input;
+        if (argOp)
+            inp.op = argOp;
+        const result = mutate(inp);
+        if (result === null)
+            process.exit(3); // unknown op → bash fallback
+        process.stdout.write(JSON.stringify(result));
         return;
     }
     process.stdout.write(JSON.stringify(handler(input)));
