@@ -48,6 +48,75 @@ strip_ansi_file() { sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'; }
   [ "$fails" -eq 0 ]
 }
 
+# Live wiring (Phase R3d-1): with engine.mjs installed, pokemon-status.sh must
+# route the ported views THROUGH the engine and produce the frozen fixtures.
+# (render-golden.bats covers the bash fallback path — its hermetic dir has no
+# engine.mjs — so both the live and fallback paths are gated.)
+@test "live: pokemon-status.sh routes ported views through the engine (== fixtures)" {
+  local tmp; tmp=$(mktemp -d)
+  export HOME="$tmp"
+  local pdir="$tmp/.claude/pokemon"
+  mkdir -p "$pdir/locales"
+  cp "$REPO_ROOT/lib/data.default.json" "$pdir/data.json"
+  cp "$REPO_ROOT"/lib/locales/*.json "$pdir/locales/"
+  cp "$REPO_ROOT/lib/lib.sh" "$pdir/lib.sh"
+  cp "$REPO_ROOT/lib/engine.mjs" "$pdir/engine.mjs"   # ← engine present → live path
+  cp "$REPO_ROOT/lib/pokemon-status.sh" "$tmp/.claude/pokemon-status.sh"
+  jq '.language="fr" | .display_sprite_in_statusline="off"' "$pdir/data.json" > "$pdir/d.tmp"
+  mv "$pdir/d.tmp" "$pdir/data.json"
+
+  source "$REPO_ROOT/tests/render/scenarios.sh"
+  local fails=0
+  for scenario in "${!RENDER_SCENARIOS[@]}"; do
+    render_write_state "${RENDER_SCENARIOS[$scenario]}" "$pdir/state.json"
+    for view in "${PORTED_VIEWS[@]}"; do
+      local arg="$view"
+      [ "$view" = "main" ] && arg=""   # main is the default (no subcommand)
+      # shellcheck disable=SC2086
+      bash "$tmp/.claude/pokemon-status.sh" $arg 2>/dev/null | strip_ansi_file > "$tmp/got.txt"
+      if ! diff -q "$REPO_ROOT/tests/render/fixtures/${scenario}__${view}.txt" "$tmp/got.txt" >/dev/null; then
+        echo "LIVE MISMATCH ${scenario}__${view}:"
+        diff "$REPO_ROOT/tests/render/fixtures/${scenario}__${view}.txt" "$tmp/got.txt" || true
+        fails=$((fails + 1))
+      fi
+    done
+  done
+  rm -rf "$tmp"
+  [ "$fails" -eq 0 ]
+}
+
+# The sprite block is the one new rendering behavior the fixtures don't cover
+# (they're captured with no sprite files). Gate it: with a sprite file present,
+# the engine's main must match bash's main byte-exact. Uses the egg scenario
+# (total_xp=0 → no rebalance notice → no state mutation between the two runs).
+@test "live: main renders the cached sprite identically to bash" {
+  export LC_ALL=C.UTF-8
+  local tmp; tmp=$(mktemp -d)
+  export HOME="$tmp"
+  local pdir="$tmp/.claude/pokemon"
+  mkdir -p "$pdir/locales" "$pdir/sprites/normal"
+  cp "$REPO_ROOT/lib/data.default.json" "$pdir/data.json"
+  cp "$REPO_ROOT"/lib/locales/*.json "$pdir/locales/"
+  cp "$REPO_ROOT/lib/lib.sh" "$pdir/lib.sh"
+  cp "$REPO_ROOT/lib/pokemon-status.sh" "$tmp/.claude/pokemon-status.sh"
+  jq '.language="fr"' "$pdir/data.json" > "$pdir/d.tmp" && mv "$pdir/d.tmp" "$pdir/data.json"
+  # egg → lineage defaults to fire, level 0 → showdown_id "egg", variant normal.
+  printf '%b' '\033[31m▄▄▄▄\033[0m\nline two\n░░░░\n' > "$pdir/sprites/normal/egg.txt"
+  source "$REPO_ROOT/tests/render/scenarios.sh"
+
+  # bash main (no engine.mjs → fallback)
+  render_write_state "${RENDER_SCENARIOS[egg]}" "$pdir/state.json"
+  bash "$tmp/.claude/pokemon-status.sh" 2>/dev/null | strip_ansi_file > "$tmp/bash.txt"
+  # engine main (engine.mjs present → live)
+  cp "$REPO_ROOT/lib/engine.mjs" "$pdir/engine.mjs"
+  render_write_state "${RENDER_SCENARIOS[egg]}" "$pdir/state.json"
+  bash "$tmp/.claude/pokemon-status.sh" 2>/dev/null | strip_ansi_file > "$tmp/engine.txt"
+
+  run diff "$tmp/bash.txt" "$tmp/engine.txt"
+  rm -rf "$tmp"
+  [ "$status" -eq 0 ]
+}
+
 @test "engine render exits 3 for an unknown view (bash fallback signal)" {
   run bash -c "printf '%s' '{\"view\":\"switch\",\"state\":{},\"data\":{},\"locale\":{}}' | node '$REPO_ROOT/lib/engine.mjs' render switch"
   [ "$status" -eq 3 ]

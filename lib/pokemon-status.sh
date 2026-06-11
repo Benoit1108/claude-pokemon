@@ -2905,15 +2905,64 @@ view_aggregate() {
 }
 
 # ── Dispatch ─────────────────────────────────────────────────────────────────
+# ── TS render bridge (Phase R3d) ─────────────────────────────────────────────
+# Render a ported view via the bundled TS engine (the renderers verified in
+# R3c). Streams the engine's output and returns its exit code: 0 = rendered,
+# 3 = view not ported, other = error / engine unavailable → the caller falls
+# back to the bash view_* function. Node is already a hard dependency; this is
+# the same graceful-degradation contract as the R3b tick bridge.
+_render_view_live() {
+  local view="$1" scope="${2:-}"
+  pokemon_engine_available || return 1
+  local lang locale sprite_json req
+  lang=$(jq -r '.language // "fr"' "$POKEMON_DATA" 2>/dev/null || echo fr)
+  locale="$POKEMON_LOCALES_DIR/$lang.json"
+  [ -f "$locale" ] || locale="$POKEMON_LOCALES_DIR/fr.json"
+
+  # Sprite (main only): resolve the cached file exactly like view_main does.
+  sprite_json="null"
+  if [ "$view" = "main" ]; then
+    local s_lin s_lvl s_shiny s_show s_variant s_path
+    s_lin=$(jq -r '.lineage // "fire"' "$POKEMON_STATE")
+    s_lvl=$(jq -r '.current_level' "$POKEMON_STATE")
+    s_shiny=$(jq -r '.is_shiny' "$POKEMON_STATE")
+    s_show=$(pokemon_evo_field "$s_lin" "$s_lvl" "showdown_id")
+    s_variant="normal"; [ "$s_shiny" = "true" ] && s_variant="shiny"
+    s_path="$POKEMON_DIR/sprites/$s_variant/$s_show.txt"
+    if [ -f "$s_path" ]; then
+      sprite_json=$(jq -R -s 'split("\n") | if .[-1] == "" then .[:-1] else . end' "$s_path")
+    fi
+  fi
+
+  req=$(jq -cn \
+    --slurpfile st "$POKEMON_STATE" \
+    --slurpfile dt "$POKEMON_DATA" \
+    --slurpfile lc "$locale" \
+    --arg v "$view" --arg lang "$lang" --arg scope "$scope" \
+    --argjson now "$(date -u +%s)" --argjson sprite "$sprite_json" '
+    {view: $v, state: $st[0], data: $dt[0], locale: $lc[0], lang: $lang,
+     scriptName: "pokemon-status.sh", nowEpoch: $now,
+     scope: (if $scope == "" then "session" else $scope end), sprite: $sprite}
+  ' 2>/dev/null) || return 1
+
+  # Stream the engine output; PIPESTATUS[1] is node's exit (0=rendered,
+  # 3=unported, other=error). Nothing must run between the pipe and this read.
+  # Safe against double-output: the engine does a single stdout.write AFTER
+  # building the whole string, so a failure writes zero stdout bytes → the
+  # `|| view_X` fallback renders cleanly.
+  printf '%s' "$req" | node "$POKEMON_ENGINE" render "$view" 2>/dev/null
+  return "${PIPESTATUS[1]}"
+}
+
 case "${1:-}" in
   --shiny)            toggle_shiny ;;
   reset)              ceremonial_reset ;;
-  team)               view_team ;;
-  pc|storage)         view_pc ;;
-  pokedex|dex)        view_pokedex ;;
-  stats|lifetime)     view_stats ;;
-  badges)             view_badges ;;
-  inventory|inv|sac)  view_inventory ;;
+  team)               _render_view_live team    || view_team ;;
+  pc|storage)         _render_view_live pc      || view_pc ;;
+  pokedex|dex)        _render_view_live pokedex || view_pokedex ;;
+  stats|lifetime)     _render_view_live stats   || view_stats ;;
+  badges)             _render_view_live badges  || view_badges ;;
+  inventory|inv|sac)  _render_view_live inventory || view_inventory ;;
   switch)             view_switch "${2:-}" ;;
   hatch)              view_hatch "${2:-}" ;;
   deposit)            view_deposit "${2:-}" ;;
@@ -2923,8 +2972,8 @@ case "${1:-}" in
   take)               view_take ;;
   trade)              view_trade "${2:-Anonymous}" ;;
   game)               view_game "${@:2}" ;;
-  recap|summary)      view_recap "${2:-}" ;;
-  trainer-card|card)  view_trainer_card ;;
+  recap|summary)      _render_view_live recap "${2:-}" || view_recap "${2:-}" ;;
+  trainer-card|card)  _render_view_live trainer-card || view_trainer_card ;;
   stats-share|share)  view_stats_share "${2:-}" "${3:-}" ;;
   quote)              view_quote "${@:2}" ;;
   bio)                view_bio "${@:2}" ;;
@@ -2934,5 +2983,5 @@ case "${1:-}" in
   logout)             view_logout ;;
   leaderboard|lb)     view_leaderboard "${2:-total_tokens}" "${3:-10}" ;;
   aggregate|global)   view_aggregate ;;
-  *)                  view_main ;;
+  *)                  _render_view_live main || view_main ;;
 esac

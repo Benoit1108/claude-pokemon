@@ -9,6 +9,8 @@ export interface RenderInput {
     /** recap scope (session|today|…) and clock for the duration line. */
     scope?: string;
     nowEpoch?: number;
+    /** Pre-rendered sprite lines for the main view. */
+    sprite?: string[] | null;
 }
 export declare const SUPPORTED_VIEWS: string[];
 export declare function renderView(input: RenderInput): {

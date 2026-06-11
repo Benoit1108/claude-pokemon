@@ -27,6 +27,8 @@ export interface RenderInput {
   /** recap scope (session|today|…) and clock for the duration line. */
   scope?: string
   nowEpoch?: number
+  /** Pre-rendered sprite lines for the main view. */
+  sprite?: string[] | null
 }
 
 const RENDERERS: Record<string, (ctx: RenderContext, input: RenderInput) => string> = {
@@ -53,6 +55,7 @@ export function renderView(input: RenderInput): { supported: boolean; output: st
     lang: input.lang ?? 'fr',
     scriptName: input.scriptName ?? 'pokemon-status.sh',
     nowEpoch: input.nowEpoch,
+    sprite: input.sprite,
   }
   return { supported: true, output: renderer(ctx, input) }
 }

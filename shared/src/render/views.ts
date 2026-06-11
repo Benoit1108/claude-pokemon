@@ -22,6 +22,9 @@ export interface RenderContext {
   /** Unix epoch seconds for the recap session/today duration (bash used `date`).
    *  Optional: the deterministic recap path (no active session) never reads it. */
   nowEpoch?: number
+  /** Pre-rendered sprite lines (main view). Absent → no sprite block, matching
+   *  the R3a fixtures (captured with no sprite files on disk). */
+  sprite?: string[] | null
 }
 
 // ANSI (mirrors lib/pokemon-status.sh). Stripped by the parity test; kept so the
@@ -391,7 +394,12 @@ export function renderMain(ctx: RenderContext): string {
   out += '\n'
   out += boxTop(t(locale, 'main.companion'), 64)
 
-  // Sprites are OFF in the render contract → no sprite block.
+  // Sprite (when the cached file exists). bash: `printf '  %s\n' "$line"` per
+  // line + a trailing newline. Absent → no block (matches the R3a fixtures).
+  if (ctx.sprite && ctx.sprite.length > 0) {
+    for (const line of ctx.sprite) out += `  ${line}\n`
+    out += '\n'
+  }
 
   const shinyBadge = isShiny ? `${GOLD}★ SHINY${RESET}  ` : ''
   out += bashPrintf(
