@@ -18,6 +18,8 @@ import { renderView } from './render/index.js';
 import { tick } from './tick.js';
 import { renderLeaderboard, renderAggregate } from './render/net.js';
 import { runConfig } from './config.js';
+import { runShare } from './share.js';
+import { randomBytes } from 'node:crypto';
 import { teamToPc, pcToTeamOrActive, releaseSlot, switchCompanion, hatch, ceremonialReset, } from './collection.js';
 import { thresholdFor, levelFromXp, xpToNext, progressPct, xpMultiplier, typeMatchMultiplier, } from './index.js';
 export function derive(input) {
@@ -110,9 +112,10 @@ async function main() {
     const isTick = command === 'tick';
     const isNet = command === 'net';
     const isConfig = command === 'config';
+    const isShare = command === 'share';
     const handler = command ? COMMANDS[command] : undefined;
-    if (!handler && !isRender && !isMutate && !isTick && !isNet && !isConfig) {
-        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config'].join(', ')})\n`);
+    if (!handler && !isRender && !isMutate && !isTick && !isNet && !isConfig && !isShare) {
+        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config', 'share'].join(', ')})\n`);
         process.exit(2);
     }
     const raw = await readStdin();
@@ -175,6 +178,19 @@ async function main() {
             state: inp.state,
             locale: inp.locale,
         });
+        process.stdout.write(JSON.stringify(result));
+        return;
+    }
+    if (isShare) {
+        const inp = input;
+        const result = runShare({
+            args: process.argv.slice(3),
+            data: inp.data,
+            locale: inp.locale,
+            anonId: randomBytes(4).toString('hex'),
+        });
+        if (result === null)
+            process.exit(3); // forget/submit/unknown → bash fallback
         process.stdout.write(JSON.stringify(result));
         return;
     }
