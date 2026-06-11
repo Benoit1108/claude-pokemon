@@ -1,7 +1,7 @@
 // View render dispatch (Phase R3c). Maps a view name to its TS renderer. Views
 // not yet ported return { supported: false } so the bash dispatcher can fall
 // back to its own implementation (same graceful-degradation contract as R3b).
-import { renderBadges, renderInventory, renderTeam, renderPc, renderStats, renderPokedex, } from './views.js';
+import { renderBadges, renderInventory, renderTeam, renderPc, renderStats, renderPokedex, renderMain, } from './views.js';
 const RENDERERS = {
     badges: renderBadges,
     inventory: renderInventory,
@@ -9,6 +9,7 @@ const RENDERERS = {
     pc: renderPc,
     stats: renderStats,
     pokedex: renderPokedex,
+    main: renderMain,
 };
 export const SUPPORTED_VIEWS = Object.keys(RENDERERS);
 export function renderView(input) {
