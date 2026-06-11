@@ -9,6 +9,7 @@ import {
   renderStats,
   renderPokedex,
   renderMain,
+  renderTrainerCard,
   type RenderContext,
 } from './views.js'
 import type { Locale } from './i18n.js'
@@ -32,6 +33,7 @@ const RENDERERS: Record<string, (ctx: RenderContext) => string> = {
   stats: renderStats,
   pokedex: renderPokedex,
   main: renderMain,
+  'trainer-card': renderTrainerCard,
 }
 
 export const SUPPORTED_VIEWS = Object.keys(RENDERERS)
