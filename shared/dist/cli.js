@@ -19,6 +19,7 @@ import { tick } from './tick.js';
 import { renderLeaderboard, renderAggregate } from './render/net.js';
 import { runConfig } from './config.js';
 import { runShare, buildSubmitPayload, renderForget, renderSubmit } from './share.js';
+import { runArena } from './arena.js';
 import { randomBytes } from 'node:crypto';
 import { teamToPc, pcToTeamOrActive, releaseSlot, switchCompanion, hatch, ceremonialReset, } from './collection.js';
 import { thresholdFor, levelFromXp, xpToNext, progressPct, xpMultiplier, typeMatchMultiplier, } from './index.js';
@@ -113,9 +114,10 @@ async function main() {
     const isNet = command === 'net';
     const isConfig = command === 'config';
     const isShare = command === 'share';
+    const isArena = command === 'arena';
     const handler = command ? COMMANDS[command] : undefined;
-    if (!handler && !isRender && !isMutate && !isTick && !isNet && !isConfig && !isShare) {
-        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config', 'share'].join(', ')})\n`);
+    if (!handler && !isRender && !isMutate && !isTick && !isNet && !isConfig && !isShare && !isArena) {
+        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config', 'share', 'arena'].join(', ')})\n`);
         process.exit(2);
     }
     const raw = await readStdin();
@@ -240,6 +242,22 @@ async function main() {
         if (result === null)
             process.exit(3); // unknown sub → bash fallback
         process.stdout.write(JSON.stringify({ data: result.data, state, output: result.output, dataChanged: result.changed, stateChanged: false }));
+        return;
+    }
+    if (isArena) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const inp = input;
+        const result = await runArena({
+            args: process.argv.slice(3),
+            data: inp.data,
+            state: inp.state,
+            locale: inp.locale,
+            arenaSecret: inp.arenaSecret ?? '',
+            now: inp.now ?? new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+        });
+        if (result === null)
+            process.exit(3); // live/pair/link/unknown → bash fallback
+        process.stdout.write(JSON.stringify(result));
         return;
     }
     process.stdout.write(JSON.stringify(handler(input)));

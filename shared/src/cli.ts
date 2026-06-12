@@ -19,6 +19,7 @@ import { tick, type TickInput } from './tick.js'
 import { renderLeaderboard, renderAggregate, type NetResult } from './render/net.js'
 import { runConfig, type ConfigInput } from './config.js'
 import { runShare, buildSubmitPayload, renderForget, renderSubmit, type ShareInput } from './share.js'
+import { runArena, type ArenaInput } from './arena.js'
 import { randomBytes } from 'node:crypto'
 import type { Locale } from './render/i18n.js'
 import {
@@ -153,10 +154,11 @@ async function main(): Promise<void> {
   const isNet = command === 'net'
   const isConfig = command === 'config'
   const isShare = command === 'share'
+  const isArena = command === 'arena'
   const handler = command ? COMMANDS[command] : undefined
-  if (!handler && !isRender && !isMutate && !isTick && !isNet && !isConfig && !isShare) {
+  if (!handler && !isRender && !isMutate && !isTick && !isNet && !isConfig && !isShare && !isArena) {
     process.stderr.write(
-      `engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config', 'share'].join(', ')})\n`,
+      `engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config', 'share', 'arena'].join(', ')})\n`,
     )
     process.exit(2)
   }
@@ -286,6 +288,21 @@ async function main(): Promise<void> {
     process.stdout.write(
       JSON.stringify({ data: result.data, state, output: result.output, dataChanged: result.changed, stateChanged: false }),
     )
+    return
+  }
+  if (isArena) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const inp = input as any
+    const result = await runArena({
+      args: process.argv.slice(3),
+      data: inp.data,
+      state: inp.state,
+      locale: inp.locale as Locale,
+      arenaSecret: inp.arenaSecret ?? '',
+      now: inp.now ?? new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+    } as ArenaInput)
+    if (result === null) process.exit(3) // live/pair/link/unknown → bash fallback
+    process.stdout.write(JSON.stringify(result))
     return
   }
   process.stdout.write(JSON.stringify(handler!(input)))
