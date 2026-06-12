@@ -7,6 +7,14 @@ export interface CommandInput {
     data: Json;
     locale: Locale;
     now: string;
+    /** Epoch seconds — for cooldown checks (game / trade). */
+    nowEpoch?: number;
+    /** Injected randomness (game / trade), like the tick. */
+    decisions?: {
+        pool_idx?: number;
+        trade_level?: number;
+        trade_shiny?: boolean;
+    };
 }
 export interface CommandResult {
     output: string;

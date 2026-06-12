@@ -299,6 +299,8 @@ async function main() {
             data: inp.data,
             locale: inp.locale,
             now: inp.now ?? new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+            nowEpoch: inp.now_epoch ?? 0,
+            decisions: inp.decisions ?? {},
         });
         if (result === null)
             process.exit(3); // unknown command → bash fallback
