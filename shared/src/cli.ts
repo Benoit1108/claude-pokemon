@@ -348,6 +348,8 @@ async function main(): Promise<void> {
       data: inp.data,
       locale: inp.locale as Locale,
       now: inp.now ?? new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+      nowEpoch: inp.now_epoch ?? 0,
+      decisions: inp.decisions ?? {},
     } as CommandInput)
     if (result === null) process.exit(3) // unknown command → bash fallback
     process.stdout.write(JSON.stringify(result))

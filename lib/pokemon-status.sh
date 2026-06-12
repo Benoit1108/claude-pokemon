@@ -3086,18 +3086,28 @@ _arena() {
 _cmd() {
   local name="$1"; shift
   pokemon_engine_available || return 1
-  local lang locale args_json now
+  local lang locale args_json now now_epoch pool_count decisions
   lang=$(jq -r '.language // "fr"' "$POKEMON_DATA" 2>/dev/null || echo fr)
   locale="$POKEMON_LOCALES_DIR/$lang.json"; [ -f "$locale" ] || locale="$POKEMON_LOCALES_DIR/fr.json"
   if [ "$#" -eq 0 ]; then args_json='[]'; else args_json=$(printf '%s\n' "$@" | jq -R . | jq -cs .); fi
   now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  now_epoch=$(date -u +%s)
+  # Randomness for trade/game is computed here ("decisions in") so the engine
+  # stays pure; other commands ignore it. pool_idx forced to 0 by a single-entry
+  # wild_pool in tests (like the tick), making the deterministic paths diffable.
+  pool_count=$(jq -r '.wild_pool | length' "$POKEMON_DATA" 2>/dev/null || echo 1)
+  case "$pool_count" in ''|*[!0-9]*) pool_count=1 ;; esac
+  [ "$pool_count" -lt 1 ] && pool_count=1
+  decisions=$(jq -cn --argjson i "$((RANDOM % pool_count))" --argjson l "$((RANDOM % 46 + 5))" \
+    --argjson s "$([ "$((RANDOM % 20))" -eq 0 ] && echo true || echo false)" \
+    '{pool_idx:$i, trade_level:$l, trade_shiny:$s}')
   mkdir -p "$POKEMON_DIR"; touch "$POKEMON_LOCK"
   (
     flock -x 200
     local req out rc schanged
     req=$(jq -cn --slurpfile st "$POKEMON_STATE" --slurpfile dt "$POKEMON_DATA" --slurpfile lc "$locale" \
-      --arg now "$now" --argjson args "$args_json" \
-      '{state:$st[0], data:$dt[0], locale:$lc[0], now:$now, args:$args}' 2>/dev/null) || exit 1
+      --arg now "$now" --argjson ne "$now_epoch" --argjson args "$args_json" --argjson dec "$decisions" \
+      '{state:$st[0], data:$dt[0], locale:$lc[0], now:$now, now_epoch:$ne, args:$args, decisions:$dec}' 2>/dev/null) || exit 1
     out=$(printf '%s' "$req" | node "$POKEMON_ENGINE" cmd "$name" 2>/dev/null); rc=$?
     [ "$rc" -ne 0 ] && exit "$rc"
     [ -n "$out" ] || exit 1
@@ -3189,8 +3199,8 @@ case "${1:-}" in
   release)            _cmd release "${2:-}" "${3:-}" "${4:-}" || view_release "${2:-}" "${3:-}" "${4:-}" ;;
   give)               _cmd give "${2:-}" || view_give "${2:-}" ;;
   take)               _cmd take          || view_take ;;
-  trade)              view_trade "${2:-Anonymous}" ;;
-  game)               view_game "${@:2}" ;;
+  trade)              _cmd trade "${2:-Anonymous}" || view_trade "${2:-Anonymous}" ;;
+  game)               _cmd game "${@:2}"           || view_game "${@:2}" ;;
   recap|summary)      _render_view_live recap "${2:-}" || view_recap "${2:-}" ;;
   trainer-card|card)  _render_view_live trainer-card || view_trainer_card ;;
   stats-share|share)  _share "${@:2}" || view_stats_share "${2:-}" "${3:-}" ;;
