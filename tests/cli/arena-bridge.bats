@@ -24,7 +24,10 @@ setup_arena() {
     const h=require("http"); const battle=process.argv[1];
     const s=h.createServer((q,r)=>{
       let b="{}";
-      if(q.url.includes("/arena/enable")||q.url.includes("/arena/regenerate")) b="{\"arena_secret\":\"newsecret123\"}";
+      if(q.url.includes("/arena/pair/init")) b="{\"code\":\"ABCD23\",\"expires_at\":\"2026-06-12T13:00:00Z\"}";
+      else if(q.url.includes("/arena/pair/redeem")) b="{\"anon_id\":\"newanon1\",\"arena_secret\":\"sek2\"}";
+      else if(q.url.includes("/trainer/")) b="{\"stats\":{\"active\":{\"lineage\":\"water\",\"current_level\":22,\"is_shiny\":true},\"lifetime\":{\"total_tokens\":500,\"max_level\":22},\"badges\":[\"hatch\"],\"pokedex_seen_ids\":[\"pikachu\"]}}";
+      else if(q.url.includes("/arena/enable")||q.url.includes("/arena/regenerate")) b="{\"arena_secret\":\"newsecret123\"}";
       else if(q.url.includes("/arena/opponents")) b="{\"total\":2,\"opponents\":[{\"anon_id\":\"o1\",\"display_name\":\"Riv\",\"lineage\":\"water\",\"level\":30,\"is_shiny\":true},{\"anon_id\":\"o2\",\"display_name\":\"\",\"lineage\":\"grass\",\"level\":12,\"is_shiny\":false}]}";
       else if(q.url.includes("/arena/challenge")||q.url.includes("/arena/battle/")) b=battle;
       else b="{\"ok\":true}";
@@ -77,4 +80,27 @@ arena_diff() {
   [ "$status" -eq 0 ]
   [ "$(jq -r '.arena.enabled' "$PD/data.json")" = "false" ]
   [ ! -f "$PD/.arena-secret" ]
+}
+
+@test "arena pair (code + url, qrencode-absent hint)" {
+  setup_arena
+  ASECRET=sek arena_diff true pair
+}
+
+@test "arena link redeems + syncs state (engine vs bash output)" {
+  setup_arena
+  # link rewrites state with now-stamped fields; compare output only.
+  arena_diff false link abcd23
+}
+
+@test "arena link writes the secret + flips data + syncs state (structure)" {
+  setup_arena
+  seed_arena false
+  run bash "$STATUS" arena link abcd23
+  [ "$status" -eq 0 ]
+  [ "$(cat "$PD/.arena-secret")" = "sek2" ]
+  [ "$(jq -r '.stats_share.anon_id' "$PD/data.json")" = "newanon1" ]
+  [ "$(jq -r '.arena.enabled' "$PD/data.json")" = "true" ]
+  [ "$(jq -r '.current_level' "$PD/state.json")" = "22" ]
+  [ "$(jq -r '.lineage' "$PD/state.json")" = "water" ]
 }

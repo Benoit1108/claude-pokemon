@@ -3,6 +3,7 @@
 // (Node) and battle-replay rendering; bash owns the arena_secret FILE (a
 // separate chmod-600 file), so runArena returns a `secret` op signal instead of
 // touching the filesystem. live / pair / link → null (handled elsewhere).
+import { execFileSync } from 'node:child_process';
 import { bashPrintf } from './render/printf.js';
 import { t } from './render/i18n.js';
 import { lineageEmoji } from './render/views.js';
@@ -51,6 +52,43 @@ export function renderBattle(locale, raw) {
     out += bashPrintf(`  %s${t(locale, 'arena.battle_summary', (b.turns ?? []).length, b.reason)}%s\n\n`, DIM, RESET);
     return out;
 }
+const PAIR_CODE_RE = /^[A-HJ-NP-TV-Z2-9]{6}$/;
+// Port of _link_apply_trainer_to_state: rewrite state from a TrainerResponse.
+export function applyTrainerToState(state, trainer, now) {
+    const s = JSON.parse(JSON.stringify(state));
+    const active = trainer.stats?.active ?? {};
+    const lt = trainer.stats?.lifetime ?? {};
+    s.lineage = active.lineage;
+    s.is_shiny = active.is_shiny;
+    s.current_level = active.current_level;
+    s.lifetime_stats ??= {};
+    s.lifetime_stats.total_tokens = lt.total_tokens ?? 0;
+    s.lifetime_stats.total_evolutions = lt.total_evolutions ?? 0;
+    s.lifetime_stats.total_shinies = lt.total_shinies ?? 0;
+    s.lifetime_stats.max_level = lt.max_level ?? 0;
+    s.lifetime_stats.total_compagnons = lt.total_compagnons ?? 0;
+    s.lifetime_stats.lineages_completed = lt.lineages_completed ?? [];
+    s.lifetime_stats.games_won = lt.games_won ?? 0;
+    s.lifetime_stats.games_played = lt.games_played ?? 0;
+    s.badges = (trainer.stats?.badges ?? []).map((id) => ({ id, earned_at: now }));
+    const wild = {};
+    for (const id of trainer.stats?.pokedex_seen_ids ?? [])
+        wild[id] = { count: 1, first_seen_at: now };
+    s.pokedex_wild = wild;
+    s.last_updated = now;
+    return s;
+}
+// QR of the pair URL via the optional `qrencode` binary (like chafa for sprites
+// — absent → graceful hint). Returns the indented QR block or null.
+function qrBlock(url) {
+    try {
+        const out = execFileSync('qrencode', ['-t', 'ANSIUTF8', '-m', '1', url], { stdio: ['ignore', 'pipe', 'ignore'] }).toString();
+        return out.replace(/\n$/, '').split('\n').map((l) => '  ' + l).join('\n');
+    }
+    catch {
+        return null;
+    }
+}
 async function getJson(url, init) {
     try {
         const r = await fetch(url, init);
@@ -85,6 +123,8 @@ export async function runArena(input) {
     const secret = input.arenaSecret;
     let secretOp = null;
     let dataChanged = false;
+    let stateOut = input.state;
+    let stateChanged = false;
     let out = bashPrintf(`\n  %s%s${L('arena.title')}%s\n\n`, BOLD, GOLD, RESET);
     const line = (k, color, ...a) => {
         out += bashPrintf(`  %s${L(k, ...a)}%s\n\n`, color, RESET);
@@ -261,10 +301,92 @@ export async function runArena(input) {
             out += bashPrintf(`  %s${L('arena.usage')}%s\n\n`, DIM, RESET);
             break;
         }
+        case 'pair': {
+            // bash prints arena.title (already in `out`) then pair.title.
+            out += bashPrintf(`\n  %s%s${L('pair.title')}%s\n\n`, BOLD, GOLD, RESET);
+            if (!enabled || !anonId) {
+                line('live.not_enabled', DIM);
+                break;
+            }
+            if (!secret) {
+                line('arena.no_secret', DIM);
+                break;
+            }
+            const resp = await postJson(`${endpoint}/v1/arena/pair/init`, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
+                body: JSON.stringify({ anon_id: anonId }),
+            });
+            const code = resp.code ?? '';
+            if (!code) {
+                line('pair.failed', DIM, JSON.stringify(resp));
+                break;
+            }
+            const pairUrl = `${webUrl}/pair?code=${code}`;
+            out += bashPrintf(`  %s${L('pair.code_label')}%s   %s%s%s\n\n`, DIM, RESET, BOLD + GOLD, code, RESET);
+            out += bashPrintf(`  %s${L('pair.url_label')}%s\n`, DIM, RESET);
+            out += bashPrintf('  %s%s%s\n\n', BOLD, pairUrl, RESET);
+            const qr = qrBlock(pairUrl);
+            if (qr !== null) {
+                out += bashPrintf(`  %s${L('pair.qr_label')}%s\n`, DIM, RESET);
+                out += qr + '\n\n';
+            }
+            else {
+                out += bashPrintf(`  %s${L('pair.qr_hint')}%s\n\n`, DIM, RESET);
+            }
+            out += bashPrintf(`  %s${L('pair.expires', resp.expires_at ?? '')}%s\n\n`, DIM, RESET);
+            out += bashPrintf(`  %s${L('pair.warning')}%s\n\n`, DIM, RESET);
+            break;
+        }
+        case 'link': {
+            // bash prints arena.title (already in `out`) then link.title.
+            out += bashPrintf(`\n  %s%s${L('link.title')}%s\n\n`, BOLD, GOLD, RESET);
+            const code = input.args[1] ?? '';
+            if (!code) {
+                out += bashPrintf(`  %s${L('link.usage')}%s\n\n`, DIM, RESET);
+                break;
+            }
+            const upper = code.toUpperCase();
+            if (!PAIR_CODE_RE.test(upper)) {
+                out += bashPrintf(`  %s${L('link.invalid_code')}%s\n\n`, DIM, RESET);
+                break;
+            }
+            if (enabled && anonId)
+                out += bashPrintf(`  %s${L('link.warn_existing', anonId)}%s\n\n`, DIM, RESET);
+            const resp = await postJson(`${endpoint}/v1/arena/pair/redeem`, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ code: upper }),
+            });
+            const newAnon = resp.anon_id ?? '';
+            const newSecret = resp.arena_secret ?? '';
+            if (!newAnon || !newSecret) {
+                out += bashPrintf(`  %s${L('link.failed', JSON.stringify(resp))}%s\n\n`, DIM, RESET);
+                break;
+            }
+            secretOp = { action: 'save', value: newSecret };
+            ensureArena();
+            data.stats_share ??= {};
+            data.stats_share.anon_id = newAnon;
+            data.arena.enabled = true;
+            data.arena.enabled_at = now;
+            dataChanged = true;
+            const trainer = await getJson(`${endpoint}/v1/trainer/${newAnon}`);
+            if (trainer !== null) {
+                stateOut = applyTrainerToState(input.state, trainer, now);
+                stateChanged = true;
+                out += bashPrintf(`  %s${L('link.state_synced')}%s\n`, DIM, RESET);
+            }
+            else {
+                out += bashPrintf(`  %s${L('link.no_remote_state')}%s\n`, DIM, RESET);
+            }
+            out += bashPrintf(`  %s${L('link.success', newAnon)}%s\n\n`, GOLD, RESET);
+            break;
+        }
         default:
-            // live / pair / link / unknown → bash handles it.
+            // live / unknown → bash handles it.
             return null;
     }
-    return { data, output: out, dataChanged, secret: secretOp };
+    return { data, output: out, dataChanged, secret: secretOp, state: stateOut, stateChanged };
 }
 //# sourceMappingURL=arena.js.map
