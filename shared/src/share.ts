@@ -5,14 +5,11 @@
 // for them so the dispatcher falls back.
 import { bashPrintf } from './render/printf.js'
 import { t, type Locale } from './render/i18n.js'
+import { RESET, BOLD, DIM, GOLD } from './render/ansi.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
 
-const RESET = '\x1b[0m'
-const BOLD = '\x1b[1m'
-const DIM = '\x1b[2m'
-const GOLD = '\x1b[33m'
 
 const NAME_RE = /^[a-zA-Z0-9_-]{2,24}$/
 
@@ -79,12 +76,12 @@ export function buildSubmitPayload(
   }
 }
 
-const SHARE_RESET = '\x1b[0m'
-const SHARE_BOLD = '\x1b[1m'
-const SHARE_DIM = '\x1b[2m'
-const SHARE_GOLD = '\x1b[33m'
+
+
+
+
 const shareTitle = (locale: Locale): string =>
-  bashPrintf(`\n  %s%s${t(locale, 'share.title')}%s\n\n`, SHARE_BOLD, SHARE_GOLD, SHARE_RESET)
+  bashPrintf(`\n  %s%s${t(locale, 'share.title')}%s\n\n`, BOLD, GOLD, RESET)
 
 // forget: the command fetches DELETE /v1/forget?anon_id; ok = success.
 export function renderForget(data: Json, locale: Locale, anonId: string, ok: boolean): ShareOutput {
@@ -92,15 +89,15 @@ export function renderForget(data: Json, locale: Locale, anonId: string, ok: boo
   let out = shareTitle(locale)
   let changed = false
   if (!anonId) {
-    out += bashPrintf(`  %s${t(locale, 'share.no_id')}%s\n\n`, SHARE_DIM, SHARE_RESET)
+    out += bashPrintf(`  %s${t(locale, 'share.no_id')}%s\n\n`, DIM, RESET)
   } else if (ok) {
     d.stats_share ??= {}
     d.stats_share.enabled = false
     d.stats_share.anon_id = null
     changed = true
-    out += bashPrintf(`  %s${t(locale, 'share.forgotten', anonId)}%s\n\n`, SHARE_GOLD, SHARE_RESET)
+    out += bashPrintf(`  %s${t(locale, 'share.forgotten', anonId)}%s\n\n`, GOLD, RESET)
   } else {
-    out += bashPrintf(`  %s${t(locale, 'share.forget_failed')}%s\n\n`, SHARE_DIM, SHARE_RESET)
+    out += bashPrintf(`  %s${t(locale, 'share.forget_failed')}%s\n\n`, DIM, RESET)
   }
   return { data: d, output: out, changed }
 }
@@ -118,15 +115,15 @@ export function renderSubmit(
   let out = shareTitle(locale)
   let changed = false
   if (!enabled) {
-    out += bashPrintf(`  %s${t(locale, 'share.not_enabled')}%s\n\n`, SHARE_DIM, SHARE_RESET)
+    out += bashPrintf(`  %s${t(locale, 'share.not_enabled')}%s\n\n`, DIM, RESET)
   } else if (code === 200) {
     s.last_stats_submit_at = now
     changed = true
-    out += bashPrintf(`  %s${t(locale, 'share.submit_ok')}%s\n\n`, SHARE_GOLD, SHARE_RESET)
+    out += bashPrintf(`  %s${t(locale, 'share.submit_ok')}%s\n\n`, GOLD, RESET)
   } else if (code === 429) {
-    out += bashPrintf(`  %s${t(locale, 'share.cooldown', Math.floor(cooldownS / 3600))}%s\n\n`, SHARE_DIM, SHARE_RESET)
+    out += bashPrintf(`  %s${t(locale, 'share.cooldown', Math.floor(cooldownS / 3600))}%s\n\n`, DIM, RESET)
   } else {
-    out += bashPrintf(`  %s${t(locale, 'share.submit_failed', code)}%s\n\n`, SHARE_DIM, SHARE_RESET)
+    out += bashPrintf(`  %s${t(locale, 'share.submit_failed', code)}%s\n\n`, DIM, RESET)
   }
   return { state: s, output: out, changed }
 }

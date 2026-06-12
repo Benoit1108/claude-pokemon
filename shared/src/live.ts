@@ -1,87 +1,26 @@
 // Live PvP commands (Phase R3d-4b): invite / accept / status / move / forfeit.
 // One-shot per subcommand (the user re-runs `status` to refresh — no polling).
-// Renders HP/state + the local player's move hints. The move table mirrors the
-// worker's STAGE_MOVES (display-only; the worker re-validates).
+// Renders HP/state + the local player's move hints.
 import { bashPrintf } from './render/printf.js'
 import { t, type Locale } from './render/i18n.js'
 import { lineageEmoji } from './render/views.js'
 import { httpJson, describeFailure, describeBody, sanitizeForTerminal } from './http.js'
+import { movesForParticipant } from './moves.js'
+import { RESET, BOLD, DIM, GOLD } from './render/ansi.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
 
-const RESET = '\x1b[0m'
-const BOLD = '\x1b[1m'
-const DIM = '\x1b[2m'
-const GOLD = '\x1b[33m'
 
-// Mirror of _live_stage_for (lib/pokemon-status.sh) — lineage + level → stage.
-export function liveStageFor(lin: string, lvl: number): string {
-  const tiers: Record<string, [number, string][]> = {
-    fire: [[55, 'charizard-megax'], [36, 'charizard'], [16, 'charmeleon'], [1, 'charmander']],
-    water: [[55, 'blastoise-mega'], [36, 'blastoise'], [16, 'wartortle'], [1, 'squirtle']],
-    grass: [[55, 'venusaur-mega'], [32, 'venusaur'], [16, 'ivysaur'], [1, 'bulbasaur']],
-    electric: [[55, 'raichu-alola'], [30, 'raichu'], [10, 'pikachu'], [1, 'pichu']],
-    eevee: [[30, 'vaporeon'], [1, 'eevee']],
-    chikorita: [[32, 'meganium'], [16, 'bayleef'], [1, 'chikorita']],
-    cyndaquil: [[55, 'typhlosion-hisui'], [32, 'typhlosion'], [16, 'quilava'], [1, 'cyndaquil']],
-    totodile: [[32, 'feraligatr'], [16, 'croconaw'], [1, 'totodile']],
-  }
-  const t2 = tiers[lin]
-  if (!t2) return 'egg'
-  for (const [min, id] of t2) if (lvl >= min) return id
-  return 'egg'
-}
-
-// Mirror of _live_moves_for_stage — per-stage 4-move hint list.
-const STAGE_MOVES: Record<string, string> = {
-  egg: 'Charge\nMimi-Queue\nRepli\nGrondement',
-  charmander: 'Charge\nGriffe\nFlammèche\nGrondement',
-  charmeleon: 'Tranche\nFlammèche\nBrouillard\nBrûlure',
-  charizard: 'Lance-Flammes\nCru-Aile\nTranche\nMorsure',
-  'charizard-megax': 'Dracosouffle\nDamoclès\nLance-Flammes\nTranche',
-  'charizard-megay': 'Lance-Soleil\nDéflagration\nCru-Aile\nBélier',
-  squirtle: 'Charge\nMimi-Queue\nPistolet à O\nRepli',
-  wartortle: 'Pistolet à O\nRepli\nMorsure\nTranche',
-  blastoise: "Hydrocanon\nBulles d'O\nTranche\nBélier",
-  'blastoise-mega': 'Hydroblast\nVibraqua\nBélier\nDamoclès',
-  'blastoise-gmax': 'Hydroblast\nVibraqua\nHydrocanon\nDamoclès',
-  bulbasaur: "Charge\nRugissement\nVampigraine\nTranch'Herbe",
-  ivysaur: "Tranch'Herbe\nVampigraine\nPoudre Dodo\nBélier",
-  venusaur: "Lance-Soleil\nTranch'Herbe\nVampigraine\nBélier",
-  'venusaur-mega': 'Lance-Soleil\nVampigraine\nBélier\nSynthèse',
-  'venusaur-gmax': 'G-Max Vine Lash\nLance-Soleil\nSynthèse\nVampigraine',
-  pichu: 'Charge\nÉclair\nMimi-Queue\nVive-Attaque',
-  pikachu: 'Tonnerre\nVive-Attaque\nÉclair\nCharge',
-  raichu: "Fatal-Foudre\nCoup d'Jus\nTonnerre\nVive-Attaque",
-  'raichu-alola': "Psyko\nTonnerre\nVive-Attaque\nCoup d'Jus",
-  'pikachu-gmax': "G-Max Volt Crash\nCataclectric\nTonnerre\nVive-Attaque",
-  eevee: 'Charge\nMimi-Queue\nMorsure\nVive-Attaque',
-  vaporeon: "Hydrocanon\nVibraqua\nBulles d'O\nMorsure",
-  jolteon: "Tonnerre\nVive-Attaque\nCoup d'Jus\nÉclair",
-  flareon: 'Lance-Flammes\nCrocs Feu\nRoue de Feu\nMorsure',
-  espeon: 'Psyko\nVœu Soin\nVive-Attaque\nMimi-Queue',
-  umbreon: "Ball'Ombre\nReflet Magik\nMorsure\nVive-Attaque",
-  chikorita: "Charge\nRugissement\nTranch'Herbe\nMimi-Queue",
-  bayleef: "Tranch'Herbe\nSynthèse\nVampigraine\nBélier",
-  meganium: "Lance-Soleil\nBélier\nSynthèse\nTranch'Herbe",
-  cyndaquil: "Charge\nGroz'Yeux\nFlammèche\nBrouillard",
-  quilava: 'Roue de Feu\nBrouillard\nFlammèche\nVive-Attaque',
-  typhlosion: 'Lance-Flammes\nSurchauffe\nRoue de Feu\nTranche',
-  'typhlosion-hisui': "Vortex Infernal\nBall'Ombre\nLance-Flammes\nReflet Magik",
-  totodile: 'Charge\nRugissement\nPistolet à O\nMorsure',
-  croconaw: 'Morsure\nPistolet à O\nTranche\nVive-Attaque',
-  feraligatr: 'Hydrocanon\nMâchouille\nTranche\nBélier',
-}
-function movesForStage(stage: string): string {
-  return STAGE_MOVES[stage] ?? 'Charge\nMimi-Queue\nMorsure\nTranche'
-}
-
-// Move names are intentionally hardcoded French (mirrors bash, not t()).
+// Move hints come from the SAME pool the worker validates against
+// (movesForParticipant: curated starter sets + learnsets for wilds). The old
+// private stage/move tables here had already drifted from stages.ts/moves.ts
+// (charizard-megay missing → wrong hints at Lv.100) — dedup'd away.
+// Move names are intentionally hardcoded French (mirrors the move catalog).
 function printMoves(lin: string, lvl: number): string {
-  const moves = movesForStage(liveStageFor(lin, lvl))
+  const moves = movesForParticipant(lin, lvl)
   let out = bashPrintf('  %sTes attaques :%s\n', BOLD, RESET)
-  for (const m of moves.split('\n')) if (m) out += bashPrintf('    %s• %s%s\n', GOLD, m, RESET)
+  for (const m of moves) out += bashPrintf('    %s• %s%s\n', GOLD, m.name, RESET)
   out += bashPrintf('\n  %s/pokemon arena live move "<nom>"%s\n\n', DIM, RESET)
   return out
 }

@@ -13,6 +13,7 @@ import { tPad } from './render/views.js'
 import { teamToPc, pcToTeamOrActive, releaseSlot, switchCompanion, hatch, ceremonialReset } from './collection.js'
 
 import type { CompanionEntry, PokemonData, PokemonState, RecentEvent, WildPoolEntry } from './state-types.js'
+import { RESET, BOLD, DIM, GOLD } from './render/ansi.js'
 
 function cloneState(state: PokemonState): PokemonState {
   return JSON.parse(JSON.stringify(state))
@@ -24,10 +25,6 @@ function wildName(w: WildPoolEntry, lang: string): string {
   return typeof v === 'string' ? v : ''
 }
 
-const RESET = '\x1b[0m'
-const BOLD = '\x1b[1m'
-const DIM = '\x1b[2m'
-const GOLD = '\x1b[33m'
 
 export interface CommandInput {
   name: string
