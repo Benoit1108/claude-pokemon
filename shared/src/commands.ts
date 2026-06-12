@@ -9,7 +9,7 @@
 // the returned state (guarded) under flock and prints the output.
 import { bashPrintf } from './render/printf.js'
 import { t, type Locale } from './render/i18n.js'
-import { teamToPc, pcToTeamOrActive, releaseSlot } from './collection.js'
+import { teamToPc, pcToTeamOrActive, releaseSlot, switchCompanion, hatch, ceremonialReset } from './collection.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
@@ -35,6 +35,85 @@ export interface CommandResult {
 
 function maxStage(entry: Json): string {
   return entry?.max_stage ?? 'Œuf'
+}
+
+function lastEvoName(state: Json): string {
+  const h: Json[] = state.evolution_history ?? []
+  return (h.length ? h[h.length - 1].name : undefined) ?? 'Œuf'
+}
+
+// Port of _print_roster_entry. `%-22s` is byte-width padding (bashPrintf).
+function rosterEntry(entry: Json, slot: string, marker: string, data: Json, locale: Locale): string {
+  const lin: string = entry.lineage
+  const lvl = entry.level ?? entry.current_level
+  const name = entry.max_stage ?? (entry.evolution_history?.length ? entry.evolution_history.at(-1)?.name : undefined) ?? 'Œuf'
+  const star = entry.is_shiny === true ? `${GOLD}★${RESET} ` : ''
+  const label = data.lineages?.[lin]?.label ?? lin
+  const markerStr = marker === 'active' ? `  ${GOLD}${t(locale, 'common.active_marker')}${RESET}` : ''
+  return bashPrintf(
+    '   %s[%s]%s  %s%-22s  %sLv.%d%s  %s%s%s%s\n',
+    BOLD, slot, RESET, star, name, BOLD, lvl, RESET, DIM, label, RESET, markerStr,
+  )
+}
+
+function cmdSwitch(input: CommandInput): CommandResult {
+  const { state, data, locale, now } = input
+  const L = (k: string, ...a: Array<string | number>): string => t(locale, k, ...a)
+  let out = bashPrintf(`\n  %s%s${L('switch.title')}%s\n\n`, BOLD, GOLD, RESET)
+  const slotArg = input.args[0] ?? ''
+  if (slotArg === '') {
+    const activeLineage = state.lineage ?? ''
+    const activeLevel = Number(state.current_level ?? 0)
+    if (activeLineage !== '' && activeLevel > 0) {
+      const activeEntry = {
+        lineage: state.lineage,
+        is_shiny: state.is_shiny,
+        level: state.current_level,
+        max_stage: lastEvoName(state),
+        evolution_history: state.evolution_history,
+      }
+      out += rosterEntry(activeEntry, '-', 'active', data, locale)
+    } else {
+      out += bashPrintf(`   %s${L('switch.no_active')}%s\n`, DIM, RESET)
+    }
+    out += '\n'
+    const team: Json[] = state.team ?? []
+    if (team.length === 0) {
+      out += bashPrintf(`   %s${L('switch.no_team')}%s\n\n`, DIM, RESET)
+    } else {
+      for (let i = 0; i < team.length; i++) out += rosterEntry(team[i], String(i), '', data, locale)
+      out += bashPrintf(`\n  %s${L('switch.usage')}%s\n\n`, DIM, RESET)
+    }
+    return { output: out, state, stateChanged: false }
+  }
+  const team: Json[] = state.team ?? []
+  const slot = Number(slotArg)
+  if (slot >= team.length || slot < 0) {
+    return { output: out + bashPrintf(`  %s${L('switch.out_of_range', team.length - 1)}%s\n\n`, DIM, RESET), state, stateChanged: false }
+  }
+  const activeName = lastEvoName(state)
+  const targetName = maxStage(team[slot])
+  const next = switchCompanion(state, now, slot)
+  out += bashPrintf(`  %s${L('switch.swapped', activeName, targetName)}%s\n\n`, BOLD, RESET)
+  return { output: out, state: next, stateChanged: true }
+}
+
+function cmdHatch(input: CommandInput): CommandResult {
+  const { state, data, locale, now } = input
+  const L = (k: string, ...a: Array<string | number>): string => t(locale, k, ...a)
+  let out = bashPrintf(`\n  %s%s${L('hatch.title')}%s\n\n`, BOLD, GOLD, RESET)
+  const target = input.args[0] ?? ''
+  if (target !== '' && !data.lineages?.[target]) {
+    // jq `keys` sorts alphabetically — match it, not insertion order.
+    const available = Object.keys(data.lineages ?? {}).sort().join(', ')
+    return { output: out + bashPrintf(`  %s${L('hatch.no_lineage_match', target, available)}%s\n\n`, DIM, RESET), state, stateChanged: false }
+  }
+  const activeName = lastEvoName(state)
+  const activeLevel = Number(state.current_level ?? 0)
+  const next = hatch(state, now, data, target || undefined)
+  if (activeLevel > 0) out += bashPrintf(`  %s${L('hatch.current_archived', activeName)}%s\n`, DIM, RESET)
+  out += bashPrintf(`  %s${L('hatch.egg_starting', target !== '' ? target : 'random')}%s\n\n`, BOLD, RESET)
+  return { output: out, state: next, stateChanged: true }
 }
 
 function cmdDeposit(input: CommandInput): CommandResult {
@@ -108,6 +187,29 @@ function cmdRelease(input: CommandInput): CommandResult {
   return { output: out, state: next, stateChanged: true }
 }
 
+// Port of toggle_shiny — no title, no indent (verbatim bash printf).
+function cmdShiny(input: CommandInput): CommandResult {
+  const next: Json = JSON.parse(JSON.stringify(input.state))
+  const newVal = input.state.is_shiny !== true
+  next.is_shiny = newVal
+  const out = bashPrintf('%s✦ shiny → %s%s\n\n', GOLD, newVal ? 'true' : 'false', RESET)
+  return { output: out, state: next, stateChanged: true }
+}
+
+function cmdReset(input: CommandInput): CommandResult {
+  const { state, data, locale, now } = input
+  const L = (k: string, ...a: Array<string | number>): string => t(locale, k, ...a)
+  const lineage = state.lineage ?? ''
+  const currentLevel = Number(state.current_level ?? 0)
+  if (lineage === '' || currentLevel === 0) {
+    return { output: bashPrintf(`\n  %s${L('reset.no_active')}%s\n\n`, DIM, RESET), state, stateChanged: false }
+  }
+  const next = ceremonialReset(state, now, data)
+  let out = bashPrintf(`\n  %s${L('reset.archived')}%s\n`, BOLD, RESET)
+  out += bashPrintf(`  %s${L('reset.egg_awaits')}%s\n\n`, DIM, RESET)
+  return { output: out, state: next, stateChanged: true }
+}
+
 export function runCommand(input: CommandInput): CommandResult | null {
   switch (input.name) {
     case 'deposit':
@@ -116,6 +218,14 @@ export function runCommand(input: CommandInput): CommandResult | null {
       return cmdWithdraw(input)
     case 'release':
       return cmdRelease(input)
+    case 'switch':
+      return cmdSwitch(input)
+    case 'hatch':
+      return cmdHatch(input)
+    case 'shiny':
+      return cmdShiny(input)
+    case 'reset':
+      return cmdReset(input)
     default:
       return null
   }

@@ -144,6 +144,38 @@ assert_engine_eq_bash() {
   assert_engine_eq_bash "[]" "[]" release team 0 --confirm
 }
 
+# ── switch/hatch validation + display branches (engine `cmd` bridge) ──
+@test "switch roster display (no arg): engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[$(mon water 30 Carabaffe),$(mon grass 20 Herbizarre)]" "[]" switch
+}
+@test "switch roster display, empty team: engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[]" "[]" switch
+}
+@test "switch roster display, no active companion: engine == bash" {
+  setup_dir
+  seed "[$(mon water 30 X)]" "[]" null 0
+  assert_engine_eq_bash "[$(mon water 30 X)]" "[]" switch
+}
+@test "switch out-of-range slot: engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[$(mon water 30 X)]" "[]" switch 9
+}
+@test "hatch unknown lineage: engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[]" "[]" hatch zzz
+}
+@test "shiny toggle: engine == bash (state + stdout)" {
+  setup_dir
+  assert_engine_eq_bash "[]" "[]" --shiny
+}
+@test "reset with no active companion: engine == bash" {
+  setup_dir
+  seed "[]" "[]" null 0
+  assert_engine_eq_bash "[]" "[]" reset
+}
+
 @test "hatch from an egg (no active companion): engine path == bash fallback" {
   setup_dir
   local s_e st_e o_e st_b o_b
