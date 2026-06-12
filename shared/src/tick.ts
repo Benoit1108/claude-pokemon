@@ -13,9 +13,7 @@
 import { levelFromXp, xpMultiplier, typeMatchMultiplier } from './xp.js'
 import { evoField } from './render/views.js'
 import { archiveToTeam, checkBadges } from './collection.js'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = any
+import type { PokemonData, PokemonState, RecentEvent, SessionEntry, StageDef } from './state-types.js'
 
 export interface TickDecisions {
   /** Lineage to assign when the active has none (bash pokemon_pick_starter). */
@@ -32,8 +30,8 @@ export interface TickDecisions {
 }
 
 export interface TickInput {
-  state: Json
-  data: Json
+  state: PokemonState
+  data: PokemonData
   now: string
   now_epoch: number
   session_id: string
@@ -46,23 +44,23 @@ function clone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v))
 }
 
-function prepend10(list: Json[] | undefined, ev: Json): Json[] {
+function prepend10(list: RecentEvent[] | undefined, ev: RecentEvent): RecentEvent[] {
   return [ev, ...(Array.isArray(list) ? list : [])].slice(0, 10)
 }
 
-export function tick(input: TickInput): { state: Json } {
+export function tick(input: TickInput): { state: PokemonState } {
   const { data, now, now_epoch, session_id: sid, current_tokens, decisions } = input
   const usedPct = input.used_pct == null ? null : Number(input.used_pct)
   const thresholds: number[] = data.thresholds ?? []
   const maxLevel = thresholds.length - 1
-  const s: Json = clone(input.state)
+  const s: PokemonState = clone(input.state)
 
   // ── Schema migration (forward-compat) ──
   s.badges ??= []
   s.team ??= []
   s.pc_storage ??= []
-  s.pokedex ??= {}
-  s.lifetime_stats ??= {
+  const pokedex = (s.pokedex ??= {})
+  const ls = (s.lifetime_stats ??= {
     total_tokens: 0,
     total_evolutions: 0,
     total_shinies: 0,
@@ -70,14 +68,13 @@ export function tick(input: TickInput): { state: Json } {
     lineages_completed: [],
     total_compagnons: 1,
     first_shiny_at: null,
-  }
-  const ls = s.lifetime_stats
+  })
 
   // ── Retroactive backfill (idempotent) ──
-  ls.max_level = (ls.max_level ?? 0) > s.current_level ? ls.max_level : s.current_level
+  ls.max_level = (ls.max_level ?? 0) > (s.current_level ?? 0) ? ls.max_level : s.current_level
   const linNow = s.lineage ?? ''
-  if (linNow !== '' && (s.pokedex[linNow] ?? null) == null) {
-    s.pokedex[linNow] = {
+  if (linNow !== '' && (pokedex[linNow] ?? null) == null) {
+    pokedex[linNow] = {
       seen: true,
       count: 1,
       first_seen_at: s.created_at,
@@ -85,9 +82,10 @@ export function tick(input: TickInput): { state: Json } {
       shiny_count: s.is_shiny ? 1 : 0,
     }
   }
-  if (linNow !== '' && s.is_shiny === true && (s.pokedex[linNow]?.shiny_seen ?? false) === false) {
-    s.pokedex[linNow].shiny_seen = true
-    s.pokedex[linNow].shiny_count = (s.pokedex[linNow].shiny_count ?? 0) + 1
+  if (linNow !== '' && s.is_shiny === true && (pokedex[linNow]?.shiny_seen ?? false) === false) {
+    const pd = pokedex[linNow]
+    pd.shiny_seen = true
+    pd.shiny_count = (pd.shiny_count ?? 0) + 1
   }
   if (s.is_shiny === true && ls.total_shinies === 0) {
     ls.total_shinies = 1
@@ -99,10 +97,10 @@ export function tick(input: TickInput): { state: Json } {
   if (!lineage) {
     lineage = decisions.starter as string
     s.lineage = lineage
-    s.pokedex[lineage] ??= { seen: false, shiny_seen: false, count: 0, shiny_count: 0, first_seen_at: null }
-    s.pokedex[lineage].seen = true
-    s.pokedex[lineage].count += 1
-    s.pokedex[lineage].first_seen_at ??= now
+    const pd = (pokedex[lineage] ??= { seen: false, shiny_seen: false, count: 0, shiny_count: 0, first_seen_at: null })
+    pd.seen = true
+    pd.count = (pd.count ?? 0) + 1
+    pd.first_seen_at ??= now
   }
 
   // ── Clamp current_level DOWN to what total_xp supports (never up here) ──
@@ -112,13 +110,12 @@ export function tick(input: TickInput): { state: Json } {
     s.evolution_flash_remaining = 0
   }
 
-  let isShiny: boolean = s.is_shiny
-  const prevLevel: number = s.current_level
+  let isShiny: boolean = s.is_shiny ?? false
+  const prevLevel: number = s.current_level ?? 0
 
   // ── Per-tick delta + per-turn credit accumulator ──
-  s.sessions ??= {}
-  s.sessions[sid] ??= {}
-  const sess = s.sessions[sid]
+  const sessions = (s.sessions ??= {})
+  const sess = (sessions[sid] ??= {})
   const prevTokens = sess.last_tick_tokens ?? sess.max_context_tokens ?? 0
   const rawDelta = current_tokens > prevTokens ? current_tokens - prevTokens : 0
   let pending = (sess.pending_tokens ?? 0) + rawDelta
@@ -181,8 +178,8 @@ export function tick(input: TickInput): { state: Json } {
   const curMonth = d.getUTCMonth() + 1
   const curDay = d.getUTCDate()
   let seasonMult = 1.0
-  for (const season of Object.values(data.seasons ?? {}) as Json[]) {
-    if (curMonth === season.month && curDay >= season.day_start && curDay <= season.day_end) {
+  for (const season of Object.values(data.seasons ?? {})) {
+    if (curMonth === season.month && curDay >= (season.day_start ?? Infinity) && curDay <= (season.day_end ?? -Infinity)) {
       seasonMult = Number(season.boost_mult_xp ?? 1.0)
       break
     }
@@ -205,8 +202,9 @@ export function tick(input: TickInput): { state: Json } {
 
   // ── Random events (resolved upstream via `decisions`) ──
   if (decisions.berry.fired) {
-    const b = data.berries[decisions.berry.index]
-    s.total_xp = (s.total_xp ?? 0) + b.xp_bonus
+    // fired implies the index was rolled against this pool — entry exists.
+    const b = (data.berries ?? [])[decisions.berry.index]
+    s.total_xp = (s.total_xp ?? 0) + (b.xp_bonus ?? 0)
     s.recent_events = prepend10(s.recent_events, {
       type: 'berry',
       id: b.id,
@@ -217,17 +215,17 @@ export function tick(input: TickInput): { state: Json } {
     })
   }
   if (decisions.encounter.fired) {
-    const w = data.wild_pool[decisions.encounter.index]
-    s.pokedex_wild ??= {}
-    s.pokedex_wild[w.id] = {
-      count: (s.pokedex_wild[w.id]?.count ?? 0) + 1,
-      first_seen_at: s.pokedex_wild[w.id]?.first_seen_at ?? now,
+    const w = (data.wild_pool ?? [])[decisions.encounter.index]
+    const wild = (s.pokedex_wild ??= {})
+    wild[w.id] = {
+      count: (wild[w.id]?.count ?? 0) + 1,
+      first_seen_at: wild[w.id]?.first_seen_at ?? now,
       last_seen_at: now,
     }
     s.recent_events = prepend10(s.recent_events, { type: 'encounter', id: w.id, at: now })
 
     if (decisions.battle.fired) {
-      const ownLevel = s.current_level
+      const ownLevel = s.current_level ?? 0
       const wildLevel = decisions.battle.wild_level
       const battleWon = ownLevel >= wildLevel - 3
       if (battleWon) {
@@ -253,16 +251,16 @@ export function tick(input: TickInput): { state: Json } {
 
     if (decisions.item.fired) {
       // jq `.items | keys` is sorted lexicographically — match it (the index
-      // was rolled against the same sorted length on the bash side).
+      // was rolled against the same sorted length on the engine side).
       const itemKeys = Object.keys(data.items ?? {}).sort()
       const itemId = itemKeys[decisions.item.index]
-      s.items ??= {}
-      s.items[itemId] = (s.items[itemId] ?? 0) + 1
+      const inv = (s.items ??= {})
+      inv[itemId] = (inv[itemId] ?? 0) + 1
       s.recent_events = prepend10(s.recent_events, {
         type: 'item',
         id: itemId,
-        name: data.items[itemId]?.name,
-        emoji: data.items[itemId]?.emoji,
+        name: data.items?.[itemId]?.name,
+        emoji: data.items?.[itemId]?.emoji,
         at: now,
       })
     }
@@ -299,19 +297,21 @@ export function tick(input: TickInput): { state: Json } {
       isShiny = decisions.shiny
       s.is_shiny = isShiny
       if (isShiny) {
-        s.pokedex[lineage].shiny_seen = true
-        s.pokedex[lineage].shiny_count += 1
-        ls.total_shinies += 1
+        const pd = pokedex[lineage]
+        pd.shiny_seen = true
+        pd.shiny_count = (pd.shiny_count ?? 0) + 1
+        ls.total_shinies = (ls.total_shinies ?? 0) + 1
         ls.first_shiny_at ??= now
       }
     }
     if (lineage === 'eevee' && prevLevel < 30 && newLevel >= 30) {
+      const rules = data.eevee_evolution_rules ?? {}
       let chosenForm = ''
       let usedStone = ''
       for (const stone of ['fire_stone', 'water_stone', 'thunder_stone']) {
         if ((s.items?.[stone] ?? 0) > 0) {
           usedStone = stone
-          chosenForm = data.eevee_evolution_rules[stone]
+          chosenForm = rules[stone] ?? ''
           break
         }
       }
@@ -320,24 +320,23 @@ export function tick(input: TickInput): { state: Json } {
         const threshold = data.eevee_friendship_threshold ?? 50
         const hour = d.getUTCHours()
         if (friendship >= threshold) {
-          chosenForm =
-            hour >= 6 && hour < 18
-              ? data.eevee_evolution_rules.day_default
-              : data.eevee_evolution_rules.night_default
+          chosenForm = (hour >= 6 && hour < 18 ? rules.day_default : rules.night_default) ?? ''
         } else {
           const fallback = ['fire_stone', 'water_stone', 'thunder_stone'][decisions.eevee_fallback_index]
-          chosenForm = data.eevee_evolution_rules[fallback]
+          chosenForm = rules[fallback] ?? ''
         }
       }
       s.eevee_form = chosenForm
       if (usedStone) {
-        s.items[usedStone] -= 1
-        if (s.items[usedStone] <= 0) delete s.items[usedStone]
+        // usedStone was found in s.items above — the inventory exists.
+        const inv = s.items as Record<string, number>
+        inv[usedStone] -= 1
+        if (inv[usedStone] <= 0) delete inv[usedStone]
       }
     }
 
     // Log stage TRANSITIONS in (prevLevel, newLevel]. Eevee L30: log once.
-    const stages: Json[] = data.lineages?.[lineage]?.stages ?? []
+    const stages: StageDef[] = data.lineages?.[lineage]?.stages ?? []
     const transitions = stages
       .filter((st) => st.min_level > prevLevel && st.min_level <= newLevel)
       .map((st) => st.min_level)
@@ -379,8 +378,8 @@ export function tick(input: TickInput): { state: Json } {
 
   // ── Session cleanup (drop sessions older than 30 days, keep current) ──
   const cutoff = new Date(now_epoch * 1000 - 30 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z')
-  const kept: Json = {}
-  for (const [k, v] of Object.entries(s.sessions) as [string, Json][]) {
+  const kept: Record<string, SessionEntry> = {}
+  for (const [k, v] of Object.entries(sessions)) {
     if (k === sid || (v.last_seen ?? '') >= cutoff) kept[k] = v
   }
   s.sessions = kept

@@ -5,6 +5,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+### Changed
+
+- **Le domaine est enfin typé : `PokemonState` / `PokemonData`** (nettoyage post-audit). Nouveau `shared/src/state-types.ts` (~230 l) : le contrat complet des deux documents persistés — `state.json` (save : compagnon, équipe/PC, pokédex, sessions, événements, stats lifetime…) et `data.json` (config + contenu : lignées, wild_pool, items, saisons…). Les **chemins de mutation** (`tick.ts`, `collection.ts`, `commands.ts` — ceux qui écrivent les sauvegardes) abandonnent `type Json = any` pour ces types stricts : un typo de champ est désormais une **erreur de compilation**, plus une corruption silencieuse de save. Exporté dans l'API publique du package (consommable par api/ et web/). Zéro dérive comportementale (goldens + fixtures inchangés). Au passage, deux bugs latents NaN corrigés (`total_shinies += 1` et `xp_bonus` sur champ absent). Le reste (`arena`/`live`/`auth`/`share`/render) sera converti avec leurs refontes respectives.
+
 ### Removed
 
 - **Hygiène infra (nettoyage post-audit)** : `shared/dist` sort de git (1,1 Mo de build commité — son seul consommateur était le submodule du repo legacy ; le `prepare: tsc` le régénère à chaque `npm ci`) ; suppression des lockfiles morts `api/package-lock.json` (antérieur au monorepo, ne contenait même pas `claude-pokemon-shared`) et `shared/package-lock.json` — les jobs CI api passent au pattern racine (`npm ci` + `npm run -w api …`, comme web) et l'audit prod couvre tout le workspace ; `engines.node` corrigé `>=14` → **`>=18`** (les bundles ciblent node18 — un install Node 16 « réussissait » puis cassait au runtime) ; whitelist `files` resserrée — le tarball npm passe de **~14 Mo à 231 Ko** (exit `lib/data/` sources, `build-data.sh`, `extract_animations.py`, dist).
