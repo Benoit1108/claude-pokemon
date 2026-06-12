@@ -33,18 +33,14 @@ jobs:
         run: npm audit --audit-level=high || echo "::warning::root deps have audit findings"
 
   security-api:
-    name: 🔒 npm audit (api/)
+    name: 🔒 npm audit (workspaces, prod, high+)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: api
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: api/package-lock.json
       - name: npm audit (prod, high+)
         run: npm audit --omit=dev --audit-level=high
 
@@ -110,52 +106,40 @@ jobs:
     name: 🐛 api — ESLint
     needs: [security-api]
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: api
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: api/package-lock.json
       - run: npm ci
-      - run: npm run lint
+      - run: npm run -w api lint
 
   api-prettier:
     name: 💅 api — Prettier check
     needs: [security-api]
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: api
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: api/package-lock.json
       - run: npm ci
-      - run: npm run format:check
+      - run: npm run -w api format:check
 
   api-typecheck:
     name: 🚨 api — TypeScript typecheck
     needs: [security-api]
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: api
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: api/package-lock.json
       - run: npm ci
-      - run: npm run typecheck
+      - run: npm run -w api typecheck
 
   # ─── Stage : quality — shared package ─────────────────────────────────────
   shared-tests:
@@ -175,7 +159,7 @@ jobs:
         run: |
           npm run -w shared build:gen
           npm run -w shared build:engine
-          if ! git diff --exit-code shared/dist shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts lib/statusline.mjs lib/pokemon.mjs; then
+          if ! git diff --exit-code shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts lib/statusline.mjs lib/pokemon.mjs; then
             echo "::error::shared dist/generated/bundles stale. Run \`npm run build:data && npm run -w shared build:engine\` and commit."
             exit 1
           fi
@@ -224,18 +208,14 @@ jobs:
     name: ✅ api — Vitest + coverage
     needs: [api-lint, api-prettier, api-typecheck]
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: api
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: api/package-lock.json
       - run: npm ci
-      - run: npm run test:coverage
+      - run: npm run -w api test:coverage
 
   # ─── Stage : quality + test + build — web side (Nuxt arena) ───────────────
   # Web jobs pin Node 22 (web's @nuxt/eslint → eslint-flat-config-utils calls

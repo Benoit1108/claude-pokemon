@@ -22,7 +22,7 @@
     "url": "https://github.com/Benoit1108/claude-pokemon/issues"
   },
   "engines": {
-    "node": ">=14"
+    "node": ">=18"
   },
   "bin": {
     "claude-pokemon": "./bin/claude-pokemon"
@@ -35,7 +35,12 @@
   },
   "files": [
     "bin/",
-    "lib/",
+    "lib/pokemon.mjs",
+    "lib/statusline.mjs",
+    "lib/data.default.json",
+    "lib/locales/",
+    "lib/sprites/",
+    "lib/sprites-mini/",
     "skills/",
     "README.md",
     "LICENSE"
