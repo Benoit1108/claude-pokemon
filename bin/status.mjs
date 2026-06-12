@@ -15,7 +15,8 @@ console.log(`\n${B}claude-pokemon — état de l’installation${R}\n`)
 
 console.log(`${B}Fichiers :${R}`)
 const files = [
-  join(TARGET, 'data.json'),
+  join(TARGET, 'content.json'),
+  join(TARGET, 'config.json'),
   join(TARGET, 'state.json'),
   join(TARGET, 'statusline.mjs'),
   join(TARGET, 'pokemon.mjs'),

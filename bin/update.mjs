@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-// Native Node updater (Phase R3d-5). Windows-native equivalent of
-// bin/update.sh: refresh runtime files + sprites, migrate data.json (preserve
-// user customisations + state.json). No bash / jq / chafa.
-import { copyFileSync, cpSync, existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from 'node:fs'
+// Native Node updater. Refresh runtime files + sprites + game content
+// (state.json and config.json preserved). No bash / jq / chafa.
+import { copyFileSync, cpSync, existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -11,20 +10,10 @@ const ROOT = process.env.CLAUDE_POKEMON_ROOT || join(fileURLToPath(new URL('.', 
 const HOME = process.env.HOME || homedir()
 const TARGET = join(HOME, '.claude', 'pokemon')
 
-console.log('Update : runtime + sprites + migration data.json (state.json préservé)')
+console.log('Update : runtime + sprites + contenu (state.json et config.json préservés)')
 if (!existsSync(TARGET)) {
   console.error("Pas installé. Lance d'abord : npx claude-pokemon install")
   process.exit(1)
-}
-
-// jq `*` semantics: recursive object merge, right operand wins; non-objects
-// (incl. arrays) overwritten by the right operand.
-const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v)
-function deepMerge(a, b) {
-  if (!isObj(a) || !isObj(b)) return b
-  const out = { ...a }
-  for (const k of Object.keys(b)) out[k] = k in a ? deepMerge(a[k], b[k]) : b[k]
-  return out
 }
 
 const cp = (rel, dst) => copyFileSync(join(ROOT, rel), join(TARGET, dst))
@@ -49,16 +38,28 @@ for (const sub of ['sprites', 'sprites-mini']) {
 }
 console.log('  runtime + sprites synchronisés')
 
-// Merge defaults into the user's data.json: user wins (recursive *), but the
-// game-design constants + content arrays are force-propagated from defaults.
-const def = JSON.parse(readFileSync(join(ROOT, 'lib', 'data.default.json'), 'utf8'))
-const userPath = join(TARGET, 'data.json')
-const user = JSON.parse(readFileSync(userPath, 'utf8'))
-const merged = deepMerge(def, user)
-merged.thresholds = def.thresholds
-merged.version = def.version
-merged.wild_pool = def.wild_pool
-writeFileSync(userPath, JSON.stringify(merged, null, 2) + '\n')
-console.log('  data.json migré (customisations préservées)')
+// Game CONTENT: copied fresh from the package — no merge, no allowlist (the
+// old deepMerge let the user copy win on every content key forever; balance
+// changes to lineages/items/… never reached existing users). User config lives
+// in config.json and is simply left alone. Mirrors entry-io.ts CONFIG_KEYS.
+const CONFIG_KEYS = [
+  'language', 'theme', 'display_sprite_in_statusline', 'enable_animations', 'enable_sound',
+  'shiny_mode', 'shiny_hunter_mode', 'starter_pick', 'stats_share', 'arena',
+]
+cp('lib/data.default.json', 'content.json')
+const configPath = join(TARGET, 'config.json')
+const legacyDataPath = join(TARGET, 'data.json')
+if (!existsSync(configPath) && existsSync(legacyDataPath)) {
+  // One-time migration of the pre-split single data.json.
+  const legacy = JSON.parse(readFileSync(legacyDataPath, 'utf8'))
+  const cfg = {}
+  for (const k of CONFIG_KEYS) if (k in legacy) cfg[k] = legacy[k]
+  writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n')
+  renameSync(legacyDataPath, legacyDataPath + '.pre-split.bak')
+  console.log('  data.json migré → content.json + config.json (backup .pre-split.bak)')
+} else if (!existsSync(configPath)) {
+  writeFileSync(configPath, '{}\n')
+}
+console.log('  contenu synchronisé (config.json préservé)')
 
 console.log('✓ Update terminé. Relance Claude Code.')

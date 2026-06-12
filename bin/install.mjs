@@ -4,7 +4,7 @@
 // Node entrypoints (statusline.mjs / pokemon.mjs) — the runtime is bash-free.
 // Idempotent; preserves an existing state.json / data.json. Backs up
 // settings.json.
-import { mkdirSync, copyFileSync, cpSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, copyFileSync, cpSync, existsSync, readFileSync, writeFileSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -48,18 +48,32 @@ for (const sub of ['sprites', 'sprites-mini']) {
 }
 ok('Runtime (bundles Node + locales + sprites + skill) installé')
 
-// data.json — preserve an existing one; default otherwise. Animations off.
-if (!existsSync(join(TARGET, 'data.json'))) {
-  cp('lib/data.default.json', 'data.json')
-  ok('data.json initialisé (configuration par défaut)')
+// Game CONTENT: always copied fresh from the package (balance changes reach
+// every user). User CONFIG is a small separate overlay, preserved across
+// installs. Mirrors entry-io.ts CONFIG_KEYS.
+const CONFIG_KEYS = [
+  'language', 'theme', 'display_sprite_in_statusline', 'enable_animations', 'enable_sound',
+  'shiny_mode', 'shiny_hunter_mode', 'starter_pick', 'stats_share', 'arena',
+]
+cp('lib/data.default.json', 'content.json')
+const configPath = join(TARGET, 'config.json')
+const legacyDataPath = join(TARGET, 'data.json')
+if (!existsSync(configPath)) {
+  if (existsSync(legacyDataPath)) {
+    // One-time migration of the pre-split single data.json: keep ONLY the
+    // user-owned keys; the content half is superseded by content.json.
+    const legacy = JSON.parse(readFileSync(legacyDataPath, 'utf8'))
+    const cfg = {}
+    for (const k of CONFIG_KEYS) if (k in legacy) cfg[k] = legacy[k]
+    writeFileSync(configPath, JSON.stringify(cfg, null, 2) + '\n')
+    renameSync(legacyDataPath, legacyDataPath + '.pre-split.bak')
+    ok('data.json migré → content.json + config.json (backup .pre-split.bak)')
+  } else {
+    writeFileSync(configPath, '{}\n')
+    ok('config.json initialisé (défauts du contenu)')
+  }
 } else {
-  warn('data.json existe déjà — préservé')
-}
-{
-  const dataPath = join(TARGET, 'data.json')
-  const data = JSON.parse(readFileSync(dataPath, 'utf8'))
-  data.enable_animations = false
-  writeFileSync(dataPath, JSON.stringify(data, null, 2) + '\n')
+  warn('config.json existe déjà — préservé')
 }
 
 // state.json — init a fresh egg only if missing.

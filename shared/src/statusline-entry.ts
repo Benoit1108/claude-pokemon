@@ -14,8 +14,8 @@ import { renderStatusline, type SpriteDeps } from './statusline.js'
 import { planAutoSubmit, type AutoSubmitPlan } from './autosubmit.js'
 import {
   POKEMON_DIR,
-  DATA_PATH,
   STATE_PATH,
+  loadData,
   readJsonFile,
   writeJsonAtomic,
   nowEpochSeconds,
@@ -136,12 +136,12 @@ function main(input: ClaudeInput): void {
   // A file that EXISTS but doesn't parse is FATAL — never tick from `{}` (the
   // old behavior re-initialized the save and overwrote the user's companion).
   // A missing state is fine (first run: the tick initializes a fresh egg).
-  const dataRead = readJsonFile(DATA_PATH)
+  const dataRead = loadData()
   if (!dataRead.ok) {
     process.stdout.write(
       dataRead.missing
-        ? '⚠ pokemon: data.json absent — lance `npx claude-pokemon install`'
-        : '⚠ pokemon: data.json corrompu — répare-le ou relance `npx claude-pokemon install`',
+        ? `⚠ pokemon: ${dataRead.file} absent — lance \`npx claude-pokemon install\``
+        : `⚠ pokemon: ${dataRead.file} corrompu — répare-le ou relance \`npx claude-pokemon install\``,
     )
     return
   }
@@ -150,7 +150,7 @@ function main(input: ClaudeInput): void {
     process.stdout.write('⚠ pokemon: state.json corrompu — répare-le ou restaure un backup (`npx claude-pokemon import <f>`)')
     return
   }
-  const data = dataRead.value as PokemonData
+  const data = dataRead.data as PokemonData
   let state: PokemonState = stateRead.ok ? (stateRead.value as PokemonState) : {}
 
   // Tick (in-process): RNG decisions here, pure tick() owns the logic.
