@@ -101,6 +101,47 @@ assert_engine_eq_bash() {
   assert_engine_eq_bash "[]" "[]" reset
 }
 
+# Like assert_engine_eq_bash but applies a jq patch to the seeded state first
+# (give/take need .items / .held_item, which seed() doesn't set).
+assert_engine_eq_bash_patched() {
+  local patch="$1"; shift
+  seed "[]" "[]"; jq "$patch" "$PD/state.json" > "$PD/s.tmp" && mv "$PD/s.tmp" "$PD/state.json"
+  local o_e st_e; o_e=$(bash "$STATUS" "$@" 2>/dev/null | sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'); st_e=$(jq -S . "$PD/state.json")
+  seed "[]" "[]"; jq "$patch" "$PD/state.json" > "$PD/s.tmp" && mv "$PD/s.tmp" "$PD/state.json"
+  local o_b st_b; o_b=$(POKEMON_ENGINE=/nope/engine.mjs bash "$STATUS" "$@" 2>/dev/null | sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'); st_b=$(jq -S . "$PD/state.json")
+  [ "$st_e" = "$st_b" ] || { echo "STATE DIFF ($*):"; diff <(echo "$st_b") <(echo "$st_e"); return 1; }
+  [ "$o_e" = "$o_b" ] || { echo "OUT DIFF ($*):"; diff <(echo "$o_b") <(echo "$o_e"); return 1; }
+}
+
+@test "give usage (no item): engine == bash" {
+  setup_dir
+  assert_engine_eq_bash_patched '.' give
+}
+@test "give item not in inventory: engine == bash" {
+  setup_dir
+  assert_engine_eq_bash_patched '.items={}' give lucky_egg
+}
+@test "give non-holdable item: engine == bash" {
+  setup_dir
+  assert_engine_eq_bash_patched '.items={fire_stone:1}' give fire_stone
+}
+@test "give holdable item (count>1): engine == bash" {
+  setup_dir
+  assert_engine_eq_bash_patched '.items={lucky_egg:2} | .held_item=null' give lucky_egg
+}
+@test "give holdable item (count==1 → removed): engine == bash" {
+  setup_dir
+  assert_engine_eq_bash_patched '.items={lucky_egg:1} | .held_item=null' give lucky_egg
+}
+@test "take with no held item: engine == bash" {
+  setup_dir
+  assert_engine_eq_bash_patched '.held_item=null' take
+}
+@test "take held item: engine == bash" {
+  setup_dir
+  assert_engine_eq_bash_patched '.held_item="lucky_egg" | .items={}' take
+}
+
 # ── deposit/withdraw/release validation branches (now rendered by the engine
 #    `cmd` bridge, Phase R3d-4b) — no state change, stdout must match bash. ──
 @test "deposit usage (no slot): engine == bash" {

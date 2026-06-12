@@ -3187,8 +3187,8 @@ case "${1:-}" in
   deposit)            _cmd deposit "${2:-}"            || view_deposit "${2:-}" ;;
   withdraw)           _cmd withdraw "${2:-}"           || view_withdraw "${2:-}" ;;
   release)            _cmd release "${2:-}" "${3:-}" "${4:-}" || view_release "${2:-}" "${3:-}" "${4:-}" ;;
-  give)               view_give "${2:-}" ;;
-  take)               view_take ;;
+  give)               _cmd give "${2:-}" || view_give "${2:-}" ;;
+  take)               _cmd take          || view_take ;;
   trade)              view_trade "${2:-Anonymous}" ;;
   game)               view_game "${@:2}" ;;
   recap|summary)      _render_view_live recap "${2:-}" || view_recap "${2:-}" ;;
