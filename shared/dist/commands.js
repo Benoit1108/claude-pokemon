@@ -188,6 +188,44 @@ function cmdReset(input) {
     out += bashPrintf(`  %s${L('reset.egg_awaits')}%s\n\n`, DIM, RESET);
     return { output: out, state: next, stateChanged: true };
 }
+// Port of view_give — equip a held item from the inventory.
+function cmdGive(input) {
+    const { state, data, locale } = input;
+    const L = (k, ...a) => t(locale, k, ...a);
+    let out = bashPrintf(`\n  %s%s${L('held.title')}%s\n\n`, BOLD, GOLD, RESET);
+    const id = input.args[0] ?? '';
+    if (id === '')
+        return { output: out + bashPrintf(`  %s${L('held.usage_give')}%s\n\n`, DIM, RESET), state, stateChanged: false };
+    const count = state.items?.[id] ?? 0;
+    if (count === 0)
+        return { output: out + bashPrintf(`  %s${L('held.no_inventory')}%s\n\n`, DIM, RESET), state, stateChanged: false };
+    const holdable = data.items?.[id]?.holdable ?? false;
+    if (holdable !== true)
+        return { output: out + bashPrintf(`  %s${L('held.not_holdable')}%s\n\n`, DIM, RESET), state, stateChanged: false };
+    const name = data.items?.[id]?.name ?? id;
+    const next = JSON.parse(JSON.stringify(state));
+    next.items[id] -= 1;
+    if (next.items[id] <= 0)
+        delete next.items[id];
+    next.held_item = id;
+    out += bashPrintf(`  %s${L('held.given', name)}%s\n\n`, BOLD, RESET);
+    return { output: out, state: next, stateChanged: true };
+}
+// Port of view_take — unequip the held item back to the inventory.
+function cmdTake(input) {
+    const { state, locale } = input;
+    const L = (k, ...a) => t(locale, k, ...a);
+    let out = bashPrintf(`\n  %s%s${L('held.title')}%s\n\n`, BOLD, GOLD, RESET);
+    const current = state.held_item ?? '';
+    if (current === '')
+        return { output: out + bashPrintf(`  %s${L('held.none')}%s\n\n`, DIM, RESET), state, stateChanged: false };
+    const next = JSON.parse(JSON.stringify(state));
+    next.items ??= {};
+    next.items[current] = (next.items[current] ?? 0) + 1;
+    next.held_item = null;
+    out += bashPrintf(`  %s${L('held.taken')}%s\n\n`, BOLD, RESET);
+    return { output: out, state: next, stateChanged: true };
+}
 export function runCommand(input) {
     switch (input.name) {
         case 'deposit':
@@ -204,6 +242,10 @@ export function runCommand(input) {
             return cmdShiny(input);
         case 'reset':
             return cmdReset(input);
+        case 'give':
+            return cmdGive(input);
+        case 'take':
+            return cmdTake(input);
         default:
             return null;
     }
