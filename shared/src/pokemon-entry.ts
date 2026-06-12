@@ -5,12 +5,9 @@
 // session ops to disk, and prints the output. Bundled to lib/pokemon.mjs.
 //
 // State/data writes are atomic (tmp + rename); no flock (the /pokemon commands
-// are rare + sequential — the tick path keeps its own lock in statusline). Bash
-// pokemon-status.sh stays the registered command until this is proven byte-exact
-// and the switch is flipped (Phase R3d-5 piece 5).
-import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs'
+// are rare + sequential — the statusline tick has its own single-writer path).
+import { readFileSync, writeFileSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
-import { homedir } from 'node:os'
 import { randomBytes } from 'node:crypto'
 import { renderView } from './render/index.js'
 import { renderLeaderboard, renderAggregate, type NetResult } from './render/net.js'
@@ -21,27 +18,22 @@ import { runArena } from './arena.js'
 import { runLogin, runLogout } from './auth.js'
 import { evoField } from './render/views.js'
 import type { Locale } from './render/i18n.js'
+import {
+  POKEMON_DIR,
+  DATA_PATH,
+  STATE_PATH,
+  readJsonFile,
+  writeJsonAtomic,
+  nowEpochSeconds,
+  epochToIso,
+} from './entry-io.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
 
-const POKEMON_DIR = process.env.POKEMON_DIR || join(homedir(), '.claude', 'pokemon')
-const DATA_PATH = join(POKEMON_DIR, 'data.json')
-const STATE_PATH = join(POKEMON_DIR, 'state.json')
 const SECRET_FILE = join(POKEMON_DIR, '.arena-secret')
 const SESSION_FILE = join(POKEMON_DIR, '.session')
 
-function readJson(path: string): Json {
-  try {
-    return JSON.parse(readFileSync(path, 'utf8'))
-  } catch {
-    return {}
-  }
-}
-function writeJsonAtomic(path: string, obj: Json): void {
-  writeFileSync(path + '.tmp', JSON.stringify(obj) + '\n')
-  renameSync(path + '.tmp', path)
-}
 function readText(path: string): string {
   try {
     return readFileSync(path, 'utf8')
@@ -64,9 +56,8 @@ const out = (s: string): void => {
   process.stdout.write(s)
 }
 
-// POKEMON_NOW_EPOCH is a test seam (mirrors the bash `date` shim); unset → real.
-const nowEpoch = process.env.POKEMON_NOW_EPOCH ? Number(process.env.POKEMON_NOW_EPOCH) : Math.floor(Date.now() / 1000)
-const nowIso = new Date(nowEpoch * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z')
+const nowEpoch = nowEpochSeconds()
+const nowIso = epochToIso(nowEpoch)
 
 async function getJson(endpoint: string, path: string): Promise<NetResult> {
   if (!endpoint) return { endpoint: false }
@@ -100,16 +91,35 @@ async function main(): Promise<void> {
   const sub = argv[0] ?? ''
   const rest = argv.slice(1)
 
-  const data = readJson(DATA_PATH)
-  const state = readJson(STATE_PATH)
+  // EXISTS-but-corrupt is fatal (a save must never be silently re-initialized);
+  // missing state is fine (fresh install — the views render an empty egg).
+  const dataRead = readJsonFile(DATA_PATH)
+  if (!dataRead.ok) {
+    process.stderr.write(
+      dataRead.missing
+        ? "data.json absent — lance d'abord : npx claude-pokemon install\n"
+        : `data.json corrompu (${dataRead.error}) — répare-le ou relance : npx claude-pokemon install\n`,
+    )
+    process.exitCode = 1
+    return
+  }
+  const stateRead = readJsonFile(STATE_PATH)
+  if (!stateRead.ok && !stateRead.missing) {
+    process.stderr.write(
+      `state.json corrompu (${stateRead.error}) — répare-le ou restaure un backup : npx claude-pokemon import <fichier>\n`,
+    )
+    process.exitCode = 1
+    return
+  }
+  const data: Json = dataRead.value
+  const state: Json = stateRead.ok ? stateRead.value : {}
   const lang = data.language ?? 'fr'
-  let localePath = join(POKEMON_DIR, 'locales', `${lang}.json`)
   let locale: Locale
   try {
-    locale = JSON.parse(readFileSync(localePath, 'utf8'))
+    locale = JSON.parse(readFileSync(join(POKEMON_DIR, 'locales', `${lang}.json`), 'utf8'))
   } catch {
-    localePath = join(POKEMON_DIR, 'locales', 'fr.json')
-    locale = readJson(localePath)
+    const fallback = readJsonFile(join(POKEMON_DIR, 'locales', 'fr.json'))
+    locale = (fallback.ok ? fallback.value : {}) as Locale
   }
 
   // ── render views (no state change) ─────────────────────────────────────────

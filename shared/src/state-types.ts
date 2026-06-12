@@ -140,6 +140,8 @@ export interface PokemonState {
   current_quiz?: CurrentQuiz
   last_game_completed_at?: string
   last_trade_at?: string
+  /** Last opt-in stats auto-submit (24h cooldown, see autosubmit.ts). */
+  last_stats_submit_at?: string
   created_at?: string
   last_updated?: string
 }
