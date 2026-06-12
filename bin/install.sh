@@ -26,7 +26,9 @@ title() { printf "\n%s%s%s\n\n" "$B" "$1" "$R"; }
 title "1/5 Vérification des prérequis"
 
 MISSING=()
-for tool in jq chafa flock curl awk; do
+# chafa is no longer a user prerequisite — sprites ship pre-rendered (Phase
+# R3d-5). It stays a maintainer build tool (scripts/build-sprites.sh).
+for tool in jq flock curl awk; do
   if command -v "$tool" >/dev/null; then
     ok "$tool $(command -v "$tool")"
   else
@@ -106,29 +108,26 @@ cp "$ROOT/lib/pokemon-status.sh" "$TARGET_POKEMON_STATUS"
 chmod +x "$TARGET_STATUSLINE" "$TARGET_POKEMON_STATUS"
 ok "Scripts statusline + pokemon-status installés"
 
-# ── 4. Download sprites ─────────────────────────────────────────────────────
-title "4/5 Téléchargement des sprites Showdown (~50 fichiers, ~1MB)"
+# ── 4. Install sprites (pre-rendered, shipped in the package) ───────────────
+title "4/5 Installation des sprites (pré-rendus, sans chafa ni réseau)"
 
-ids=$(jq -r '.lineages | to_entries[] | .value.stages[].showdown_id' "$TARGET_DIR/data.json" | sort -u)
-
-dl_count=0
+# Sprites are pre-rendered to ANSI .txt at package-build time and shipped in
+# the tarball (Phase R3d-5). Copy them in instead of downloading + chafa-ing.
+sprite_count=0
 for variant in normal shiny; do
-  url_path="gen5"
-  [ "$variant" = "shiny" ] && url_path="gen5-shiny"
-  for id in $ids; do
-    out_std="$TARGET_DIR/sprites/$variant/$id.txt"
-    out_mini="$TARGET_DIR/sprites-mini/$variant/$id.txt"
-    if [ -s "$out_std" ] && [ -s "$out_mini" ]; then continue; fi
-    tmp=$(mktemp --suffix=.png)
-    if curl -sf -o "$tmp" "https://play.pokemonshowdown.com/sprites/$url_path/$id.png" 2>/dev/null; then
-      chafa --size 32x16 --symbols block "$tmp" > "$out_std" 2>/dev/null
-      chafa --size 24x12 --symbols block "$tmp" > "$out_mini" 2>/dev/null
-      dl_count=$((dl_count+1))
-    fi
-    rm -f "$tmp"
+  for sub in sprites sprites-mini; do
+    src="$ROOT/lib/$sub/$variant"
+    dst="$TARGET_DIR/$sub/$variant"
+    [ -d "$src" ] || continue
+    mkdir -p "$dst"
+    for f in "$src"/*.txt; do
+      [ -e "$f" ] || continue
+      cp "$f" "$dst/"
+      [ "$sub" = "sprites" ] && sprite_count=$((sprite_count + 1))
+    done
   done
 done
-ok "$dl_count sprites téléchargés et convertis (lignées de base)"
+ok "$sprite_count sprites installés (lignées de base)"
 
 # ── 4b. Optional: extract animated frames (requires Python + Pillow) ────────
 title "4b/5 Animations (optionnel)"

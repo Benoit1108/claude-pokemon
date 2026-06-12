@@ -14,6 +14,11 @@ state.json
 sprites/
 sprites-mini/
 sprites-mini-anim/
+# …except the pre-rendered sprites shipped in the package (Phase R3d-5).
+!/lib/sprites/
+!/lib/sprites/**
+!/lib/sprites-mini/
+!/lib/sprites-mini/**
 .npmrc
 
 # Demo recording intermediates (the final GIF lives in assets/)

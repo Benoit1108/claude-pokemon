@@ -9,15 +9,15 @@ echo
 
 # Prereqs
 echo "${B}Prérequis :${R}"
-for tool in jq chafa flock curl awk gifsicle; do
+for tool in jq flock curl awk chafa gifsicle; do
   if command -v "$tool" >/dev/null; then
     printf "  ${G}✓${R} %-10s %s\n" "$tool" "$(command -v "$tool")"
   else
-    if [ "$tool" = "gifsicle" ]; then
-      printf "  ${Y}-${R} %-10s ${D}optionnel (animations)${R}\n" "$tool"
-    else
-      printf "  ${E}✗${R} %-10s ${E}MANQUANT${R}\n" "$tool"
-    fi
+    case "$tool" in
+      gifsicle) printf "  ${Y}-${R} %-10s ${D}optionnel (animations)${R}\n" "$tool" ;;
+      chafa)    printf "  ${Y}-${R} %-10s ${D}optionnel (sprites pré-rendus — build only)${R}\n" "$tool" ;;
+      *)        printf "  ${E}✗${R} %-10s ${E}MANQUANT${R}\n" "$tool" ;;
+    esac
   fi
 done
 
