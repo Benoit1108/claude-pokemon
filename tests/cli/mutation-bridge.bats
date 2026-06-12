@@ -101,6 +101,49 @@ assert_engine_eq_bash() {
   assert_engine_eq_bash "[]" "[]" reset
 }
 
+# ── deposit/withdraw/release validation branches (now rendered by the engine
+#    `cmd` bridge, Phase R3d-4b) — no state change, stdout must match bash. ──
+@test "deposit usage (no slot): engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[$(mon fire 50 A)]" "[]" deposit
+}
+@test "deposit empty team: engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[]" "[]" deposit 0
+}
+@test "deposit out-of-range slot: engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[$(mon fire 50 A)]" "[]" deposit 5
+}
+@test "withdraw usage (no slot): engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[]" "[$(mon grass 8 X)]" withdraw
+}
+@test "withdraw empty pc: engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[]" "[]" withdraw 0
+}
+@test "release usage (no args): engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[$(mon fire 50 A)]" "[]" release
+}
+@test "release bad area: engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[$(mon fire 50 A)]" "[]" release foo 0
+}
+@test "release confirm-required (no --confirm): engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[$(mon fire 50 A),$(mon water 50 B)]" "[]" release team 1
+}
+@test "release out-of-range: engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[$(mon fire 50 A)]" "[]" release team 9 --confirm
+}
+@test "release empty team: engine == bash" {
+  setup_dir
+  assert_engine_eq_bash "[]" "[]" release team 0 --confirm
+}
+
 @test "hatch from an egg (no active companion): engine path == bash fallback" {
   setup_dir
   local s_e st_e o_e st_b o_b
