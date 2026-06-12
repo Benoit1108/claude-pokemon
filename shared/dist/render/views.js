@@ -157,9 +157,10 @@ export function renderTeam(ctx) {
     let out = renderRoster(ctx, 'team', t(ctx.locale, 'team.title'));
     const pcCount = Array.isArray(ctx.state.pc_storage) ? ctx.state.pc_storage.length : 0;
     if (pcCount > 0) {
-        // The "bancale" line: 6 conversions, 5 args → trailing %s is empty (bash
-        // reuses the format-with-missing-arg). Frozen exactly by the R3a fixture.
-        out += bashPrintf(`  %s${t(ctx.locale, 'team.pc_overflow')} — %sbash %s pc%s\n\n`, DIM, pcCount, DIM, ctx.scriptName, RESET);
+        // Clean hint (R3d-6): the old bash line garbled the script path via a
+        // printf format-reuse quirk; now the source of truth, we point at the
+        // /pokemon slash command (bash/node-agnostic, always correct).
+        out += bashPrintf(`  %s%s%s\n\n`, DIM, t(ctx.locale, 'team.pc_overflow', pcCount), RESET);
     }
     return out;
 }
@@ -514,7 +515,7 @@ export function renderMain(ctx) {
     out += '\n';
     // Footer
     out += bashPrintf(`  %s${tPad(locale, 'common.subcommands', 22)}%s : team, pc, pokedex, stats, badges, switch, hatch, deposit, withdraw, give, take, trade, reset, --shiny\n`, DIM, RESET);
-    out += bashPrintf(`  %s${tPad(locale, 'common.example', 22)}%s : %sbash ~/.claude/pokemon-status.sh team%s\n\n`, DIM, RESET, DIM, RESET);
+    out += bashPrintf(`  %s${tPad(locale, 'common.example', 22)}%s : %s/pokemon team%s\n\n`, DIM, RESET, DIM, RESET);
     return out;
 }
 // ── recap ────────────────────────────────────────────────────────────────────

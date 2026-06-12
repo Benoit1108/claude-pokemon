@@ -1,0 +1,23 @@
+
+  📜 RECAP DE SESSION
+
+  Période : session courante · durée : 2h05
+
+  📊 Progression
+    Tokens consommés       :  4 000
+    XP gagnés              :  +1 000 000
+    Amitié gagnée          :  +40
+    Niveau                 :  Lv.3 → Lv.5
+
+  🎉 Events (5)
+    11:00  🍇 🍒 Baie +500 XP
+    11:10  🎯 🌿 Bulbizarre rencontré
+    11:20  ⚔️  battle won vs Bulbizarre Lv.12 (+900 XP)
+    11:30  💢 battle lost vs Bulbizarre Lv.40
+    11:40  🎁 🔥 Pierre Feu obtenu
+
+  ✨ Évolutions
+    11:45  ✨ Lv.16 — Reptincel
+
+  🏆 Badges débloqués
+    11:46  🌱  Premier pas

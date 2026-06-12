@@ -151,7 +151,7 @@
   "team": {
     "title": "TEAM",
     "empty": "Empty team. Reach Lv.100 or use /pokemon switch / withdraw to add a buddy.",
-    "pc_overflow": "+ %d buddy(s) in PC storage — bash %s pc"
+    "pc_overflow": "+ %d buddy(s) in PC storage — /pokemon pc"
   },
   "pc": {
     "title": "PC STORAGE",

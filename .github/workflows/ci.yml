@@ -55,12 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - run: |
-          shellcheck -S error \
-            bin/install.sh bin/uninstall.sh bin/status.sh \
-            bin/update.sh bin/export.sh bin/import.sh \
-            lib/lib.sh lib/statusline.sh lib/pokemon-status.sh \
-            lib/build-data.sh
+      # Runtime is bash-free (R3d-6); only the maintainer build scripts remain.
+      - run: shellcheck -S error lib/build-data.sh scripts/build-sprites.sh scripts/ci-pre-push.sh
 
   bash-json:
     name: 🌍 Data JSON validate + locale parity + build drift
@@ -203,25 +199,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      # chafa is no longer needed at install — sprites ship pre-rendered.
-      - run: sudo apt-get install -y jq util-linux curl
-      - run: bash -n bin/install.sh
-      - run: bash -n bin/update.sh
-      # Node-native installers (Phase R3d-5) — syntax check.
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Node-native install tooling (R3d-6 — bash-free) — syntax check.
       - run: for f in install update uninstall status export import; do node --check "bin/$f.mjs"; done
       - run: node --check bin/claude-pokemon
       - name: Verify required files
         run: |
-          test -f lib/lib.sh
+          test -f lib/engine.mjs
+          test -f lib/statusline.mjs
+          test -f lib/pokemon.mjs
           test -f lib/data.default.json
           test -f lib/locales/fr.json
           test -f lib/locales/en.json
-          test -f lib/statusline.sh
-          test -f lib/pokemon-status.sh
           test -f skills/pokemon/SKILL.md
-          # Sprites must ship pre-rendered (Phase R3d-5 — no chafa at install).
+          # Sprites must ship pre-rendered (R3d-5 — no chafa at install).
           test -f lib/sprites/normal/charmander.txt
-          test -f lib/sprites/shiny/charmander.txt
           test -f lib/sprites-mini/normal/charmander.txt
           n=$(find lib/sprites lib/sprites-mini -name '*.txt' | wc -l)
           test "$n" -eq 148 || { echo "expected 148 sprite .txt, found $n"; exit 1; }

@@ -1,0 +1,33 @@
+
+  BADGES
+
+   ▢  Naissance             
+     Première éclosion
+   ▢  Premier pas           
+     Première évolution (Lv.16+)
+   ⭐  Étoile filante         2026-05-08
+     Premier shiny obtenu
+   ▢  Champion              
+     Atteindre Lv.100
+   ▢  Centurion             
+     100M tokens cumulés (toute vie)
+   ▢  Constellation         
+     5 shinies en collection
+   ▢  Maître Pokédex      
+     5 lignées rencontrées
+   ▢  Maître Feu           
+     Lv.100 sur Lignée Feu
+   ▢  Maître Eau           
+     Lv.100 sur Lignée Eau
+   ▢  Maître Plante        
+     Lv.100 sur Lignée Plante
+   ▢  Maître Électrik     
+     Lv.100 sur Lignée Électrik
+   ▢  Maître Eevee         
+     Lv.100 sur Lignée Eevee
+   ▢  Maître Germignon     
+     Lv.100 sur Lignée Plante (Johto)
+   ▢  Maître Héricendre   
+     Lv.100 sur Lignée Feu (Johto)
+   ▢  Maître Kaiminus      
+     Lv.100 sur Lignée Eau (Johto)

@@ -1,0 +1,26 @@
+
+╭─ TRAINER CARD ────────────────────────────────────────────────╮
+
+  🎮 Sacha#abcd ✦
+  Dresseur depuis —
+
+  Compagnon actif        :  🐉 Dracaufeu · Lv.40
+  Lignée                 :  🔥 Lignée Feu
+
+  📊 Stats lifetime
+  Tokens consommés       :  123 456 789
+  XP cumulés (active)    :  60 000 000
+  Amitié (lifetime)      :  550
+  Shinies trouvés        :  4
+  Lignées complétées     :  2 / 8
+  Quizz gagnés           :  0 / 0
+  Pokédex sauvages       :  5 / 251
+
+  🏆 Badges acquis (1)
+  ⭐ · Étoile filante
+
+  📡 Stats partagées
+  Activé · anon_id abcd1234ef · sync auto every 24h
+  Pseudo public : Sacha
+  ⚔️  Arena : Phase 2 — coming soon (combats async, leaderboard ELO)
+╰──────────────────────────────────────────────────────────────╯
