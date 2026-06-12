@@ -3174,16 +3174,16 @@ _mutate_state() {
 }
 
 case "${1:-}" in
-  --shiny)            toggle_shiny ;;
-  reset)              ceremonial_reset ;;
+  --shiny)            _cmd shiny || toggle_shiny ;;
+  reset)              _cmd reset || ceremonial_reset ;;
   team)               _render_view_live team    || view_team ;;
   pc|storage)         _render_view_live pc      || view_pc ;;
   pokedex|dex)        _render_view_live pokedex || view_pokedex ;;
   stats|lifetime)     _render_view_live stats   || view_stats ;;
   badges)             _render_view_live badges  || view_badges ;;
   inventory|inv|sac)  _render_view_live inventory || view_inventory ;;
-  switch)             view_switch "${2:-}" ;;
-  hatch)              view_hatch "${2:-}" ;;
+  switch)             _cmd switch "${2:-}"  || view_switch "${2:-}" ;;
+  hatch)              _cmd hatch "${2:-}"   || view_hatch "${2:-}" ;;
   deposit)            _cmd deposit "${2:-}"            || view_deposit "${2:-}" ;;
   withdraw)           _cmd withdraw "${2:-}"           || view_withdraw "${2:-}" ;;
   release)            _cmd release "${2:-}" "${3:-}" "${4:-}" || view_release "${2:-}" "${3:-}" "${4:-}" ;;
