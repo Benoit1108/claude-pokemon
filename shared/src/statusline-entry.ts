@@ -1,35 +1,31 @@
 // Native Node statusline entrypoint (Phase R3d-5). Replaces statusline.sh:
 // reads Claude Code's stdin JSON, runs the tick (in-process — no engine spawn),
-// writes state, and renders the companion line. Bundled to lib/statusline.mjs.
+// writes state, fires the opt-in stats auto-submit, and renders the companion
+// line. Bundled to lib/statusline.mjs.
 //
-// This is the first piece of the bash-free entrypoint. It imports the shared
-// engine directly (zero spawn overhead on the hot path). The randomness for the
-// tick is computed here (the "decisions in" pattern), keeping tick() pure.
-//
-// NOTE: auto-submit (stats push) is intentionally not yet ported here — it has
-// no effect on the rendered line, and statusline.sh stays the registered
-// command until the switch is validated. It must be added before that switch.
-import { readFileSync, writeFileSync, renameSync, readdirSync } from 'node:fs'
+// It imports the shared engine directly (zero spawn overhead on the hot path).
+// The randomness for the tick is computed here (the "decisions in" pattern),
+// keeping tick() pure.
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { homedir } from 'node:os'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import { tick, type TickDecisions } from './tick.js'
 import { renderStatusline, type SpriteDeps } from './statusline.js'
+import { planAutoSubmit, type AutoSubmitPlan } from './autosubmit.js'
+import {
+  POKEMON_DIR,
+  DATA_PATH,
+  STATE_PATH,
+  readJsonFile,
+  writeJsonAtomic,
+  nowEpochSeconds,
+  epochToIso,
+} from './entry-io.js'
+import type { PokemonData, PokemonState } from './state-types.js'
 
+// Claude Code's statusline stdin payload — external schema, kept loose.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = any
-
-const POKEMON_DIR = process.env.POKEMON_DIR || join(homedir(), '.claude', 'pokemon')
-const DATA_PATH = join(POKEMON_DIR, 'data.json')
-const STATE_PATH = join(POKEMON_DIR, 'state.json')
-
-function readJson(path: string): Json {
-  try {
-    return JSON.parse(readFileSync(path, 'utf8'))
-  } catch {
-    return {}
-  }
-}
+type ClaudeInput = any
 
 function lengthOf(x: unknown): number {
   if (Array.isArray(x)) return x.length
@@ -38,15 +34,15 @@ function lengthOf(x: unknown): number {
 }
 
 // Port of pokemon_pick_starter (jq `keys` is sorted).
-function pickStarter(data: Json): string {
-  const mode = data.starter_pick ?? 'random'
+function pickStarter(data: PokemonData): string {
+  const mode = String(data.starter_pick ?? 'random')
   if (mode !== 'random' && data.lineages?.[mode]) return mode
   const keys = Object.keys(data.lineages ?? {}).sort()
   return keys[Math.floor(Math.random() * keys.length)] ?? ''
 }
 
 // Port of pokemon_roll_shiny.
-function rollShiny(data: Json, state: Json): boolean {
+function rollShiny(data: PokemonData, state: PokemonState): boolean {
   const mode = data.shiny_mode ?? 'random'
   if (mode === 'always') return true
   if (mode === 'never') return false
@@ -57,7 +53,7 @@ function rollShiny(data: Json, state: Json): boolean {
 }
 
 // Port of _pokemon_tick_decisions.
-function computeDecisions(state: Json, data: Json): TickDecisions {
+function computeDecisions(state: PokemonState, data: PokemonData): TickDecisions {
   const lineage = state.lineage ?? ''
   const bl = lengthOf(data.berries)
   const wl = lengthOf(data.wild_pool)
@@ -76,7 +72,7 @@ function computeDecisions(state: Json, data: Json): TickDecisions {
       bonus_xp_raw: Math.floor(Math.random() * (bxmax - bxmin + 1)) + bxmin,
     },
     item: { fired: Math.random() < Number(data.item_drop_chance_on_encounter ?? 0.3), index: il ? Math.floor(Math.random() * il) : 0 },
-  } as TickDecisions
+  }
 }
 
 function gitBranch(cwd: string): string {
@@ -97,13 +93,29 @@ function basename(p: string): string {
   return parts[parts.length - 1] || p
 }
 
+// Fire-and-forget stats push: a DETACHED node child does the POST (≤5s), so
+// the statusline never blocks on the network (mirror of bash's disowned curl).
+// Failures are silent by design — the next tick past the cooldown retries.
+function fireAutoSubmit(plan: AutoSubmitPlan): void {
+  const code =
+    "fetch(process.argv[1],{method:'POST',headers:{'content-type':'application/json'},body:process.argv[2],signal:AbortSignal.timeout(5000)}).catch(()=>{})"
+  try {
+    spawn(process.execPath, ['-e', code, plan.url, JSON.stringify(plan.payload)], {
+      detached: true,
+      stdio: 'ignore',
+    }).unref()
+  } catch {
+    // spawn failure must never break the statusline
+  }
+}
+
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = []
   for await (const chunk of process.stdin) chunks.push(chunk as Buffer)
   return Buffer.concat(chunks).toString('utf8')
 }
 
-function main(input: Json): void {
+function main(input: ClaudeInput): void {
   const cwd = input.workspace?.current_dir ?? input.cwd ?? ''
   const model = input.model?.display_name ?? ''
   const used = input.context_window?.used_percentage
@@ -121,15 +133,29 @@ function main(input: Json): void {
   }
   contextTokens = Math.round(Number(contextTokens ?? 0)) || 0
 
-  const data = readJson(DATA_PATH)
-  let state = readJson(STATE_PATH)
+  // A file that EXISTS but doesn't parse is FATAL — never tick from `{}` (the
+  // old behavior re-initialized the save and overwrote the user's companion).
+  // A missing state is fine (first run: the tick initializes a fresh egg).
+  const dataRead = readJsonFile(DATA_PATH)
+  if (!dataRead.ok) {
+    process.stdout.write(
+      dataRead.missing
+        ? '⚠ pokemon: data.json absent — lance `npx claude-pokemon install`'
+        : '⚠ pokemon: data.json corrompu — répare-le ou relance `npx claude-pokemon install`',
+    )
+    return
+  }
+  const stateRead = readJsonFile(STATE_PATH)
+  if (!stateRead.ok && !stateRead.missing) {
+    process.stdout.write('⚠ pokemon: state.json corrompu — répare-le ou restaure un backup (`npx claude-pokemon import <f>`)')
+    return
+  }
+  const data = dataRead.value as PokemonData
+  let state: PokemonState = stateRead.ok ? (stateRead.value as PokemonState) : {}
 
   // Tick (in-process): RNG decisions here, pure tick() owns the logic.
-  // POKEMON_NOW_EPOCH is a test seam (mirrors the bash `date` shim) so the
-  // differential against statusline.sh can pin the clock; unset → real time.
-  const epochOverride = process.env.POKEMON_NOW_EPOCH
-  const nowEpoch = epochOverride ? Number(epochOverride) : Math.floor(Date.now() / 1000)
-  const now = new Date(nowEpoch * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z')
+  const nowEpoch = nowEpochSeconds()
+  const now = epochToIso(nowEpoch)
   const pct = usedStr === '' ? null : Math.round(Number(used))
   try {
     const res = tick({
@@ -143,8 +169,14 @@ function main(input: Json): void {
       decisions: computeDecisions(state, data),
     })
     state = res.state
-    writeFileSync(STATE_PATH + '.tmp', JSON.stringify(state) + '\n')
-    renameSync(STATE_PATH + '.tmp', STATE_PATH)
+    // Opt-in stats auto-submit (≤1×/24h): stamp BEFORE the single atomic write
+    // so a crash after the stamp just skips one push (never double-submits).
+    const plan = planAutoSubmit(state, data, now, nowEpoch)
+    if (plan) {
+      state.last_stats_submit_at = now
+      fireAutoSubmit(plan)
+    }
+    writeJsonAtomic(STATE_PATH, state)
   } catch {
     // If the tick fails, still render from whatever state we have.
   }
@@ -176,7 +208,7 @@ function main(input: Json): void {
 }
 
 readStdin().then((raw) => {
-  let input: Json = {}
+  let input: ClaudeInput = {}
   try {
     input = JSON.parse(raw)
   } catch {
