@@ -51,7 +51,11 @@ SHIM
 teardown() { [ -n "${SRV:-}" ] && kill "$SRV" 2>/dev/null; [ -n "${TD:-}" ] && rm -rf "$TD"; }
 strip() { sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'; }
 
-STATE0='{"version":2,"lineage":"fire","current_level":40,"total_xp":120000000,"is_shiny":false,"evolution_flash_remaining":0,"evolution_history":[{"level":1,"name":"Salamèche"},{"level":36,"name":"Dracaufeu"}],"sessions":{},"badges":[],"team":[{"lineage":"water","is_shiny":false,"level":30,"max_stage":"Carabaffe","evolution_history":[],"items":{},"created_at":"2026-05-01T00:00:00Z"}],"pc_storage":[],"pokedex":{},"items":{"lucky_egg":1},"held_item":null,"friendship":10,"lifetime_stats":{"total_tokens":100,"total_evolutions":1,"total_shinies":0,"max_level":40,"games_won":0,"games_played":0},"created_at":"2026-06-01T00:00:00Z"}'
+# xp_rebalance_v2_acknowledged:true so the one-time notice doesn't fire — the
+# Node main view acks it (faithful to view_main), but the legacy engine render
+# bridge (_render_view_live) doesn't, so without the flag the two paths would
+# diverge on a pre-existing bridge bug that's irrelevant post-bash.
+STATE0='{"version":2,"lineage":"fire","current_level":40,"total_xp":120000000,"is_shiny":false,"evolution_flash_remaining":0,"xp_rebalance_v2_acknowledged":true,"evolution_history":[{"level":1,"name":"Salamèche"},{"level":36,"name":"Dracaufeu"}],"sessions":{},"badges":[],"team":[{"lineage":"water","is_shiny":false,"level":30,"max_stage":"Carabaffe","evolution_history":[],"items":{},"created_at":"2026-05-01T00:00:00Z"}],"pc_storage":[],"pokedex":{},"items":{"lucky_egg":1},"held_item":null,"friendship":10,"lifetime_stats":{"total_tokens":100,"total_evolutions":1,"total_shinies":0,"max_level":40,"games_won":0,"games_played":0},"created_at":"2026-06-01T00:00:00Z"}'
 
 # pokemon.mjs vs the registered pokemon-status.sh (BOTH engine-backed — that's
 # the behavior pokemon.mjs replaces), from the same seed. Compares stripped
