@@ -20,6 +20,7 @@ import { renderLeaderboard, renderAggregate } from './render/net.js';
 import { runConfig } from './config.js';
 import { runShare, buildSubmitPayload, renderForget, renderSubmit } from './share.js';
 import { runArena } from './arena.js';
+import { runLogin, runLogout } from './auth.js';
 import { randomBytes } from 'node:crypto';
 import { teamToPc, pcToTeamOrActive, releaseSlot, switchCompanion, hatch, ceremonialReset, } from './collection.js';
 import { thresholdFor, levelFromXp, xpToNext, progressPct, xpMultiplier, typeMatchMultiplier, } from './index.js';
@@ -115,9 +116,11 @@ async function main() {
     const isConfig = command === 'config';
     const isShare = command === 'share';
     const isArena = command === 'arena';
+    const isLogin = command === 'login';
+    const isLogout = command === 'logout';
     const handler = command ? COMMANDS[command] : undefined;
-    if (!handler && !isRender && !isMutate && !isTick && !isNet && !isConfig && !isShare && !isArena) {
-        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config', 'share', 'arena'].join(', ')})\n`);
+    if (!handler && !isRender && !isMutate && !isTick && !isNet && !isConfig && !isShare && !isArena && !isLogin && !isLogout) {
+        process.stderr.write(`engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config', 'share', 'arena', 'login', 'logout'].join(', ')})\n`);
         process.exit(2);
     }
     const raw = await readStdin();
@@ -257,6 +260,29 @@ async function main() {
         });
         if (result === null)
             process.exit(3); // live/pair/link/unknown → bash fallback
+        process.stdout.write(JSON.stringify(result));
+        return;
+    }
+    if (isLogin) {
+        // Interactive: human-facing text streams to stderr (bash leaves it on the
+        // tty); only the session op goes to stdout (captured). Exit 1 when no token
+        // was obtained, mirroring view_login's failure returns.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const inp = input;
+        const { sessionToken } = await runLogin({ endpoint: inp.endpoint ?? '', clientId: inp.client_id ?? '' }, {
+            write: (s) => process.stderr.write(s),
+            sleep: (seconds) => new Promise((r) => setTimeout(r, seconds * 1000)),
+            now: () => Math.floor(Date.now() / 1000),
+        });
+        process.stdout.write(JSON.stringify({ session: sessionToken ? { action: 'save', value: sessionToken } : null }));
+        if (!sessionToken)
+            process.exit(1);
+        return;
+    }
+    if (isLogout) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const inp = input;
+        const result = await runLogout({ endpoint: inp.endpoint ?? '', token: inp.token ?? '' });
         process.stdout.write(JSON.stringify(result));
         return;
     }

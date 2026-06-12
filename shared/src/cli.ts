@@ -20,6 +20,7 @@ import { renderLeaderboard, renderAggregate, type NetResult } from './render/net
 import { runConfig, type ConfigInput } from './config.js'
 import { runShare, buildSubmitPayload, renderForget, renderSubmit, type ShareInput } from './share.js'
 import { runArena, type ArenaInput } from './arena.js'
+import { runLogin, runLogout } from './auth.js'
 import { randomBytes } from 'node:crypto'
 import type { Locale } from './render/i18n.js'
 import {
@@ -155,10 +156,14 @@ async function main(): Promise<void> {
   const isConfig = command === 'config'
   const isShare = command === 'share'
   const isArena = command === 'arena'
+  const isLogin = command === 'login'
+  const isLogout = command === 'logout'
   const handler = command ? COMMANDS[command] : undefined
-  if (!handler && !isRender && !isMutate && !isTick && !isNet && !isConfig && !isShare && !isArena) {
+  if (
+    !handler && !isRender && !isMutate && !isTick && !isNet && !isConfig && !isShare && !isArena && !isLogin && !isLogout
+  ) {
     process.stderr.write(
-      `engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config', 'share', 'arena'].join(', ')})\n`,
+      `engine: unknown command ${JSON.stringify(command)} (expected: ${[...Object.keys(COMMANDS), 'render', 'mutate', 'tick', 'net', 'config', 'share', 'arena', 'login', 'logout'].join(', ')})\n`,
     )
     process.exit(2)
   }
@@ -302,6 +307,31 @@ async function main(): Promise<void> {
       now: inp.now ?? new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
     } as ArenaInput)
     if (result === null) process.exit(3) // live/pair/link/unknown → bash fallback
+    process.stdout.write(JSON.stringify(result))
+    return
+  }
+  if (isLogin) {
+    // Interactive: human-facing text streams to stderr (bash leaves it on the
+    // tty); only the session op goes to stdout (captured). Exit 1 when no token
+    // was obtained, mirroring view_login's failure returns.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const inp = input as any
+    const { sessionToken } = await runLogin(
+      { endpoint: inp.endpoint ?? '', clientId: inp.client_id ?? '' },
+      {
+        write: (s) => process.stderr.write(s),
+        sleep: (seconds) => new Promise((r) => setTimeout(r, seconds * 1000)),
+        now: () => Math.floor(Date.now() / 1000),
+      },
+    )
+    process.stdout.write(JSON.stringify({ session: sessionToken ? { action: 'save', value: sessionToken } : null }))
+    if (!sessionToken) process.exit(1)
+    return
+  }
+  if (isLogout) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const inp = input as any
+    const result = await runLogout({ endpoint: inp.endpoint ?? '', token: inp.token ?? '' })
     process.stdout.write(JSON.stringify(result))
     return
   }

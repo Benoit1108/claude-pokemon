@@ -3078,6 +3078,41 @@ _arena() {
   jq -j '.output' <<<"$out"
 }
 
+# GitHub device-flow login via the engine (Phase R3d-4b). The engine runs the
+# poll loop itself and streams its progress to the tty (stderr, which we leave
+# attached) ; we capture only the session op on stdout and persist the token.
+# Unlike the other bridges this owns its own fallback (it returns view_login's
+# own exit code, so `_login || view_login` would wrongly re-run the flow on a
+# normal login failure). rc mirrors view_login (non-zero when no session).
+_login() {
+  if ! pokemon_engine_available; then view_login; return; fi
+  local endpoint client_id req out rc token
+  endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
+  client_id="${POKEMON_GITHUB_CLIENT_ID:-Ov23liiZGFKFIT78EDcz}"
+  req=$(jq -cn --arg ep "$endpoint" --arg cid "$client_id" '{endpoint:$ep, client_id:$cid}') \
+    || { view_login; return; }
+  # stdout (session op) captured ; stderr (human text) streams to the terminal.
+  out=$(printf '%s' "$req" | node "$POKEMON_ENGINE" login); rc=$?
+  token=$(jq -r '.session.value // empty' <<<"$out" 2>/dev/null)
+  [ -n "$token" ] && _session_save "$token"
+  return "$rc"
+}
+
+# Logout via the engine — best-effort revoke + a session-clear op (bash still
+# owns the .session file). Self-fallback to view_logout on any engine trouble.
+_logout() {
+  if ! pokemon_engine_available; then view_logout; return; fi
+  local endpoint token req out rc
+  token=$(_session_load)
+  endpoint=$(jq -r '.stats_share.endpoint // ""' "$POKEMON_DATA")
+  req=$(jq -cn --arg ep "$endpoint" --arg tok "$token" '{endpoint:$ep, token:$tok}') \
+    || { view_logout; return; }
+  out=$(printf '%s' "$req" | node "$POKEMON_ENGINE" logout 2>/dev/null); rc=$?
+  if [ "$rc" -ne 0 ] || [ -z "$out" ]; then view_logout; return; fi
+  [ "$(jq -r '.session.action // "none"' <<<"$out" 2>/dev/null)" = "clear" ] && _session_clear
+  jq -j '.output' <<<"$out"
+}
+
 # Apply a single collection transform via the TS engine (Phase R3d-2). Reads
 # $POKEMON_STATE; on success echoes the NEW state JSON (rc 0). rc 4 = op refused
 # (e.g. team full). rc 1 = engine unavailable / error → caller falls back to the
@@ -3130,8 +3165,8 @@ case "${1:-}" in
   bio)                _config bio "${@:2}"   || view_bio "${@:2}" ;;
   pins|pinned)        _config pins "${@:2}"  || view_pins "${@:2}" ;;
   arena)              _arena "${@:2}" || view_arena "${@:2}" ;;
-  login)              view_login ;;
-  logout)             view_logout ;;
+  login)              _login ;;
+  logout)             _logout ;;
   leaderboard|lb)     _render_net leaderboard "${2:-total_tokens}" "${3:-10}" || view_leaderboard "${2:-total_tokens}" "${3:-10}" ;;
   aggregate|global)   _render_net aggregate || view_aggregate ;;
   *)                  _render_view_live main || view_main ;;
