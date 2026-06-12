@@ -60,6 +60,27 @@ const out = (s: string): void => {
 const nowEpoch = nowEpochSeconds()
 const nowIso = epochToIso(nowEpoch)
 
+// ── Routing tables (KNOWN is DERIVED from them — no third hand-kept list) ────
+// Alias → view name (no state change).
+const renderViews: Record<string, string> = {
+  team: 'team', pc: 'pc', storage: 'pc', pokedex: 'pokedex', dex: 'pokedex',
+  stats: 'stats', lifetime: 'stats', badges: 'badges', inventory: 'inventory',
+  inv: 'inventory', sac: 'inventory', 'trainer-card': 'trainer-card', card: 'trainer-card',
+}
+// Alias → engine `cmd` runner name (mutating commands).
+const cmdMap: Record<string, string> = {
+  '--shiny': 'shiny', reset: 'reset', switch: 'switch', hatch: 'hatch',
+  deposit: 'deposit', withdraw: 'withdraw', release: 'release', give: 'give', take: 'take',
+  trade: 'trade', game: 'game',
+}
+// Subcommands with dedicated if-branches in main().
+const DIRECT_SUBS = [
+  'recap', 'summary', 'quote', 'bio', 'pins', 'pinned',
+  'leaderboard', 'lb', 'aggregate', 'global', 'stats-share', 'share', 'arena', 'login', 'logout',
+] as const
+// Anything NOT known falls to the `main` view (the historical `*)` default).
+const KNOWN = new Set<string>([...Object.keys(renderViews), ...Object.keys(cmdMap), ...DIRECT_SUBS])
+
 async function getJson(endpoint: string, path: string): Promise<NetResult> {
   if (!endpoint) return { endpoint: false }
   const r = await httpJson(`${endpoint}${path}`)
@@ -120,11 +141,6 @@ async function main(): Promise<void> {
   }
 
   // ── render views (no state change) ─────────────────────────────────────────
-  const renderViews: Record<string, string> = {
-    team: 'team', pc: 'pc', storage: 'pc', pokedex: 'pokedex', dex: 'pokedex',
-    stats: 'stats', lifetime: 'stats', badges: 'badges', inventory: 'inventory',
-    inv: 'inventory', sac: 'inventory', 'trainer-card': 'trainer-card', card: 'trainer-card',
-  }
   if (sub in renderViews || sub === '' || !KNOWN.has(sub)) {
     const view = renderViews[sub] ?? 'main'
     let sprite: string[] | null = null
@@ -158,11 +174,6 @@ async function main(): Promise<void> {
   }
 
   // ── mutating commands via the engine `cmd` runner ──────────────────────────
-  const cmdMap: Record<string, string> = {
-    '--shiny': 'shiny', reset: 'reset', switch: 'switch', hatch: 'hatch',
-    deposit: 'deposit', withdraw: 'withdraw', release: 'release', give: 'give', take: 'take',
-    trade: 'trade', game: 'game',
-  }
   if (sub in cmdMap) {
     const name = cmdMap[sub]
     const res = runCommand({ name, args: rest, state, data, locale, now: nowIso, nowEpoch, decisions: cmdDecisions(data) })
@@ -280,15 +291,5 @@ async function main(): Promise<void> {
   const { output } = renderView({ view: 'main', state, data, locale, lang, nowEpoch })
   out(output)
 }
-
-// Subcommands handled below the render-view branch — anything NOT here falls to
-// the `main` view (the bash `*)` default).
-const KNOWN = new Set([
-  '--shiny', 'reset', 'switch', 'hatch', 'deposit', 'withdraw', 'release', 'give', 'take',
-  'trade', 'game', 'recap', 'summary', 'quote', 'bio', 'pins', 'pinned',
-  'leaderboard', 'lb', 'aggregate', 'global', 'stats-share', 'share', 'arena', 'login', 'logout',
-  'team', 'pc', 'storage', 'pokedex', 'dex', 'stats', 'lifetime', 'badges', 'inventory', 'inv', 'sac',
-  'trainer-card', 'card',
-])
 
 void main()

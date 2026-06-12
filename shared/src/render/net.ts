@@ -6,14 +6,11 @@ import { bashPrintf } from './printf.js'
 import { t, type Locale } from './i18n.js'
 import { fmtInt, tPad, lineageEmoji } from './views.js'
 import { sanitizeForTerminal } from '../http.js'
+import { RESET, BOLD, DIM, GOLD } from './ansi.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
 
-const RESET = '\x1b[0m'
-const BOLD = '\x1b[1m'
-const DIM = '\x1b[2m'
-const GOLD = '\x1b[33m'
 
 export type NetResult = { endpoint: false } | { fetchFailed: true } | { resp: Json }
 

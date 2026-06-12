@@ -9,14 +9,11 @@ import { t, type Locale } from './render/i18n.js'
 import { lineageEmoji } from './render/views.js'
 import { runLive } from './live.js'
 import { httpJson, describeFailure, describeBody, sanitizeForTerminal } from './http.js'
+import { RESET, BOLD, DIM, GOLD } from './render/ansi.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
 
-const RESET = '\x1b[0m'
-const BOLD = '\x1b[1m'
-const DIM = '\x1b[2m'
-const GOLD = '\x1b[33m'
 
 // Port of _arena_build_team — null when there's no active companion.
 export function buildTeam(state: Json, anonId: string, displayName: string): Json | null {

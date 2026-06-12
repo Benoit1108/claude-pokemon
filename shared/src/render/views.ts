@@ -7,6 +7,7 @@
 // views (stats, main, recap, trainer-card) + the pokedex grid come next.
 import { bashPrintf } from './printf.js'
 import { t, type Locale } from './i18n.js'
+import { RESET, BOLD, DIM, GOLD } from './ansi.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
@@ -25,12 +26,6 @@ export interface RenderContext {
   sprite?: string[] | null
 }
 
-// ANSI (mirrors lib/pokemon-status.sh). Stripped by the parity test; kept so the
-// eventual bash-free entrypoint (R3d) renders in colour.
-const RESET = '\x1b[0m'
-const BOLD = '\x1b[1m'
-const DIM = '\x1b[2m'
-const GOLD = '\x1b[33m' // theme accent placeholder (pokemon_theme_accent)
 
 // jq string interpolation renders null/absent as the literal "null".
 function jqStr(v: unknown): string {

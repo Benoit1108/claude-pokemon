@@ -7,14 +7,11 @@
 // tick vs render) so a future refactor can touch one without the others.
 import { bashPrintf } from './render/printf.js'
 import { t, type Locale } from './render/i18n.js'
+import { RESET, BOLD, DIM, GOLD } from './render/ansi.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
 
-const RESET = '\x1b[0m'
-const BOLD = '\x1b[1m'
-const DIM = '\x1b[2m'
-const GOLD = '\x1b[33m'
 
 const charLen = (s: string): number => [...s].length
 
