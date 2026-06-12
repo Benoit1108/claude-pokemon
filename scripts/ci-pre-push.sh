@@ -82,10 +82,10 @@ run "shared generated data + dist + engine bundle in sync" bash -c '
   npm run -s -w shared build:gen >/dev/null
   npm run -s -w shared build:engine >/dev/null
   if ! git diff --exit-code --quiet \
-      shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts shared/dist lib/statusline.mjs lib/pokemon.mjs; then
+      shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts lib/statusline.mjs lib/pokemon.mjs; then
     echo "  ::error:: shared generated data / dist / bundles stale. Run \`npm run build:data\` and stage the result."
     git --no-pager diff --stat \
-      shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts shared/dist lib/statusline.mjs lib/pokemon.mjs
+      shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts lib/statusline.mjs lib/pokemon.mjs
     exit 1
   fi
 '

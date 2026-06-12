@@ -29,3 +29,4 @@ sprites-mini-anim/
 # scripts ARE committed — they define team conventions, not user prefs).
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+shared/dist/
