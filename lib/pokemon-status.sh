@@ -3017,20 +3017,26 @@ _config() {
 # Persists data.json only when changed.
 _share() {
   pokemon_engine_available || return 1
-  local lang locale req out rc changed
+  local lang locale req out rc dchanged schanged
   lang=$(jq -r '.language // "fr"' "$POKEMON_DATA" 2>/dev/null || echo fr)
   locale="$POKEMON_LOCALES_DIR/$lang.json"
   [ -f "$locale" ] || locale="$POKEMON_LOCALES_DIR/fr.json"
-  req=$(jq -cn --slurpfile dt "$POKEMON_DATA" --slurpfile lc "$locale" \
-    '{data: $dt[0], locale: $lc[0]}' 2>/dev/null) || return 1
+  req=$(jq -cn --slurpfile dt "$POKEMON_DATA" --slurpfile st "$POKEMON_STATE" --slurpfile lc "$locale" \
+    '{data: $dt[0], state: $st[0], locale: $lc[0]}' 2>/dev/null) || return 1
   out=$(printf '%s' "$req" | node "$POKEMON_ENGINE" share "$@" 2>/dev/null); rc=$?
   [ "$rc" -ne 0 ] && return 1
   [ -n "$out" ] || return 1
-  changed=$(jq -r '.changed' <<<"$out" 2>/dev/null) || return 1
-  if [ "$changed" = "true" ]; then
+  dchanged=$(jq -r '.dataChanged' <<<"$out" 2>/dev/null) || return 1
+  schanged=$(jq -r '.stateChanged' <<<"$out" 2>/dev/null) || return 1
+  if [ "$dchanged" = "true" ]; then
     jq '.data' <<<"$out" > "$POKEMON_DATA.tmp" 2>/dev/null || return 1
     [ -s "$POKEMON_DATA.tmp" ] || { rm -f "$POKEMON_DATA.tmp"; return 1; }
     mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+  fi
+  if [ "$schanged" = "true" ]; then
+    jq '.state' <<<"$out" > "$POKEMON_STATE.tmp" 2>/dev/null || return 1
+    [ -s "$POKEMON_STATE.tmp" ] || { rm -f "$POKEMON_STATE.tmp"; return 1; }
+    mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
   fi
   jq -j '.output' <<<"$out"
 }

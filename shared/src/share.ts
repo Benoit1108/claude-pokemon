@@ -30,6 +30,107 @@ export interface ShareOutput {
   changed: boolean
 }
 
+// ── Network subcommands (forget / submit) ───────────────────────────────────
+// The fetch happens in the `share` command (Node); these render + mutate given
+// the result, so they stay pure/testable.
+
+// Port of _share_build_payload (lib/pokemon-status.sh): the strict submit
+// whitelist from data.stats_share + state.
+export function buildSubmitPayload(
+  data: Json,
+  state: Json,
+  anonId: string,
+  clientVer: string,
+  displayName: string,
+  now: string,
+): Json {
+  const share = data.stats_share ?? {}
+  const ls = state.lifetime_stats ?? {}
+  const orNull = (v: string): string | null => (v === '' ? null : v)
+  return {
+    anon_id: anonId,
+    display_name: orNull(displayName),
+    quote: orNull(share.quote ?? ''),
+    bio: orNull(share.bio ?? ''),
+    pinned_badges: share.pinned_badges ?? [],
+    schema_version: 1,
+    client_version: clientVer,
+    submitted_at: now,
+    stats: {
+      lifetime: {
+        total_tokens: ls.total_tokens ?? 0,
+        total_evolutions: ls.total_evolutions ?? 0,
+        total_shinies: ls.total_shinies ?? 0,
+        max_level: ls.max_level ?? 0,
+        total_compagnons: ls.total_compagnons ?? 0,
+        lineages_completed: ls.lineages_completed ?? [],
+        games_won: ls.games_won ?? 0,
+        games_played: ls.games_played ?? 0,
+      },
+      active: {
+        lineage: state.lineage ?? null,
+        current_level: state.current_level ?? 0,
+        is_shiny: state.is_shiny ?? false,
+      },
+      badges: (state.badges ?? []).map((b: Json) => b.id),
+      pokedex_seen_count: Object.keys(state.pokedex_wild ?? {}).length,
+      pokedex_seen_ids: Object.keys(state.pokedex_wild ?? {}),
+    },
+  }
+}
+
+const SHARE_RESET = '\x1b[0m'
+const SHARE_BOLD = '\x1b[1m'
+const SHARE_DIM = '\x1b[2m'
+const SHARE_GOLD = '\x1b[33m'
+const shareTitle = (locale: Locale): string =>
+  bashPrintf(`\n  %s%s${t(locale, 'share.title')}%s\n\n`, SHARE_BOLD, SHARE_GOLD, SHARE_RESET)
+
+// forget: the command fetches DELETE /v1/forget?anon_id; ok = success.
+export function renderForget(data: Json, locale: Locale, anonId: string, ok: boolean): ShareOutput {
+  const d: Json = JSON.parse(JSON.stringify(data))
+  let out = shareTitle(locale)
+  let changed = false
+  if (!anonId) {
+    out += bashPrintf(`  %s${t(locale, 'share.no_id')}%s\n\n`, SHARE_DIM, SHARE_RESET)
+  } else if (ok) {
+    d.stats_share ??= {}
+    d.stats_share.enabled = false
+    d.stats_share.anon_id = null
+    changed = true
+    out += bashPrintf(`  %s${t(locale, 'share.forgotten', anonId)}%s\n\n`, SHARE_GOLD, SHARE_RESET)
+  } else {
+    out += bashPrintf(`  %s${t(locale, 'share.forget_failed')}%s\n\n`, SHARE_DIM, SHARE_RESET)
+  }
+  return { data: d, output: out, changed }
+}
+
+// submit: the command fetches POST /v1/submit; code = HTTP status.
+export function renderSubmit(
+  state: Json,
+  locale: Locale,
+  enabled: boolean,
+  code: number,
+  cooldownS: number,
+  now: string,
+): { state: Json; output: string; changed: boolean } {
+  const s: Json = JSON.parse(JSON.stringify(state))
+  let out = shareTitle(locale)
+  let changed = false
+  if (!enabled) {
+    out += bashPrintf(`  %s${t(locale, 'share.not_enabled')}%s\n\n`, SHARE_DIM, SHARE_RESET)
+  } else if (code === 200) {
+    s.last_stats_submit_at = now
+    changed = true
+    out += bashPrintf(`  %s${t(locale, 'share.submit_ok')}%s\n\n`, SHARE_GOLD, SHARE_RESET)
+  } else if (code === 429) {
+    out += bashPrintf(`  %s${t(locale, 'share.cooldown', Math.floor(cooldownS / 3600))}%s\n\n`, SHARE_DIM, SHARE_RESET)
+  } else {
+    out += bashPrintf(`  %s${t(locale, 'share.submit_failed', code)}%s\n\n`, SHARE_DIM, SHARE_RESET)
+  }
+  return { state: s, output: out, changed }
+}
+
 /** Returns null for subcommands the engine doesn't own (forget/submit/unknown)
  *  → the bash dispatcher falls back. */
 export function runShare(input: ShareInput): ShareOutput | null {

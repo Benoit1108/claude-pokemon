@@ -18,7 +18,7 @@ import { renderView } from './render/index.js';
 import { tick } from './tick.js';
 import { renderLeaderboard, renderAggregate } from './render/net.js';
 import { runConfig } from './config.js';
-import { runShare } from './share.js';
+import { runShare, buildSubmitPayload, renderForget, renderSubmit } from './share.js';
 import { randomBytes } from 'node:crypto';
 import { teamToPc, pcToTeamOrActive, releaseSlot, switchCompanion, hatch, ceremonialReset, } from './collection.js';
 import { thresholdFor, levelFromXp, xpToNext, progressPct, xpMultiplier, typeMatchMultiplier, } from './index.js';
@@ -182,16 +182,64 @@ async function main() {
         return;
     }
     if (isShare) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const inp = input;
-        const result = runShare({
-            args: process.argv.slice(3),
-            data: inp.data,
-            locale: inp.locale,
-            anonId: randomBytes(4).toString('hex'),
-        });
+        const data = inp.data;
+        const state = inp.state;
+        const locale = inp.locale;
+        const sub = process.argv[3] ?? '';
+        const endpoint = data?.stats_share?.endpoint ?? '';
+        const nowIso = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+        if (sub === 'forget') {
+            const anonId = data?.stats_share?.anon_id ?? '';
+            let ok = false;
+            if (anonId && endpoint) {
+                try {
+                    const r = await fetch(`${endpoint}/v1/forget?anon_id=${anonId}`, { method: 'DELETE' });
+                    ok = r.ok && (await r.text()).length > 0;
+                }
+                catch {
+                    ok = false;
+                }
+            }
+            const res = renderForget(data, locale, anonId, ok);
+            process.stdout.write(JSON.stringify({ data: res.data, state, output: res.output, dataChanged: res.changed, stateChanged: false }));
+            return;
+        }
+        if (sub === 'submit' || sub === 'push') {
+            const enabled = data?.stats_share?.enabled === true;
+            let code = 0;
+            let cooldownS = 0;
+            if (enabled && endpoint) {
+                const payload = buildSubmitPayload(data, state, data.stats_share.anon_id ?? '', data.version ?? 'unknown', data.stats_share.display_name ?? '', nowIso);
+                try {
+                    const r = await fetch(`${endpoint}/v1/submit`, {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+                    code = r.status;
+                    if (code === 429) {
+                        try {
+                            cooldownS = (await r.json()).cooldown_remaining_s ?? 0;
+                        }
+                        catch {
+                            cooldownS = 0;
+                        }
+                    }
+                }
+                catch {
+                    code = 0;
+                }
+            }
+            const res = renderSubmit(state, locale, enabled, code, cooldownS, nowIso);
+            process.stdout.write(JSON.stringify({ data, state: res.state, output: res.output, dataChanged: false, stateChanged: res.changed }));
+            return;
+        }
+        const result = runShare({ args: process.argv.slice(3), data, locale, anonId: randomBytes(4).toString('hex') });
         if (result === null)
-            process.exit(3); // forget/submit/unknown → bash fallback
-        process.stdout.write(JSON.stringify(result));
+            process.exit(3); // unknown sub → bash fallback
+        process.stdout.write(JSON.stringify({ data: result.data, state, output: result.output, dataChanged: result.changed, stateChanged: false }));
         return;
     }
     process.stdout.write(JSON.stringify(handler(input)));
