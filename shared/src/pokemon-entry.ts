@@ -20,8 +20,9 @@ import { evoField } from './render/views.js'
 import type { Locale } from './render/i18n.js'
 import {
   POKEMON_DIR,
-  DATA_PATH,
   STATE_PATH,
+  loadData,
+  saveUserConfig,
   readJsonFile,
   writeJsonAtomic,
   nowEpochSeconds,
@@ -111,12 +112,12 @@ async function main(): Promise<void> {
 
   // EXISTS-but-corrupt is fatal (a save must never be silently re-initialized);
   // missing state is fine (fresh install — the views render an empty egg).
-  const dataRead = readJsonFile(DATA_PATH)
+  const dataRead = loadData()
   if (!dataRead.ok) {
     process.stderr.write(
       dataRead.missing
-        ? "data.json absent — lance d'abord : npx claude-pokemon install\n"
-        : `data.json corrompu (${dataRead.error}) — répare-le ou relance : npx claude-pokemon install\n`,
+        ? `${dataRead.file} absent — lance d'abord : npx claude-pokemon install\n`
+        : `${dataRead.file} corrompu (${dataRead.error}) — répare-le ou relance : npx claude-pokemon install\n`,
     )
     process.exitCode = 1
     return
@@ -129,7 +130,8 @@ async function main(): Promise<void> {
     process.exitCode = 1
     return
   }
-  const data: Json = dataRead.value
+  const data: Json = dataRead.data
+  const dataMode = dataRead.mode
   const state: Json = stateRead.ok ? stateRead.value : {}
   const lang = data.language ?? 'fr'
   let locale: Locale
@@ -188,7 +190,7 @@ async function main(): Promise<void> {
   if (sub === 'quote' || sub === 'bio' || sub === 'pins' || sub === 'pinned') {
     const cmd = sub === 'pinned' ? 'pins' : sub
     const res = runConfig({ cmd, args: rest, data, state, locale } as never)
-    if (res.changed) writeJsonAtomic(DATA_PATH, res.data)
+    if (res.changed) saveUserConfig(res.data, dataMode)
     out(res.output)
     return
   }
@@ -219,7 +221,7 @@ async function main(): Promise<void> {
         ok = r.ok && r.status >= 200 && r.status < 300 && r.body != null
       }
       const res = renderForget(data, locale, anonId, ok)
-      if (res.changed) writeJsonAtomic(DATA_PATH, res.data)
+      if (res.changed) saveUserConfig(res.data, dataMode)
       out(res.output)
       return
     }
@@ -248,7 +250,7 @@ async function main(): Promise<void> {
     }
     const res = runShare({ args: rest, data, locale, anonId: randomBytes(4).toString('hex') } as never)
     if (res) {
-      if (res.changed) writeJsonAtomic(DATA_PATH, res.data)
+      if (res.changed) saveUserConfig(res.data, dataMode)
       out(res.output)
       return
     }
@@ -258,7 +260,7 @@ async function main(): Promise<void> {
   if (sub === 'arena') {
     const res = await runArena({ args: rest, data, state, locale, arenaSecret: readText(SECRET_FILE), now: nowIso })
     if (res) {
-      if (res.dataChanged) writeJsonAtomic(DATA_PATH, res.data)
+      if (res.dataChanged) saveUserConfig(res.data, dataMode)
       if (res.stateChanged) writeJsonAtomic(STATE_PATH, res.state)
       if (res.secret?.action === 'save') writeSecretFile(SECRET_FILE, res.secret.value)
       else if (res.secret?.action === 'clear') rm(SECRET_FILE)

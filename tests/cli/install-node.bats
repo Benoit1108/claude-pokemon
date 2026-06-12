@@ -17,7 +17,8 @@ teardown() { [ -n "${TD:-}" ] && rm -rf "$TD"; }
   setup_node_install
   run node "$REPO_ROOT/bin/install.mjs"
   [ "$status" -eq 0 ]
-  for f in statusline.mjs pokemon.mjs data.json state.json locales/fr.json locales/en.json; do
+  # Split model: game CONTENT (package-fresh) + small user CONFIG overlay.
+  for f in statusline.mjs pokemon.mjs content.json config.json state.json locales/fr.json locales/en.json; do
     [ -f "$TD/.claude/pokemon/$f" ] || { echo "missing $f"; false; }
   done
   [ -f "$TD/.claude/pokemon/sprites/normal/charmander.txt" ]
@@ -27,9 +28,10 @@ teardown() { [ -n "${TD:-}" ] && rm -rf "$TD"; }
   cmd=$(jq -r '.statusLine.command' "$TD/.claude/settings.json")
   [[ "$cmd" == node* ]]
   [[ "$cmd" == *statusline.mjs ]]
-  # state.json is a fresh egg, valid JSON.
+  # state.json is a fresh egg; fresh config is an empty overlay.
   [ "$(jq -r '.current_level' "$TD/.claude/pokemon/state.json")" = "0" ]
-  [ "$(jq -r '.enable_animations' "$TD/.claude/pokemon/data.json")" = "false" ]
+  [ "$(jq -r 'keys | length' "$TD/.claude/pokemon/config.json")" = "0" ]
+  [ "$(jq -r '.wild_pool | length' "$TD/.claude/pokemon/content.json")" -gt 200 ]
 }
 
 @test "install.mjs is idempotent (preserves state.json)" {
@@ -54,17 +56,57 @@ teardown() { [ -n "${TD:-}" ] && rm -rf "$TD"; }
   [[ "$(jq -r '.statusLine.command' "$TD/.claude/settings.json")" == *statusline.mjs ]]
 }
 
-@test "update.mjs migrates data.json (force thresholds/version/wild_pool) + preserves state" {
+@test "update.mjs refreshes content + preserves config/state (no merge)" {
   setup_node_install
   node "$REPO_ROOT/bin/install.mjs" >/dev/null
   jq '.current_level=50' "$TD/.claude/pokemon/state.json" > "$TD/s.tmp"; mv "$TD/s.tmp" "$TD/.claude/pokemon/state.json"
-  # User mangles thresholds + adds a custom key; update must reset thresholds, keep the custom key.
-  jq '.thresholds=[0,1] | .my_custom="keep"' "$TD/.claude/pokemon/data.json" > "$TD/d.tmp"; mv "$TD/d.tmp" "$TD/.claude/pokemon/data.json"
+  echo '{"language":"en","theme":"retro"}' > "$TD/.claude/pokemon/config.json"
+  # Mangle the content: update must restore it package-fresh (no user-wins merge).
+  jq '.thresholds=[0,1]' "$TD/.claude/pokemon/content.json" > "$TD/c.tmp"; mv "$TD/c.tmp" "$TD/.claude/pokemon/content.json"
   run node "$REPO_ROOT/bin/update.mjs"
   [ "$status" -eq 0 ]
-  [ "$(jq -r '.current_level' "$TD/.claude/pokemon/state.json")" = "50" ]   # preserved
-  [ "$(jq -r '.my_custom' "$TD/.claude/pokemon/data.json")" = "keep" ]      # custom preserved
-  [ "$(jq -r '.thresholds | length' "$TD/.claude/pokemon/data.json")" -gt 2 ] # reset from default
+  [ "$(jq -r '.current_level' "$TD/.claude/pokemon/state.json")" = "50" ]            # state preserved
+  [ "$(jq -r '.language' "$TD/.claude/pokemon/config.json")" = "en" ]                # config preserved
+  [ "$(jq -r '.thresholds | length' "$TD/.claude/pokemon/content.json")" -gt 2 ]     # content fresh
+}
+
+@test "legacy data.json install: runtime keeps working, install migrates it" {
+  setup_node_install
+  mkdir -p "$TD/.claude/pokemon/locales"
+  cp "$REPO_ROOT"/lib/locales/*.json "$TD/.claude/pokemon/locales/"
+  cp "$REPO_ROOT/lib/pokemon.mjs" "$TD/.claude/pokemon/pokemon.mjs"
+  # A pre-split install: single data.json with user customisations inside.
+  jq '.language="en" | .stats_share={enabled:true,anon_id:"abcd1234",endpoint:"https://x"}' \
+    "$REPO_ROOT/lib/data.default.json" > "$TD/.claude/pokemon/data.json"
+  echo '{"version":2,"lineage":"fire","current_level":7,"total_xp":2000000,"xp_rebalance_v2_acknowledged":true,"evolution_history":[{"level":1,"name":"Charmander"}],"lifetime_stats":{}}' > "$TD/.claude/pokemon/state.json"
+  # 1. LEGACY mode: pokemon.mjs reads the old data.json as-is (EN locale).
+  run bash -c "POKEMON_DIR='$TD/.claude/pokemon' node '$TD/.claude/pokemon/pokemon.mjs' stats"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"LIFETIME"* || "$output" == *"STAT"* ]]
+  # 2. install migrates: config.json carries the user keys, content fresh, backup kept.
+  run node "$REPO_ROOT/bin/install.mjs"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.language' "$TD/.claude/pokemon/config.json")" = "en" ]
+  [ "$(jq -r '.stats_share.anon_id' "$TD/.claude/pokemon/config.json")" = "abcd1234" ]
+  [ "$(jq -r 'has("wild_pool")' "$TD/.claude/pokemon/config.json")" = "false" ]   # content keys dropped
+  [ -f "$TD/.claude/pokemon/data.json.pre-split.bak" ]
+  [ ! -f "$TD/.claude/pokemon/data.json" ]
+  # 3. SPLIT mode: runtime reads content ⊕ config (still EN), state intact.
+  run bash -c "POKEMON_DIR='$TD/.claude/pokemon' node '$TD/.claude/pokemon/pokemon.mjs' stats"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.current_level' "$TD/.claude/pokemon/state.json")" = "7" ]
+}
+
+@test "split mode: runtime config writes land in config.json, never content.json" {
+  setup_node_install
+  node "$REPO_ROOT/bin/install.mjs" >/dev/null
+  local PD="$TD/.claude/pokemon"
+  local content_before; content_before=$(md5sum "$PD/content.json" | cut -d' ' -f1)
+  echo '{"version":2,"lineage":"fire","current_level":7,"total_xp":2000000,"xp_rebalance_v2_acknowledged":true,"evolution_history":[],"lifetime_stats":{}}' > "$PD/state.json"
+  run bash -c "POKEMON_DIR='$PD' node '$PD/pokemon.mjs' quote 'hello world'"
+  [ "$status" -eq 0 ]
+  [ "$(jq -r '.stats_share.quote' "$PD/config.json")" = "hello world" ]
+  [ "$(md5sum "$PD/content.json" | cut -d' ' -f1)" = "$content_before" ]   # content untouched
 }
 
 @test "status.mjs reports the install + statusLine" {
