@@ -12,8 +12,17 @@ import { t, type Locale } from './render/i18n.js'
 import { tPad } from './render/views.js'
 import { teamToPc, pcToTeamOrActive, releaseSlot, switchCompanion, hatch, ceremonialReset } from './collection.js'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = any
+import type { CompanionEntry, PokemonData, PokemonState, RecentEvent, WildPoolEntry } from './state-types.js'
+
+function cloneState(state: PokemonState): PokemonState {
+  return JSON.parse(JSON.stringify(state))
+}
+
+// jq `.wild_pool[$i]["name_" + $lang]` — missing locale column renders empty.
+function wildName(w: WildPoolEntry, lang: string): string {
+  const v = (w as unknown as Record<string, unknown>)[`name_${lang}`]
+  return typeof v === 'string' ? v : ''
+}
 
 const RESET = '\x1b[0m'
 const BOLD = '\x1b[1m'
@@ -23,8 +32,8 @@ const GOLD = '\x1b[33m'
 export interface CommandInput {
   name: string
   args: string[]
-  state: Json
-  data: Json
+  state: PokemonState
+  data: PokemonData
   locale: Locale
   now: string
   /** Epoch seconds — for cooldown checks (game / trade). */
@@ -34,23 +43,23 @@ export interface CommandInput {
 }
 export interface CommandResult {
   output: string
-  state: Json
+  state: PokemonState
   stateChanged: boolean
 }
 
-function maxStage(entry: Json): string {
+function maxStage(entry: CompanionEntry | undefined): string {
   return entry?.max_stage ?? 'Œuf'
 }
 
-function lastEvoName(state: Json): string {
-  const h: Json[] = state.evolution_history ?? []
+function lastEvoName(state: PokemonState): string {
+  const h = state.evolution_history ?? []
   return (h.length ? h[h.length - 1].name : undefined) ?? 'Œuf'
 }
 
 // Port of _print_roster_entry. `%-22s` is byte-width padding (bashPrintf).
-function rosterEntry(entry: Json, slot: string, marker: string, data: Json, locale: Locale): string {
-  const lin: string = entry.lineage
-  const lvl = entry.level ?? entry.current_level
+function rosterEntry(entry: CompanionEntry, slot: string, marker: string, data: PokemonData, locale: Locale): string {
+  const lin = entry.lineage ?? ''
+  const lvl = entry.level ?? 0 // %d of a missing level rendered 0 in bash too
   const name = entry.max_stage ?? (entry.evolution_history?.length ? entry.evolution_history.at(-1)?.name : undefined) ?? 'Œuf'
   const star = entry.is_shiny === true ? `${GOLD}★${RESET} ` : ''
   const label = data.lineages?.[lin]?.label ?? lin
@@ -82,7 +91,7 @@ function cmdSwitch(input: CommandInput): CommandResult {
       out += bashPrintf(`   %s${L('switch.no_active')}%s\n`, DIM, RESET)
     }
     out += '\n'
-    const team: Json[] = state.team ?? []
+    const team = state.team ?? []
     if (team.length === 0) {
       out += bashPrintf(`   %s${L('switch.no_team')}%s\n\n`, DIM, RESET)
     } else {
@@ -91,7 +100,7 @@ function cmdSwitch(input: CommandInput): CommandResult {
     }
     return { output: out, state, stateChanged: false }
   }
-  const team: Json[] = state.team ?? []
+  const team = state.team ?? []
   const slot = Number(slotArg)
   if (slot >= team.length || slot < 0) {
     return { output: out + bashPrintf(`  %s${L('switch.out_of_range', team.length - 1)}%s\n\n`, DIM, RESET), state, stateChanged: false }
@@ -127,7 +136,7 @@ function cmdDeposit(input: CommandInput): CommandResult {
   let out = bashPrintf(`\n  %s%s${L('deposit.title')}%s\n\n`, BOLD, GOLD, RESET)
   const slotArg = input.args[0] ?? ''
   if (slotArg === '') return { output: out + bashPrintf(`  %s${L('deposit.usage')}%s\n\n`, DIM, RESET), state, stateChanged: false }
-  const team: Json[] = state.team ?? []
+  const team = state.team ?? []
   if (team.length === 0) return { output: out + bashPrintf(`  %s${L('deposit.no_team')}%s\n\n`, DIM, RESET), state, stateChanged: false }
   const slot = Number(slotArg)
   if (slot >= team.length || slot < 0) {
@@ -145,7 +154,7 @@ function cmdWithdraw(input: CommandInput): CommandResult {
   let out = bashPrintf(`\n  %s%s${L('withdraw.title')}%s\n\n`, BOLD, GOLD, RESET)
   const slotArg = input.args[0] ?? ''
   if (slotArg === '') return { output: out + bashPrintf(`  %s${L('withdraw.usage')}%s\n\n`, DIM, RESET), state, stateChanged: false }
-  const pc: Json[] = state.pc_storage ?? []
+  const pc = state.pc_storage ?? []
   if (pc.length === 0) return { output: out + bashPrintf(`  %s${L('withdraw.no_pc')}%s\n\n`, DIM, RESET), state, stateChanged: false }
   const slot = Number(slotArg)
   if (slot >= pc.length || slot < 0) {
@@ -170,8 +179,7 @@ function cmdRelease(input: CommandInput): CommandResult {
   const usage = (): CommandResult => ({ output: out + bashPrintf(`  %s${L('release.usage')}%s\n\n`, DIM, RESET), state, stateChanged: false })
   if (area === '' || slotArg === '') return usage()
   if (area !== 'team' && area !== 'pc') return usage()
-  const field = area === 'team' ? 'team' : 'pc_storage'
-  const list: Json[] = state[field] ?? []
+  const list = (area === 'team' ? state.team : state.pc_storage) ?? []
   if (list.length === 0) {
     const key = area === 'team' ? 'team.empty' : 'pc.empty'
     return { output: out + bashPrintf(`  %s${L(key)}%s\n\n`, DIM, RESET), state, stateChanged: false }
@@ -194,7 +202,7 @@ function cmdRelease(input: CommandInput): CommandResult {
 
 // Port of toggle_shiny — no title, no indent (verbatim bash printf).
 function cmdShiny(input: CommandInput): CommandResult {
-  const next: Json = JSON.parse(JSON.stringify(input.state))
+  const next = cloneState(input.state)
   const newVal = input.state.is_shiny !== true
   next.is_shiny = newVal
   const out = bashPrintf('%s✦ shiny → %s%s\n\n', GOLD, newVal ? 'true' : 'false', RESET)
@@ -227,9 +235,11 @@ function cmdGive(input: CommandInput): CommandResult {
   const holdable = data.items?.[id]?.holdable ?? false
   if (holdable !== true) return { output: out + bashPrintf(`  %s${L('held.not_holdable')}%s\n\n`, DIM, RESET), state, stateChanged: false }
   const name = data.items?.[id]?.name ?? id
-  const next: Json = JSON.parse(JSON.stringify(state))
-  next.items[id] -= 1
-  if (next.items[id] <= 0) delete next.items[id]
+  const next = cloneState(state)
+  // count > 0 was checked above — the inventory exists on the clone.
+  const inv = (next.items ??= {})
+  inv[id] -= 1
+  if (inv[id] <= 0) delete inv[id]
   next.held_item = id
   out += bashPrintf(`  %s${L('held.given', name)}%s\n\n`, BOLD, RESET)
   return { output: out, state: next, stateChanged: true }
@@ -242,7 +252,7 @@ function cmdTake(input: CommandInput): CommandResult {
   let out = bashPrintf(`\n  %s%s${L('held.title')}%s\n\n`, BOLD, GOLD, RESET)
   const current = state.held_item ?? ''
   if (current === '') return { output: out + bashPrintf(`  %s${L('held.none')}%s\n\n`, DIM, RESET), state, stateChanged: false }
-  const next: Json = JSON.parse(JSON.stringify(state))
+  const next = cloneState(state)
   next.items ??= {}
   next.items[current] = (next.items[current] ?? 0) + 1
   next.held_item = null
@@ -290,11 +300,12 @@ function typeColor(type: string): string {
   return TYPE_COLOR[type] ?? '\x1b[37m'
 }
 
-function gameHints(data: Json, lang: string, idx: number, locale: Locale): string {
-  const w = data.wild_pool[idx]
-  const name: string = w['name_' + lang]
-  const type: string = w.type
-  const dex: number = w.national_dex
+function gameHints(data: PokemonData, lang: string, idx: number, locale: Locale): string {
+  // The quiz id was drawn from this pool — the entry exists.
+  const w = (data.wild_pool ?? [])[idx]
+  const name = wildName(w, lang)
+  const type = w.type ?? ''
+  const dex = w.national_dex ?? 0
   const first = stripDiacritics(name)[0] ?? ''
   const letters = [...name].length
   const gen = dex <= 151 ? '1' : '2'
@@ -333,14 +344,14 @@ function cmdGame(input: CommandInput): CommandResult {
   const currentQuizId = state.current_quiz?.id ?? ''
   if (rawAnswer === 'skip') {
     if (currentQuizId === '') return noChange(bashPrintf(`  %s${L('game.no_quiz')}%s\n\n`, DIM, RESET))
-    const next: Json = JSON.parse(JSON.stringify(state))
+    const next = cloneState(state)
     delete next.current_quiz
     return { output: title + bashPrintf(`  %s${L('game.skipped')}%s\n\n`, DIM, RESET), state: next, stateChanged: true }
   }
 
   if (rawAnswer === '') {
     if (currentQuizId !== '') {
-      const idx = (data.wild_pool ?? []).findIndex((w: Json) => w.id === currentQuizId)
+      const idx = (data.wild_pool ?? []).findIndex((w) => w.id === currentQuizId)
       return noChange(bashPrintf(`  %s${L('game.in_progress')}%s\n\n`, DIM, RESET) + gameHints(data, lang, idx, locale))
     }
     const last = state.last_game_completed_at ?? ''
@@ -353,18 +364,18 @@ function cmdGame(input: CommandInput): CommandResult {
       }
     }
     const idx = Number(input.decisions?.pool_idx ?? 0)
-    const next: Json = JSON.parse(JSON.stringify(state))
+    const next = cloneState(state)
     next.current_quiz = { id: data.wild_pool?.[idx]?.id, started_at: now }
     return { output: title + gameHints(data, lang, idx, locale), state: next, stateChanged: true }
   }
 
   // Submit an answer.
   if (currentQuizId === '') return noChange(bashPrintf(`  %s${L('game.no_quiz')}%s\n\n`, DIM, RESET))
-  const entry = (data.wild_pool ?? []).find((w: Json) => w.id === currentQuizId)
-  const expected: string = entry?.['name_' + lang]
+  const entry = (data.wild_pool ?? []).find((w) => w.id === currentQuizId)
+  const expected = entry ? wildName(entry, lang) : ''
   const xpReward = Number(data.game_xp_reward ?? 500)
   const frReward = Number(data.game_friendship_reward ?? 2)
-  const next: Json = JSON.parse(JSON.stringify(state))
+  const next = cloneState(state)
   next.lifetime_stats ??= {}
   let out = title
   if (gameNorm(rawAnswer) === gameNorm(expected)) {
@@ -408,16 +419,17 @@ function cmdTrade(input: CommandInput): CommandResult {
   const idx = Number(input.decisions?.pool_idx ?? 0)
   const level = Number(input.decisions?.trade_level ?? 5)
   const shiny = input.decisions?.trade_shiny === true
-  const w = data.wild_pool[idx]
-  const sid: string = w.id
-  const name: string = w['name_' + lang]
-  const dex: number = w.national_dex
+  // pool_idx was rolled against this pool — the entry exists.
+  const w = (data.wild_pool ?? [])[idx]
+  const sid = w.id
+  const name = wildName(w, lang)
+  const dex = w.national_dex ?? 0
   const shinyStr = shiny ? ' ' + L('trade.shiny_received') : ''
 
-  const next: Json = JSON.parse(JSON.stringify(state))
-  const team: Json[] = next.team ?? []
+  const next = cloneState(state)
+  const team = next.team ?? []
   const destination = team.length >= 6 ? 'PC' : 'team'
-  const entry: Json = {
+  const entry: CompanionEntry = {
     lineage: 'trade-' + sid,
     is_shiny: shiny,
     level,
@@ -433,7 +445,8 @@ function cmdTrade(input: CommandInput): CommandResult {
   if (destination === 'team') next.team = [...team, entry]
   else next.pc_storage = [...(next.pc_storage ?? []), entry]
   next.last_trade_at = now
-  next.recent_events = [{ type: 'trade', id: sid, name, at: now }, ...(next.recent_events ?? [])].slice(0, 10)
+  const tradeEvent: RecentEvent = { type: 'trade', id: sid, name, at: now }
+  next.recent_events = [tradeEvent, ...(next.recent_events ?? [])].slice(0, 10)
 
   const destLabel = destination === 'team' ? L('team.title') : L('pc.title')
   let lvlStr = `Lv.${level}`
