@@ -7,6 +7,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ### Added
 
+- **Preuve « runtime 100 % Node »** (Phase R3d-6 — refonte). `tests/cli/no-bash.bats` fait tourner tout le cycle de vie (install → statusline sur plusieurs ticks → **toutes** les branches `/pokemon` → layouts sprite → export/import/status) avec `bash` **saboté** (un stub `sh` prepend au PATH qui drapeaute toute invocation) et vérifie que bash n'est **jamais** appelé. Audit confirmé : les seuls spawns externes du chemin Node sont `git` (branche, optionnel) et `qrencode` (QR pairing, optionnel). Prépare la suppression des scripts bash.
+
+### Fixed
+
+- **Notice de rééquilibrage XP : acquittement sur le chemin Node** (Phase R3d-6). `view_main` (bash) écrivait le flag `xp_rebalance_v2_acknowledged` en rendant la notice (one-shot) ; le rendu moteur étant pur, le point d'entrée `pokemon.mjs` persiste désormais ce flag après le rendu de la vue `main` — sinon la notice se réaffichait à chaque `/pokemon`. Fidèle au comportement `view_main`.
+
+### Added
+
 - **Bascule vers le runtime Node-native — Windows supporté** (Phase R3d-5, 5/5 — refonte). `bin/claude-pokemon` **préfère désormais les commandes `.mjs`** (install/update/uninstall/status/export/import en Node) et ne retombe sur les `.sh` que si un `.mjs` manque ; le **garde Windows est levé** (le runtime n'a plus besoin de bash/chafa/flock). `export`/`import` portés en Node. `SKILL.md` route `/pokemon` vers `node ~/.claude/pokemon/pokemon.mjs` (au lieu de `bash pokemon-status.sh`). `install.mjs` enregistre la statusLine vers `node statusline.mjs`. **Filet de sécurité** : les scripts bash (`lib/*.sh`, `bin/*.sh`) sont **conservés** et toujours copiés à l'install — rollback possible (re-pointer settings.json) tant que le passage à Node n'est pas éprouvé. README/prérequis mis à jour (Node seul requis). Vérifié bout-en-bout (`install-node.bats` : la statusLine Node enregistrée rend + `pokemon.mjs` dispatche). bats → **234**.
 
 ### Changed

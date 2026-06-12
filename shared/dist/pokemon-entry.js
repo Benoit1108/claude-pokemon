@@ -131,6 +131,13 @@ async function main() {
         }
         const { output } = renderView({ view, state, data, locale, lang, scriptName: 'pokemon-status.sh', nowEpoch, sprite });
         out(output);
+        // Ack the one-time XP-rebalance notice (mirrors view_main: it writes the
+        // flag while rendering). The engine render is pure, so the entrypoint
+        // persists it — else the notice would re-fire every /pokemon.
+        if (view === 'main' && Number(state.total_xp ?? 0) >= 1000 && state.xp_rebalance_v2_acknowledged !== true) {
+            state.xp_rebalance_v2_acknowledged = true;
+            writeJsonAtomic(STATE_PATH, state);
+        }
         return;
     }
     if (sub === 'recap' || sub === 'summary') {
