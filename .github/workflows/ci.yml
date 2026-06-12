@@ -207,6 +207,8 @@ jobs:
       - run: sudo apt-get install -y jq util-linux curl
       - run: bash -n bin/install.sh
       - run: bash -n bin/update.sh
+      # Node-native installers (Phase R3d-5) — syntax check.
+      - run: for f in install update uninstall status; do node --check "bin/$f.mjs"; done
       - name: Verify required files
         run: |
           test -f lib/lib.sh
