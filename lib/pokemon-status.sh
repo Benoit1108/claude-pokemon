@@ -3041,6 +3041,38 @@ _share() {
   jq -j '.output' <<<"$out"
 }
 
+# Arena commands (status/enable/disable/regenerate/opponents/challenge/battle)
+# via the TS engine (Phase R3d-4b). The engine does the HTTP fetch + battle
+# render; bash owns the arena_secret FILE (passed in, applied via the engine's
+# `secret` op). live/pair/link → exit 3 → bash fallback. Persists data.json on
+# change. rc!=0 → caller falls back.
+_arena() {
+  pokemon_engine_available || return 1
+  local lang locale secret req out rc dchanged sop
+  lang=$(jq -r '.language // "fr"' "$POKEMON_DATA" 2>/dev/null || echo fr)
+  locale="$POKEMON_LOCALES_DIR/$lang.json"
+  [ -f "$locale" ] || locale="$POKEMON_LOCALES_DIR/fr.json"
+  secret=$(_arena_load_secret 2>/dev/null || printf '')
+  req=$(jq -cn --slurpfile dt "$POKEMON_DATA" --slurpfile st "$POKEMON_STATE" --slurpfile lc "$locale" \
+    --arg sec "$secret" --arg now "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+    '{data: $dt[0], state: $st[0], locale: $lc[0], arenaSecret: $sec, now: $now}' 2>/dev/null) || return 1
+  out=$(printf '%s' "$req" | node "$POKEMON_ENGINE" arena "$@" 2>/dev/null); rc=$?
+  [ "$rc" -ne 0 ] && return 1
+  [ -n "$out" ] || return 1
+  dchanged=$(jq -r '.dataChanged' <<<"$out" 2>/dev/null) || return 1
+  if [ "$dchanged" = "true" ]; then
+    jq '.data' <<<"$out" > "$POKEMON_DATA.tmp" 2>/dev/null || return 1
+    [ -s "$POKEMON_DATA.tmp" ] || { rm -f "$POKEMON_DATA.tmp"; return 1; }
+    mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
+  fi
+  sop=$(jq -r '.secret.action // "none"' <<<"$out" 2>/dev/null)
+  case "$sop" in
+    save)  _arena_save_secret "$(jq -r '.secret.value' <<<"$out")" ;;
+    clear) _arena_clear_secret ;;
+  esac
+  jq -j '.output' <<<"$out"
+}
+
 # Apply a single collection transform via the TS engine (Phase R3d-2). Reads
 # $POKEMON_STATE; on success echoes the NEW state JSON (rc 0). rc 4 = op refused
 # (e.g. team full). rc 1 = engine unavailable / error → caller falls back to the
@@ -3092,7 +3124,7 @@ case "${1:-}" in
   quote)              _config quote "${@:2}" || view_quote "${@:2}" ;;
   bio)                _config bio "${@:2}"   || view_bio "${@:2}" ;;
   pins|pinned)        _config pins "${@:2}"  || view_pins "${@:2}" ;;
-  arena)              view_arena "${2:-status}" "${3:-}" ;;
+  arena)              _arena "${@:2}" || view_arena "${2:-status}" "${3:-}" ;;
   login)              view_login ;;
   logout)             view_logout ;;
   leaderboard|lb)     _render_net leaderboard "${2:-total_tokens}" "${3:-10}" || view_leaderboard "${2:-total_tokens}" "${3:-10}" ;;
