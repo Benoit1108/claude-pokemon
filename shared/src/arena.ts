@@ -8,6 +8,7 @@ import { bashPrintf } from './render/printf.js'
 import { t, type Locale } from './render/i18n.js'
 import { lineageEmoji } from './render/views.js'
 import { runLive } from './live.js'
+import { httpJson, describeFailure, describeBody, sanitizeForTerminal } from './http.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
@@ -32,8 +33,9 @@ export function renderBattle(locale: Locale, raw: Json): string {
   const b = raw.battle ?? raw
   const c = b.challenger ?? {}
   const d = b.defender ?? {}
-  const cName = c.display_name ?? c.anon_id
-  const dName = d.display_name ?? d.anon_id
+  // Server-controlled strings — strip terminal controls before printing raw.
+  const cName = sanitizeForTerminal(String(c.display_name ?? c.anon_id ?? ''))
+  const dName = sanitizeForTerminal(String(d.display_name ?? d.anon_id ?? ''))
   const cEmoji = lineageEmoji(c.lineage)
   const dEmoji = lineageEmoji(d.lineage)
   const cStar = c.is_shiny === true ? '★' : ''
@@ -119,22 +121,20 @@ function qrBlock(url: string): string | null {
   }
 }
 
-async function getJson(url: string, init?: RequestInit): Promise<Json | null> {
-  try {
-    const r = await fetch(url, init)
-    if (!r.ok) return null
-    return await r.json()
-  } catch {
-    return null
-  }
+// GET with curl -sf semantics: null on network failure OR non-2xx.
+async function getJson(url: string): Promise<Json | null> {
+  const r = await httpJson(url)
+  if (!r.ok || r.status < 200 || r.status >= 300) return null
+  return r.body as Json
 }
-// POST that returns the parsed body even on error (bash uses `curl -s`, not -sf).
-async function postJson(url: string, init: RequestInit): Promise<Json> {
-  try {
-    return await (await fetch(url, init)).json()
-  } catch {
-    return {}
-  }
+// POST that keeps the parsed body even on HTTP errors (the worker speaks JSON
+// on errors); `failure` carries a real description when there was no body at
+// all (network / non-JSON) — threaded into the *_failed messages instead of
+// the old bare "{}".
+async function postJson(url: string, init: RequestInit): Promise<{ body: Json; failure: string | null }> {
+  const r = await httpJson(url, init)
+  if (!r.ok) return { body: {}, failure: describeFailure(r) }
+  return { body: r.body as Json, failure: null }
 }
 
 /** Returns null for live/pair/link/unknown → bash dispatcher falls back. */
@@ -171,7 +171,7 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
       }
       const team = buildTeam(input.state, anonId, displayName)
       if (!team) { line('arena.no_active', DIM); break }
-      const resp = await postJson(`${endpoint}/v1/arena/enable`, {
+      const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/enable`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(team),
@@ -180,10 +180,10 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
       if (!sec) {
         const errCode = resp.error ?? ''
         let errMsg: string
-        if (errCode === 'validation') errMsg = (resp.details ?? []).join('; ')
+        if (errCode === 'validation') errMsg = sanitizeForTerminal((resp.details ?? []).join('; '))
         else if (errCode === 'already_enabled') errMsg = L('arena.already_enabled')
-        else if (errCode === '') errMsg = typeof resp === 'string' ? resp : JSON.stringify(resp)
-        else errMsg = errCode
+        else if (errCode === '') errMsg = failure ?? describeBody(resp)
+        else errMsg = sanitizeForTerminal(String(errCode))
         // err message as an arg, never in the format (a literal % would corrupt).
         out += bashPrintf('  %s%s%s\n\n', DIM, L('arena.enable_failed', errMsg), RESET)
         break
@@ -199,10 +199,11 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
     case 'off': {
       if (!enabled) { line('arena.already_disabled', DIM); break }
       if (!secret) { line('arena.no_secret', DIM); break }
-      await fetch(`${endpoint}/v1/arena/disable?anon_id=${anonId}`, {
+      // Best-effort — failures only surface via POKEMON_DEBUG.
+      await httpJson(`${endpoint}/v1/arena/disable?anon_id=${anonId}`, {
         method: 'DELETE',
         headers: { authorization: `Bearer ${secret}` },
-      }).catch(() => undefined)
+      })
       secretOp = { action: 'clear' }
       ensureArena().enabled = false
       dataChanged = true
@@ -215,13 +216,13 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
       if (!secret) { line('arena.no_secret', DIM); break }
       const team = buildTeam(input.state, anonId, displayName)
       if (!team) { line('arena.no_active', DIM); break }
-      const resp = await postJson(`${endpoint}/v1/arena/regenerate`, {
+      const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/regenerate`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
         body: JSON.stringify(team),
       })
       const newSec = resp.arena_secret ?? ''
-      if (!newSec) { line('arena.regen_failed', DIM, JSON.stringify(resp)); break }
+      if (!newSec) { line('arena.regen_failed', DIM, failure ?? describeBody(resp)); break }
       secretOp = { action: 'save', value: newSec }
       line('arena.regen_ok', GOLD)
       break
@@ -236,7 +237,8 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
         const shinyMark = o.is_shiny === true ? ' ★' : ''
         out += bashPrintf(
           '  %s#%s%s  %s  Lv.%s  %s%s\n',
-          DIM, o.anon_id, RESET, lineageEmoji(o.lineage), o.level, o.display_name ?? o.anon_id, shinyMark,
+          DIM, sanitizeForTerminal(String(o.anon_id ?? '')), RESET, lineageEmoji(o.lineage), o.level,
+          sanitizeForTerminal(String(o.display_name ?? o.anon_id ?? '')), shinyMark,
         )
       }
       out += bashPrintf(`\n  %s${L('arena.opponents_hint')}%s\n\n`, DIM, RESET)
@@ -248,13 +250,13 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
       if (!target) { line('arena.challenge_usage', DIM); break }
       if (!enabled) { line('arena.not_enabled', DIM); break }
       if (!secret) { line('arena.no_secret', DIM); break }
-      const resp = await postJson(`${endpoint}/v1/arena/challenge`, {
+      const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/challenge`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
         body: JSON.stringify({ challenger_anon_id: anonId, defender_anon_id: target }),
       })
       const battleId = resp.battle?.battle_id ?? ''
-      if (!battleId) { line('arena.challenge_failed', DIM, JSON.stringify(resp)); break }
+      if (!battleId) { line('arena.challenge_failed', DIM, failure ?? describeBody(resp)); break }
       ensureArena().last_battle_id = battleId
       dataChanged = true
       out += renderBattle(locale, resp)
@@ -284,13 +286,13 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
       out += bashPrintf(`\n  %s%s${L('pair.title')}%s\n\n`, BOLD, GOLD, RESET)
       if (!enabled || !anonId) { line('live.not_enabled', DIM); break }
       if (!secret) { line('arena.no_secret', DIM); break }
-      const resp = await postJson(`${endpoint}/v1/arena/pair/init`, {
+      const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/pair/init`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
         body: JSON.stringify({ anon_id: anonId }),
       })
       const code = resp.code ?? ''
-      if (!code) { line('pair.failed', DIM, JSON.stringify(resp)); break }
+      if (!code) { line('pair.failed', DIM, failure ?? describeBody(resp)); break }
       const pairUrl = `${webUrl}/pair?code=${code}`
       out += bashPrintf(`  %s${L('pair.code_label')}%s   %s%s%s\n\n`, DIM, RESET, BOLD + GOLD, code, RESET)
       out += bashPrintf(`  %s${L('pair.url_label')}%s\n`, DIM, RESET)
@@ -314,14 +316,14 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
       const upper = code.toUpperCase()
       if (!PAIR_CODE_RE.test(upper)) { out += bashPrintf(`  %s${L('link.invalid_code')}%s\n\n`, DIM, RESET); break }
       if (enabled && anonId) out += bashPrintf(`  %s${L('link.warn_existing', anonId)}%s\n\n`, DIM, RESET)
-      const resp = await postJson(`${endpoint}/v1/arena/pair/redeem`, {
+      const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/pair/redeem`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ code: upper }),
       })
       const newAnon = resp.anon_id ?? ''
       const newSecret = resp.arena_secret ?? ''
-      if (!newAnon || !newSecret) { out += bashPrintf(`  %s${L('link.failed', JSON.stringify(resp))}%s\n\n`, DIM, RESET); break }
+      if (!newAnon || !newSecret) { out += bashPrintf(`  %s${L('link.failed', failure ?? describeBody(resp))}%s\n\n`, DIM, RESET); break }
       secretOp = { action: 'save', value: newSecret }
       ensureArena()
       data.stats_share ??= {}

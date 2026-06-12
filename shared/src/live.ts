@@ -5,6 +5,7 @@
 import { bashPrintf } from './render/printf.js'
 import { t, type Locale } from './render/i18n.js'
 import { lineageEmoji } from './render/views.js'
+import { httpJson, describeFailure, describeBody, sanitizeForTerminal } from './http.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
@@ -140,14 +141,17 @@ export interface LiveOutput {
   dataChanged: boolean
 }
 
-async function jsonFetch(url: string, init?: RequestInit, failable = false): Promise<Json | null> {
-  try {
-    const r = await fetch(url, init)
-    if (failable && !r.ok) return null
-    return await r.json()
-  } catch {
-    return null
-  }
+// GET with curl -sf semantics (null on failure or non-2xx).
+async function getLive(url: string): Promise<Json | null> {
+  const r = await httpJson(url)
+  if (!r.ok || r.status < 200 || r.status >= 300) return null
+  return r.body as Json
+}
+// POST keeping the body on HTTP errors; `failure` = real description when none.
+async function postLive(url: string, init: RequestInit): Promise<{ body: Json; failure: string | null }> {
+  const r = await httpJson(url, init)
+  if (!r.ok) return { body: {}, failure: describeFailure(r) }
+  return { body: r.body as Json, failure: null }
 }
 
 export async function runLive(input: LiveInput): Promise<LiveOutput> {
@@ -177,13 +181,13 @@ export async function runLive(input: LiveInput): Promise<LiveOutput> {
     case 'invite': {
       const opp = input.args[1] ?? ''
       if (!opp) { msg('live.invite_usage', DIM); break }
-      const resp = (await jsonFetch(`${endpoint}/v1/arena/live/invite`, {
+      const { body: resp, failure } = await postLive(`${endpoint}/v1/arena/live/invite`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
         body: JSON.stringify({ challenger_anon_id: anonId, defender_anon_id: opp }),
-      })) ?? {}
+      })
       const id = resp.battle_id ?? ''
-      if (!id) { msg('live.invite_failed', DIM, JSON.stringify(resp)); break }
+      if (!id) { msg('live.invite_failed', DIM, failure ?? describeBody(resp)); break }
       setLast(id)
       out += bashPrintf(`\n  %s${L('live.invite_sent', opp, id)}%s\n`, GOLD, RESET)
       out += bashPrintf(`  %s${L('live.spectator_url', webUrl, id)}%s\n\n`, DIM, RESET)
@@ -192,14 +196,14 @@ export async function runLive(input: LiveInput): Promise<LiveOutput> {
     case 'accept': {
       const id = input.args[1] || lastId()
       if (!id) { msg('live.accept_usage', DIM); break }
-      const resp = (await jsonFetch(`${endpoint}/v1/arena/live/${id}/accept`, {
+      const { body: resp, failure } = await postLive(`${endpoint}/v1/arena/live/${id}/accept`, {
         method: 'POST',
         headers: { authorization: `Bearer ${secret}` },
-      })) ?? {}
-      if (resp.state !== 'active') { msg('live.accept_failed', DIM, JSON.stringify(resp)); break }
+      })
+      if (resp.state !== 'active') { msg('live.accept_failed', DIM, failure ?? describeBody(resp)); break }
       setLast(id)
       out += bashPrintf(`\n  %s${L('live.accepted', id)}%s\n\n`, GOLD, RESET)
-      const status = await jsonFetch(`${endpoint}/v1/arena/live/${id}`, undefined, true)
+      const status = await getLive(`${endpoint}/v1/arena/live/${id}`)
       if (status !== null) {
         out += renderLiveStatus(status, anonId)
         spectator(id)
@@ -212,7 +216,7 @@ export async function runLive(input: LiveInput): Promise<LiveOutput> {
     case '': {
       const id = input.args[1] || lastId()
       if (!id) { msg('live.status_usage', DIM); break }
-      const resp = await jsonFetch(`${endpoint}/v1/arena/live/${id}`, undefined, true)
+      const resp = await getLive(`${endpoint}/v1/arena/live/${id}`)
       if (resp === null) { msg('live.not_found', DIM, id); break }
       out += renderLiveStatus(resp, anonId)
       spectator(id)
@@ -224,12 +228,13 @@ export async function runLive(input: LiveInput): Promise<LiveOutput> {
       const id = lastId()
       if (!id) { msg('live.move_no_battle', DIM); break }
       if (!name) { msg('live.move_usage', DIM); break }
-      const resp = (await jsonFetch(`${endpoint}/v1/arena/live/${id}/commit`, {
+      const { body: resp, failure } = await postLive(`${endpoint}/v1/arena/live/${id}/commit`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
         body: JSON.stringify({ anon_id: anonId, move_id: name }),
-      })) ?? {}
-      if (resp.error) { msg('live.move_failed', DIM, resp.error); break }
+      })
+      if (failure) { msg('live.move_failed', DIM, failure); break }
+      if (resp.error) { msg('live.move_failed', DIM, sanitizeForTerminal(String(resp.error))); break }
       out += bashPrintf(`\n  %s${L('live.move_committed', name)}%s\n\n`, GOLD, RESET)
       out += renderLiveStatus(resp, anonId)
       spectator(id)
@@ -239,11 +244,11 @@ export async function runLive(input: LiveInput): Promise<LiveOutput> {
     case 'abandon': {
       const id = input.args[1] || lastId()
       if (!id) { msg('live.forfeit_usage', DIM); break }
-      const resp = (await jsonFetch(`${endpoint}/v1/arena/live/${id}/forfeit`, {
+      const { body: resp } = await postLive(`${endpoint}/v1/arena/live/${id}/forfeit`, {
         method: 'POST',
         headers: { authorization: `Bearer ${secret}` },
-      })) ?? {}
-      msg('live.forfeited', DIM, resp.state ?? '')
+      })
+      msg('live.forfeited', DIM, sanitizeForTerminal(String(resp.state ?? '')))
       break
     }
     default:

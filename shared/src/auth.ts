@@ -11,35 +11,34 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
 
+import { httpJson } from './http.js'
+
 const GITHUB_DEVICE_CODE_URL = 'https://github.com/login/device/code'
 const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
 
+// {} on any failure: the device-flow poll loop treats "no body" as
+// keep-polling (a transient network blip mustn't abort a 5-minute wait).
+// Real failures surface via POKEMON_DEBUG (httpJson traces them).
 async function formPost(url: string, params: Record<string, string>, timeoutMs: number): Promise<Json> {
-  try {
-    const r = await fetch(url, {
+  const r = await httpJson(
+    url,
+    {
       method: 'POST',
       headers: { Accept: 'application/json', 'content-type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams(params).toString(),
-      signal: AbortSignal.timeout(timeoutMs),
-    })
-    return await r.json()
-  } catch {
-    return {}
-  }
+    },
+    timeoutMs,
+  )
+  return r.ok ? (r.body as Json) : {}
 }
 
 async function jsonPost(url: string, body: Json, timeoutMs: number, headers: Record<string, string> = {}): Promise<Json> {
-  try {
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', ...headers },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(timeoutMs),
-    })
-    return await r.json()
-  } catch {
-    return {}
-  }
+  const r = await httpJson(
+    url,
+    { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) },
+    timeoutMs,
+  )
+  return r.ok ? (r.body as Json) : {}
 }
 
 // Mirror of bash's interval coercion: jq `.interval // 5`, then any non-digit
@@ -134,18 +133,9 @@ export async function runLogout(input: LogoutInput): Promise<LogoutResult> {
   const { endpoint, token } = input
   if (!token) return { output: '  Not logged in.\n', session: null }
   if (endpoint) {
-    // Best-effort server-side revocation. bash fires it into the background; a
-    // short-lived Node process must await or the socket never opens. Bare POST
-    // (auth header only, no body/content-type) to match view_logout exactly.
-    try {
-      await fetch(`${endpoint}/v1/auth/logout`, {
-        method: 'POST',
-        headers: { authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(5_000),
-      })
-    } catch {
-      // ignore — revocation is best-effort
-    }
+    // Best-effort server-side revocation (bare POST, auth header only);
+    // failures only surface via POKEMON_DEBUG.
+    await httpJson(`${endpoint}/v1/auth/logout`, { method: 'POST', headers: { authorization: `Bearer ${token}` } }, 5_000)
   }
   return { output: '  ✓ Logged out.\n', session: { action: 'clear' } }
 }
