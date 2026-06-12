@@ -27,6 +27,7 @@ import {
   nowEpochSeconds,
   epochToIso,
 } from './entry-io.js'
+import { httpJson } from './http.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
@@ -61,13 +62,9 @@ const nowIso = epochToIso(nowEpoch)
 
 async function getJson(endpoint: string, path: string): Promise<NetResult> {
   if (!endpoint) return { endpoint: false }
-  try {
-    const r = await fetch(`${endpoint}${path}`)
-    if (!r.ok) return { fetchFailed: true }
-    return { resp: await r.json() }
-  } catch {
-    return { fetchFailed: true }
-  }
+  const r = await httpJson(`${endpoint}${path}`)
+  if (!r.ok || r.status < 200 || r.status >= 300) return { fetchFailed: true }
+  return { resp: r.body }
 }
 
 // Inject randomness for trade/game (the "decisions in" pattern), forced
@@ -207,12 +204,8 @@ async function main(): Promise<void> {
       const anonId: string = data?.stats_share?.anon_id ?? ''
       let ok = false
       if (anonId && endpoint) {
-        try {
-          const r = await fetch(`${endpoint}/v1/forget?anon_id=${anonId}`, { method: 'DELETE' })
-          ok = r.ok && (await r.text()).length > 0
-        } catch {
-          ok = false
-        }
+        const r = await httpJson(`${endpoint}/v1/forget?anon_id=${anonId}`, { method: 'DELETE' })
+        ok = r.ok && r.status >= 200 && r.status < 300 && r.body != null
       }
       const res = renderForget(data, locale, anonId, ok)
       if (res.changed) writeJsonAtomic(DATA_PATH, res.data)
@@ -225,18 +218,16 @@ async function main(): Promise<void> {
       let cooldownS = 0
       if (enabled && endpoint) {
         const payload = buildSubmitPayload(data, state, data.stats_share.anon_id ?? '', data.version ?? 'unknown', data.stats_share.display_name ?? '', nowIso)
-        try {
-          const r = await fetch(`${endpoint}/v1/submit`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) })
+        const r = await httpJson(`${endpoint}/v1/submit`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        if (r.ok) {
           code = r.status
-          if (code === 429) {
-            try {
-              cooldownS = ((await r.json()) as { cooldown_remaining_s?: number }).cooldown_remaining_s ?? 0
-            } catch {
-              cooldownS = 0
-            }
-          }
-        } catch {
-          code = 0
+          if (code === 429) cooldownS = (r.body as { cooldown_remaining_s?: number })?.cooldown_remaining_s ?? 0
+        } else {
+          code = r.kind === 'parse' ? (r.status ?? 0) : 0
         }
       }
       const res = renderSubmit(state, locale, enabled, code, cooldownS, nowIso)

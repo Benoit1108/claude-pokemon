@@ -5,6 +5,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+### Changed
+
+- **HTTP unifié + diagnostics + défense anti-injection terminal** (nettoyage post-audit). Nouveau `shared/src/http.ts` : `httpJson` (résultat discriminé `ok/network/parse` avec status + détail réel) remplace les **6 wrappers fetch divergents** (arena/live/auth/entry — null vs `{}` vs marqueurs : un DNS down, un timeout, un 500 et du JSON pourri étaient indistinguables). Les messages `*_failed` affichent enfin une **vraie raison** (`network: ECONNREFUSED…`, `http 502: réponse non-JSON`) au lieu de `{}`. **`POKEMON_DEBUG=1`** trace chaque requête (méthode, URL, status/erreur) sur stderr — premier chemin de diagnostic du CLI. Sécurité : `sanitizeForTerminal` strip les caractères de contrôle (ESC/OSC — injection de titre, clipboard OSC52…) de **toutes les chaînes contrôlées par le serveur** avant affichage brut (noms du leaderboard/battle/opponents, corps d'erreur, états live) — défense en profondeur au-dessus de la validation charset côté worker.
+
 ### Fixed
 
 - **Régression : l'auto-submit des stats est restauré** (nettoyage post-audit). Le portage Node du statusline avait perdu `_pokemon_maybe_autosubmit` (le commentaire du code disait lui-même « must be added before that switch » — la bascule a eu lieu sans). Conséquence : plus aucun push automatique vers le leaderboard/arène. Nouveau `shared/src/autosubmit.ts` (`planAutoSubmit`, pur + testé) : opt-in, cooldown 24h (`last_stats_submit_at` stampé dans le save avant l'écriture atomique unique), **POST détaché** depuis le statusline (enfant Node `unref()` ≤5s — zéro blocage du hot path, miroir du `curl &` bash). Bonus : le payload auto utilise désormais `buildSubmitPayload` canonique (le clone bash avait dérivé — bio/pins manquaient).

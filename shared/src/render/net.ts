@@ -5,6 +5,7 @@
 import { bashPrintf } from './printf.js'
 import { t, type Locale } from './i18n.js'
 import { fmtInt, tPad, lineageEmoji } from './views.js'
+import { sanitizeForTerminal } from '../http.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
@@ -38,8 +39,9 @@ export function renderLeaderboard(data: Json, locale: Locale, metric: string, re
   const top: Json[] = Array.isArray(resp.top) ? resp.top : []
   top.forEach((e, i) => {
     const rank = i + 1
-    const id = e.anon_id
-    const name = e.display_name ?? ''
+    // Server-controlled — strip terminal controls before printing raw.
+    const id = sanitizeForTerminal(String(e.anon_id ?? ''))
+    const name = sanitizeForTerminal(String(e.display_name ?? ''))
     const lin = e.lineage ?? '-'
     const lvl = e.level
     const isMe = id === myId
