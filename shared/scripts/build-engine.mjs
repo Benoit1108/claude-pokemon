@@ -42,3 +42,11 @@ await build({
   outfile: join(repoRoot, 'lib', 'statusline.mjs'),
 })
 console.log('Wrote lib/statusline.mjs')
+
+// The native /pokemon dispatcher (Phase R3d-5 — in-process).
+await build({
+  ...common,
+  entryPoints: [join(sharedRoot, 'dist', 'pokemon-entry.js')],
+  outfile: join(repoRoot, 'lib', 'pokemon.mjs'),
+})
+console.log('Wrote lib/pokemon.mjs')
