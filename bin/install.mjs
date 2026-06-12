@@ -36,7 +36,6 @@ mkdirSync(SKILL_DIR, { recursive: true })
 // ── 3. Copy runtime files ────────────────────────────────────────────────────
 const cp = (rel, dst = rel) => copyFileSync(join(ROOT, rel), join(TARGET, dst))
 // Node bundles (the Windows-native runtime).
-cp('lib/engine.mjs', 'engine.mjs')
 cp('lib/statusline.mjs', 'statusline.mjs')
 cp('lib/pokemon.mjs', 'pokemon.mjs')
 cp('lib/locales/fr.json', 'locales/fr.json')

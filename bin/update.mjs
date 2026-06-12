@@ -2,7 +2,7 @@
 // Native Node updater (Phase R3d-5). Windows-native equivalent of
 // bin/update.sh: refresh runtime files + sprites, migrate data.json (preserve
 // user customisations + state.json). No bash / jq / chafa.
-import { copyFileSync, cpSync, existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -28,9 +28,15 @@ function deepMerge(a, b) {
 }
 
 const cp = (rel, dst) => copyFileSync(join(ROOT, rel), join(TARGET, dst))
-cp('lib/engine.mjs', 'engine.mjs')
 cp('lib/statusline.mjs', 'statusline.mjs')
 cp('lib/pokemon.mjs', 'pokemon.mjs')
+// Drop the legacy spawn-based engine bundle from existing installs (its only
+// consumer was the deleted bash bridge — the entrypoints embed the engine).
+try {
+  unlinkSync(join(TARGET, 'engine.mjs'))
+} catch {
+  // already gone
+}
 mkdirSync(join(TARGET, 'locales'), { recursive: true })
 cp('lib/locales/fr.json', 'locales/fr.json')
 cp('lib/locales/en.json', 'locales/en.json')
