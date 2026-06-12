@@ -18,7 +18,7 @@
 
   Tient                  :  🫐 Baie Oran (combat)
 
-  \033[91m🩹 Blessé   (3 ticks remaining)
+  🩹 Blessé   (3 ticks remaining)
 
   Amitié                 :  💞 550
 
@@ -32,18 +32,18 @@
    ⚔️  Combat gagné contre Bulbizarre sauvage ! +1200 XP   2026-05-08 09:02:00Z
 
 ╭─ HISTORIQUE ──────────────────────────────────────────────────╮
-  Lv.1    🦎  ★ Salamèche              2026-05-08 10:00:00Z
-  Lv.0    null  Reptincel               null
+  Lv.1    🦎  ★ Salamèche               2026-05-08 10:00:00Z
+  Lv.?    null  Reptincel               
 
 ╰──────────────────────────────────────────────────────────────╯
 
 ╭─ CHAÎNE COMPLÈTE — Lignée Feu ────────────────────────────────╮
-   ✓  Lv.0    🥚  Œuf                    0 tokens
-   ✓  Lv.1    🦎  Salamèche              1 000 000 tokens
+   ✓  Lv.0    🥚  Œuf                     0 tokens
+   ✓  Lv.1    🦎  Salamèche               1 000 000 tokens
    ✓  Lv.16   🔥  Reptincel               10 076 000 tokens
    ►  Lv.36   🐉  Dracaufeu               42 954 000 tokens
-      Lv.55   🐲  Méga-Dracaufeu X       89 764 000 tokens
-      Lv.100  🌋  Méga-Dracaufeu Y       311 845 000 tokens
+      Lv.55   🐲  Méga-Dracaufeu X        89 764 000 tokens
+      Lv.100  🌋  Méga-Dracaufeu Y        311 845 000 tokens
 ╰──────────────────────────────────────────────────────────────╯
 
   Sous-commandes         : team, pc, pokedex, stats, badges, switch, hatch, deposit, withdraw, give, take, trade, reset, --shiny

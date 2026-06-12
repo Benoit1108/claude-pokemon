@@ -1,38 +1,29 @@
-// A faithful subset of bash `printf`, for the CLI view port (Phase R3c).
+// printf-style formatting for the CLI views (de-fossilized in the audit
+// cleanup). The API keeps bash printf's useful conveniences — missing argument
+// formats as "" / 0, the format string is REUSED while args remain (how
+// `printf '─%.0s' …` draws N dashes) — but drops the bash bugs the original
+// port reproduced byte-for-byte while the bash oracle still existed:
+//   - field width is now counted in CHARACTERS (code points), not bytes —
+//     `%-22s` aligns "Évoli" correctly instead of one short per accent;
+//   - an invalid conversion (stray `%`) renders literally instead of silently
+//     TRUNCATING the rest of the output (a translator typing `%` in a locale
+//     string used to eat the whole message).
 //
-// The bash views (lib/pokemon-status.sh) lay out every line with `printf`, and
-// the R3a render fixtures froze that exact output. To reproduce them byte-for-
-// byte we must match bash's quirks, not Node's:
-//   - field width is counted in BYTES, not code points (`%-22s` on "Étoile"
-//     pads to 22 *bytes* — É is 2 bytes in UTF-8);
-//   - a missing argument formats as "" (%s) or 0 (%d) rather than throwing;
-//   - when more args than conversions remain, the format string is REUSED
-//     (this is how `printf '─%.0s' $(seq 1 N)` draws N dashes).
-//
-// Supported specs: %%, %[-][0][width][.prec]s, %[-][0][width]d/i. That covers
-// every conversion used by the deterministic views.
+// Supported specs: %%, %[-][0][width][.prec]s, %[-][0][width]d/i.
 
 type Arg = string | number
 
 // A valid conversion at the start of a slice (excluding %%, handled separately).
 const VALID_SPEC = /^%[-+ 0]*\d*(?:\.\d+)?[sdi]/
 
-function byteLen(s: string): number {
-  return Buffer.byteLength(s, 'utf8')
+function charLen(s: string): number {
+  return [...s].length
 }
 
-// Truncate to at most `n` bytes without splitting a multibyte sequence.
-function truncateBytes(s: string, n: number): string {
-  if (byteLen(s) <= n) return s
-  let out = ''
-  let used = 0
-  for (const ch of s) {
-    const b = byteLen(ch)
-    if (used + b > n) break
-    out += ch
-    used += b
-  }
-  return out
+// Truncate to at most `n` characters (code points).
+function truncateChars(s: string, n: number): string {
+  const chars = [...s]
+  return chars.length <= n ? s : chars.slice(0, n).join('')
 }
 
 function formatSpec(spec: string, raw: Arg | undefined): string {
@@ -48,13 +39,13 @@ function formatSpec(spec: string, raw: Arg | undefined): string {
   let s: string
   if (conv === 's') {
     s = raw === undefined || raw === null ? '' : String(raw)
-    if (prec !== undefined) s = truncateBytes(s, prec)
+    if (prec !== undefined) s = truncateChars(s, prec)
   } else {
     const n = raw === undefined || raw === '' ? 0 : Math.trunc(Number(raw))
     s = String(Number.isNaN(n) ? 0 : n)
   }
 
-  const len = byteLen(s)
+  const len = charLen(s)
   if (width > len) {
     const padLen = width - len
     if (leftJustify) {
@@ -73,13 +64,9 @@ function formatSpec(spec: string, raw: Arg | undefined): string {
 interface PassResult {
   out: string
   ai: number
-  truncated: boolean
   hadConv: boolean
 }
 
-// One scan over the format. Bash stops output at the first INVALID conversion
-// (a `%` not forming `%%` or a valid spec) — e.g. a lone `%` from a resolved
-// `%%` re-fed into another printf. We model that with `truncated`.
 function onePass(fmt: string, args: Arg[], startAi: number): PassResult {
   let out = ''
   let ai = startAi
@@ -98,13 +85,19 @@ function onePass(fmt: string, args: Arg[], startAi: number): PassResult {
       continue
     }
     const m = VALID_SPEC.exec(fmt.slice(i))
-    if (!m) return { out, ai, truncated: true, hadConv } // invalid conversion → stop
+    if (!m) {
+      // Invalid conversion → emit the '%' literally and keep going (bash
+      // aborted the whole output here; that fossil ate real messages).
+      out += '%'
+      i++
+      continue
+    }
     const spec = m[0]
     out += formatSpec(spec, args[ai++])
     hadConv = true
     i += spec.length
   }
-  return { out, ai, truncated: false, hadConv }
+  return { out, ai, hadConv }
 }
 
 export function bashPrintf(fmt: string, ...args: Arg[]): string {
@@ -114,8 +107,7 @@ export function bashPrintf(fmt: string, ...args: Arg[]): string {
     const r = onePass(fmt, args, ai)
     out += r.out
     ai = r.ai
-    if (r.truncated) break
-    // Bash reuses the format while args remain AND it has ≥1 conversion.
+    // The format is reused while args remain AND it has ≥1 conversion.
     if (!(ai < args.length && r.hadConv)) break
   }
   return out

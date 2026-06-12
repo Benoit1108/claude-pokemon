@@ -23,7 +23,6 @@ export interface RenderInput {
   data: any
   locale: Locale
   lang?: string
-  scriptName?: string
   /** recap scope (session|today|…) and clock for the duration line. */
   scope?: string
   nowEpoch?: number
@@ -53,7 +52,6 @@ export function renderView(input: RenderInput): { supported: boolean; output: st
     data: input.data,
     locale: input.locale,
     lang: input.lang ?? 'fr',
-    scriptName: input.scriptName ?? 'pokemon-status.sh',
     nowEpoch: input.nowEpoch,
     sprite: input.sprite,
   }

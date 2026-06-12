@@ -17,7 +17,7 @@ const FIRST_SEEN = '2026-05-08T10:00:00Z'
 const firstEpoch = Math.floor(Date.parse(FIRST_SEEN) / 1000)
 
 function ctx(state: Record<string, unknown>, nowEpoch: number): RenderContext {
-  return { state, data, locale, lang: 'fr', scriptName: 'pokemon-status.sh', nowEpoch }
+  return { state, data, locale, lang: 'fr', nowEpoch }
 }
 
 const strip = (s: string): string => s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '') // eslint-disable-line no-control-regex

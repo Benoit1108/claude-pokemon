@@ -17,8 +17,6 @@ export interface RenderContext {
   locale: Locale
   /** Active UI language; read by the pokedex slice (data.wild_pool name_<lang>). */
   lang: string
-  /** Script basename used in the team pc-overflow line (bash used its $0). */
-  scriptName: string
   /** Unix epoch seconds for the recap session/today duration (bash used `date`).
    *  Optional: the deterministic recap path (no active session) never reads it. */
   nowEpoch?: number
@@ -196,8 +194,9 @@ function renderRoster(ctx: RenderContext, field: string, title: string): string 
     const name = jqStr(e.max_stage)
     const lvl = Number(e.level)
     const label = data.lineages?.[lin]?.label ?? lin
-    const created = jqStr(e.created_at).slice(0, 10)
-    const completed = jqStr(e.completed_at).slice(0, 10)
+    // Missing dates render '?' (the bash-era jq leak printed the string "null").
+    const created = e.created_at ? String(e.created_at).slice(0, 10) : '?'
+    const completed = e.completed_at ? String(e.completed_at).slice(0, 10) : '?'
     out += bashPrintf(
       '   %s[%d]%s  %s%-22s  %sLv.%d%s  %s%s%s  (%s%s%s → %s%s%s)\n',
       BOLD,
@@ -397,7 +396,7 @@ export function renderMain(ctx: RenderContext): string {
 
   const shinyBadge = isShiny ? `${GOLD}★ SHINY${RESET}  ` : ''
   out += bashPrintf(
-    `  %s%s${t(locale, 'main.companion')}%s   %s%s%s%s   %sdepuis %s%s\n\n`,
+    `  %s%s${t(locale, 'main.companion')}%s   %s%s%s%s   %s${t(locale, 'main.since', createdAt.slice(0, 10))}%s\n\n`,
     BOLD,
     '',
     RESET,
@@ -406,7 +405,6 @@ export function renderMain(ctx: RenderContext): string {
     lineageLabel,
     RESET,
     DIM,
-    createdAt.slice(0, 10),
     RESET,
   )
 
@@ -527,14 +525,14 @@ export function renderMain(ctx: RenderContext): string {
     out += bashPrintf(`  %s${tPad(locale, 'main.held_item', 22)}%s :  %s %s\n\n`, DIM, RESET, heldEmoji, heldName)
   }
 
-  // Injured. Bash passes "${BOLD}\\033[91m" as the first arg — in double quotes
-  // \033 is a LITERAL backslash sequence (not an ESC byte), so the ANSI strip
-  // regex leaves it in the output. Reproduce that literal exactly.
+  // Injured banner. (The bash original had a quoting bug that printed the
+  // LITERAL text "\033[91m" — fixed now that the engine is the source of
+  // truth: a real bright-red escape.)
   const injured = Number(state.injured_ticks_remaining ?? 0)
   if (injured > 0) {
     out += bashPrintf(
       `  %s${t(locale, 'main.status_injured')}%s   %s(${injured} ticks remaining)%s\n\n`,
-      BOLD + '\\033[91m',
+      BOLD + '\x1b[91m',
       RESET,
       DIM,
       RESET,
@@ -611,16 +609,18 @@ export function renderMain(ctx: RenderContext): string {
   if (history.length > 0) {
     out += boxTop(t(locale, 'main.history'), 64)
     for (const h of history) {
-      const lvl = h.level // may be undefined → bashPrintf %d → 0
-      const ename = jqStr(h.name)
-      const eat = jqStr(h.evolved_at).replace(/T/g, ' ')
+      // Entries can predate fields (old saves): render clean placeholders
+      // instead of the bash-era "Lv.null … null" garbage.
+      const lvl = h.level
+      const ename = h.name ?? '?'
+      const eat = h.evolved_at ? h.evolved_at.replace(/T/g, ' ') : ''
       const eshiny = h.is_shiny === true
       const eemoji = evoField(data, state, lineage, lvl ?? 'null', 'emoji')
       const star = eshiny ? `${GOLD}★${RESET} ` : ''
       out += bashPrintf(
-        '  %sLv.%-3d%s  %s  %s%-22s  %s%s%s\n',
+        '  %sLv.%-3s%s  %s  %s%-22s  %s%s%s\n',
         DIM,
-        lvl === undefined ? 'null' : lvl,
+        lvl === undefined ? '?' : String(lvl),
         RESET,
         eemoji,
         star,
@@ -818,11 +818,14 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
           out += bashPrintf('    %s%s%s  🍇 %s%s %s +%s XP\n', DIM, timeShort, RESET, eemoji, RESET, ename, exp)
           break
         case 'encounter':
-          out += bashPrintf('    %s%s%s  🎯 %s%s %s rencontré\n', DIM, timeShort, RESET, wildEmoji(eid), RESET, wildName(eid))
+          out += bashPrintf(
+            `    %s%s%s  🎯 %s%s %s ${t(ctx.locale, 'recap.ev_encountered')}\n`,
+            DIM, timeShort, RESET, wildEmoji(eid), RESET, wildName(eid),
+          )
           break
         case 'battle_won':
           out += bashPrintf(
-            '    %s%s%s  ⚔️  %sbattle won%s vs %s Lv.%s (+%s XP)\n',
+            `    %s%s%s  ⚔️  %s${t(ctx.locale, 'recap.battle_won_label')}%s vs %s Lv.%s (+%s XP)\n`,
             DIM,
             timeShort,
             RESET,
@@ -835,7 +838,7 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
           break
         case 'battle_lost':
           out += bashPrintf(
-            '    %s%s%s  💢 %sbattle lost%s vs %s Lv.%s\n',
+            `    %s%s%s  💢 %s${t(ctx.locale, 'recap.battle_lost_label')}%s vs %s Lv.%s\n`,
             DIM,
             timeShort,
             RESET,
@@ -846,7 +849,10 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
           )
           break
         case 'item':
-          out += bashPrintf('    %s%s%s  🎁 %s%s %s obtenu\n', DIM, timeShort, RESET, eemoji, RESET, ename)
+          out += bashPrintf(
+            `    %s%s%s  🎁 %s%s %s ${t(ctx.locale, 'recap.ev_obtained')}\n`,
+            DIM, timeShort, RESET, eemoji, RESET, ename,
+          )
           break
       }
     }

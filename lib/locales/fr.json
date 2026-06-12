@@ -41,7 +41,8 @@
     "xp_rebalance_line2": "diminuaient après Lv.16 (gain plus facile en mid-game qu'en early).",
     "xp_rebalance_line3": "Ton total XP est préservé, mais ton niveau a pu redescendre.",
     "xp_rebalance_line4": "Les level-ups sont maintenant monotones. Détails dans le CHANGELOG.",
-    "xp_rebalance_footer": "(Ce message ne s'affichera qu'une fois.)"
+    "xp_rebalance_footer": "(Ce message ne s'affichera qu'une fois.)",
+    "since": "depuis %s"
   },
   "stats": {
     "title": "STATISTIQUES DE VIE",
@@ -254,7 +255,11 @@
     "hatch_progress": "Progression hatch",
     "events_title": "🎉 Events (%s)",
     "evolutions_title": "✨ Évolutions",
-    "badges_title": "🏆 Badges débloqués"
+    "badges_title": "🏆 Badges débloqués",
+    "ev_encountered": "rencontré",
+    "ev_obtained": "obtenu",
+    "battle_won_label": "victoire",
+    "battle_lost_label": "défaite"
   },
   "share": {
     "title": "📡 STATS PARTAGÉES (anonymes, opt-in)",

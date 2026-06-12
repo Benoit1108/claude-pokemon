@@ -1,13 +1,14 @@
-// bashPrintf parity with real bash `printf` (Phase R3c keystone). The expected
-// values were captured from bash itself — see the commit message / R3c notes.
+// bashPrintf — de-fossilized in the audit cleanup. The API keeps bash printf's
+// conveniences (missing arg → ''/0, format reuse) but drops the bash BUGS the
+// R3c port had frozen (byte-width padding, truncate-on-invalid-conversion).
 import { describe, it, expect } from 'vitest'
 import { bashPrintf } from '../src/render/printf.js'
 
-describe('bashPrintf — bash printf parity', () => {
-  it('left-justifies %-Ns by BYTE width (accents count double)', () => {
-    // "Étoile filante" = 15 bytes (É is 2) → 22-15 = 7 pad spaces.
-    expect(bashPrintf('[%-22s]', 'Étoile filante')).toBe('[Étoile filante' + ' '.repeat(7) + ']')
-    // "Naissance" = 9 bytes → 20-9 = 11 pad spaces.
+describe('bashPrintf', () => {
+  it('left-justifies %-Ns by CHARACTER width (accents align correctly)', () => {
+    // "Étoile filante" = 14 chars → 22-14 = 8 pad spaces. (The bash fossil
+    // padded by BYTES, leaving accented names one short per accent.)
+    expect(bashPrintf('[%-22s]', 'Étoile filante')).toBe('[Étoile filante' + ' '.repeat(8) + ']')
     expect(bashPrintf('[%-20s]', 'Naissance')).toBe('[Naissance' + ' '.repeat(11) + ']')
   })
 
@@ -16,11 +17,8 @@ describe('bashPrintf — bash printf parity', () => {
     expect(bashPrintf('[%05d]', -3)).toBe('[-0003]')
   })
 
-  it('treats a missing argument as empty (%s) — the bancale pc_overflow line', () => {
-    // 6 conversions, 5 args → trailing %s is empty (matches the frozen fixture).
-    expect(bashPrintf('%s+ %d en PC — bash %s pc — %sbash %s pc%s', '', 1, '', 'pokemon-status.sh', '')).toBe(
-      '+ 1 en PC — bash  pc — pokemon-status.shbash  pc',
-    )
+  it('treats a missing argument as empty (%s) / zero (%d)', () => {
+    expect(bashPrintf('a=%s b=%d', 'x')).toBe('a=x b=0')
   })
 
   it('reuses the format string when args remain (%.0s dash trick)', () => {
@@ -35,13 +33,13 @@ describe('bashPrintf — bash printf parity', () => {
     expect(bashPrintf('[%5d]', 42)).toBe('[   42]')
   })
 
-  it('stops output at an invalid conversion (matches bash truncation)', () => {
-    // A lone `%` from a resolved %% re-fed into another printf → `% p` is
-    // invalid → bash emits text before it and stops. This is exactly the
-    // stats.tired_warning quirk.
-    expect(bashPrintf('A%pB%s', 'X')).toBe('A')
-    expect(bashPrintf('start%z end')).toBe('start')
-    expect(bashPrintf('tail%')).toBe('tail')
-    expect(bashPrintf('  %s>=90% pendant %d ticks%s\n', '', 7, '')).toBe('  >=90')
+  it('renders an invalid conversion literally instead of truncating', () => {
+    // The bash fossil ABORTED output at a stray `%` — which visibly ate the
+    // stats.tired_warning message ("  >=90" instead of the whole line). Now a
+    // lone % is just text.
+    expect(bashPrintf('A%pB%s', 'X')).toBe('A%pBX')
+    expect(bashPrintf('start%z end')).toBe('start%z end')
+    expect(bashPrintf('tail%')).toBe('tail%')
+    expect(bashPrintf('  %s>=90% pendant %d ticks%s\n', '', 7, '')).toBe('  >=90% pendant 7 ticks\n')
   })
 })

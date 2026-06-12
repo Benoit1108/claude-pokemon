@@ -5,7 +5,7 @@
      Première éclosion
    ▢  Premier pas           
      Première évolution (Lv.16+)
-   ▢  Étoile filante       
+   ▢  Étoile filante        
      Premier shiny obtenu
    ▢  Champion              
      Atteindre Lv.100
@@ -13,22 +13,22 @@
      100M tokens cumulés (toute vie)
    ▢  Constellation         
      5 shinies en collection
-   ▢  Maître Pokédex      
+   ▢  Maître Pokédex        
      5 lignées rencontrées
-   ▢  Maître Feu           
+   ▢  Maître Feu            
      Lv.100 sur Lignée Feu
-   ▢  Maître Eau           
+   ▢  Maître Eau            
      Lv.100 sur Lignée Eau
-   ▢  Maître Plante        
+   ▢  Maître Plante         
      Lv.100 sur Lignée Plante
-   ▢  Maître Électrik     
+   ▢  Maître Électrik       
      Lv.100 sur Lignée Électrik
-   ▢  Maître Eevee         
+   ▢  Maître Eevee          
      Lv.100 sur Lignée Eevee
-   ▢  Maître Germignon     
+   ▢  Maître Germignon      
      Lv.100 sur Lignée Plante (Johto)
-   ▢  Maître Héricendre   
+   ▢  Maître Héricendre     
      Lv.100 sur Lignée Feu (Johto)
-   ▢  Maître Kaiminus      
+   ▢  Maître Kaiminus       
      Lv.100 sur Lignée Eau (Johto)
 
