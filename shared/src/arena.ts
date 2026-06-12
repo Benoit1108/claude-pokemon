@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process'
 import { bashPrintf } from './render/printf.js'
 import { t, type Locale } from './render/i18n.js'
 import { lineageEmoji } from './render/views.js'
+import { runLive } from './live.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any
@@ -339,8 +340,16 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
       out += bashPrintf(`  %s${L('link.success', newAnon)}%s\n\n`, GOLD, RESET)
       break
     }
+    case 'live': {
+      // bash prints arena.title (already in `out`) then delegates to the live
+      // subcommand, which does its own enabled/secret gate.
+      if (!enabled || !anonId) { out += bashPrintf(`\n  %s${L('live.not_enabled')}%s\n\n`, DIM, RESET); break }
+      if (!secret) { out += bashPrintf(`\n  %s${L('arena.no_secret')}%s\n\n`, DIM, RESET); break }
+      const r = await runLive({ args: input.args.slice(1), data, locale, secret })
+      return { data: r.data, output: out + r.output, dataChanged: r.dataChanged, secret: null, state: stateOut, stateChanged: false }
+    }
     default:
-      // live / unknown → bash handles it.
+      // unknown → bash handles it.
       return null
   }
 

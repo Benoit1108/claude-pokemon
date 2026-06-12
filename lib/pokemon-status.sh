@@ -3129,7 +3129,7 @@ case "${1:-}" in
   quote)              _config quote "${@:2}" || view_quote "${@:2}" ;;
   bio)                _config bio "${@:2}"   || view_bio "${@:2}" ;;
   pins|pinned)        _config pins "${@:2}"  || view_pins "${@:2}" ;;
-  arena)              _arena "${@:2}" || view_arena "${2:-status}" "${3:-}" ;;
+  arena)              _arena "${@:2}" || view_arena "${@:2}" ;;
   login)              view_login ;;
   logout)             view_logout ;;
   leaderboard|lb)     _render_net leaderboard "${2:-total_tokens}" "${3:-10}" || view_leaderboard "${2:-total_tokens}" "${3:-10}" ;;
