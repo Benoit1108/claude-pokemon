@@ -16,7 +16,7 @@ setup_share() {
   STATUS="$TD/.claude/pokemon-status.sh"
   echo '{"version":2,"lineage":"fire","current_level":5,"badges":[],"lifetime_stats":{}}' > "$PD/state.json"
 }
-teardown() { [ -n "${TD:-}" ] && rm -rf "$TD"; }
+teardown() { [ -n "${SRV:-}" ] && kill "$SRV" 2>/dev/null; [ -n "${TD:-}" ] && rm -rf "$TD"; }
 strip() { sed -E 's/\x1b\[[0-9;]*[a-zA-Z]//g'; }
 # $1 = the stats_share JSON to seed; rest = the subcommand args.
 seed_share() { jq --argjson ss "$1" '.language="fr" | .stats_share=$ss' "$REPO_ROOT/lib/data.default.json" > "$PD/data.json"; }
@@ -61,12 +61,43 @@ OFF='{"enabled":false,"endpoint":"https://x"}'
   [[ "$(echo "$output" | strip)" == *"$id"* ]]
 }
 
-@test "forget falls back to bash (engine exits 3 for network subs)" {
+@test "forget no anon_id (deterministic, byte-exact)" {
   setup_share
-  seed_share "$EN"
-  # No network here; just assert the engine didn't hijack it and bash ran
-  # (engine `share forget` exits 3 → fallback). Output is non-empty.
-  run bash "$STATUS" stats-share forget
+  share_diff '{"enabled":false,"endpoint":"https://x"}' forget
+}
+
+# Mock worker on an ephemeral port for the network subs (forget/submit).
+start_mock() {
+  node -e '
+    const h=require("http"); const code=+process.argv[1]; const body=process.argv[2];
+    const s=h.createServer((q,r)=>{r.writeHead(code,{"content-type":"application/json"});r.end(body)});
+    s.listen(0,()=>require("fs").writeFileSync(process.argv[3], String(s.address().port)));
+  ' "$1" "$2" "$TD/port" &
+  SRV=$!
+  local tries=0; while [ ! -s "$TD/port" ] && [ "$tries" -lt 50 ]; do sleep 0.1; tries=$((tries+1)); done
+  ENDPOINT="http://localhost:$(cat "$TD/port")"
+}
+
+@test "forget success: engine fetch == bash curl (data + stdout)" {
+  setup_share
+  start_mock 200 '{"ok":true}'
+  local ss; ss=$(jq -cn --arg ep "$ENDPOINT" '{enabled:true,anon_id:"abcd1234",endpoint:$ep}')
+  share_diff "$ss" forget
+  kill "$SRV" 2>/dev/null
+}
+
+@test "submit not enabled (deterministic, byte-exact)" {
+  setup_share
+  share_diff '{"enabled":false,"endpoint":"https://x"}' submit
+}
+
+@test "submit success: engine sets last_stats_submit_at + submit_ok (structure)" {
+  setup_share
+  start_mock 200 '{"ok":true}'
+  jq --arg ep "$ENDPOINT" '.language="fr" | .stats_share={enabled:true,anon_id:"abcd1234",endpoint:$ep}' \
+    "$REPO_ROOT/lib/data.default.json" > "$PD/data.json"
+  run bash "$STATUS" stats-share submit
+  kill "$SRV" 2>/dev/null
   [ "$status" -eq 0 ]
-  [ -n "$output" ]
+  [ "$(jq -r '.last_stats_submit_at // "unset"' "$PD/state.json")" != "unset" ]
 }
