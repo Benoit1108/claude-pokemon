@@ -1,8 +1,9 @@
-// Bundle the CLI engine adapter (Phase R3b) into a single self-contained
-// `lib/engine.mjs` at the repo root, so the bash CLI can spawn it without any
-// node_modules resolution — and so it ships in the npm tarball (files: ["lib/"]).
+// Bundle the Node entrypoints into self-contained `lib/*.mjs` at the repo root
+// so the npm tarball ships working runtimes with zero node_modules resolution
+// (files: ["lib/"]) — statusline.mjs (registered statusLine) + pokemon.mjs
+// (the /pokemon dispatcher).
 //
-// Bundles the COMPILED dist/cli.js (not src) so `./index.js`-style imports
+// Bundles the COMPILED dist/*.js (not src) so `./index.js`-style imports
 // resolve to real files. Run AFTER `npm run -w shared build`.
 //   node shared/scripts/build-engine.mjs
 // Wired as `npm run build:data` → engine, and drift-checked in ci-pre-push.sh.
@@ -26,14 +27,6 @@ const common = {
   },
   legalComments: 'none',
 }
-
-// The CLI engine adapter (spawned by the bash bridge).
-await build({
-  ...common,
-  entryPoints: [join(sharedRoot, 'dist', 'cli.js')],
-  outfile: join(repoRoot, 'lib', 'engine.mjs'),
-})
-console.log('Wrote lib/engine.mjs')
 
 // The native statusline entrypoint (Phase R3d-5 — in-process, no spawn).
 await build({

@@ -17,7 +17,7 @@ teardown() { [ -n "${TD:-}" ] && rm -rf "$TD"; }
   setup_node_install
   run node "$REPO_ROOT/bin/install.mjs"
   [ "$status" -eq 0 ]
-  for f in engine.mjs statusline.mjs pokemon.mjs data.json state.json locales/fr.json locales/en.json; do
+  for f in statusline.mjs pokemon.mjs data.json state.json locales/fr.json locales/en.json; do
     [ -f "$TD/.claude/pokemon/$f" ] || { echo "missing $f"; false; }
   done
   [ -f "$TD/.claude/pokemon/sprites/normal/charmander.txt" ]

@@ -17,7 +17,6 @@ console.log(`${B}Fichiers :${R}`)
 const files = [
   join(TARGET, 'data.json'),
   join(TARGET, 'state.json'),
-  join(TARGET, 'engine.mjs'),
   join(TARGET, 'statusline.mjs'),
   join(TARGET, 'pokemon.mjs'),
   join(TARGET, 'locales', 'fr.json'),

@@ -20,7 +20,7 @@ FIXED="2026-05-08T12:05:00Z"
 setup_golden() {
   TD="$(mktemp -d)"; export HOME="$TD"
   PD="$TD/.claude/pokemon"; mkdir -p "$PD/locales"
-  cp "$REPO_ROOT/lib/engine.mjs" "$REPO_ROOT/lib/statusline.mjs" "$REPO_ROOT/lib/pokemon.mjs" "$PD/"
+  cp "$REPO_ROOT/lib/statusline.mjs" "$REPO_ROOT/lib/pokemon.mjs" "$PD/"
   cp "$REPO_ROOT"/lib/locales/*.json "$PD/locales/"
   cp -r "$REPO_ROOT/lib/sprites-mini" "$PD/sprites-mini"
   EP=$(date -u -d "$FIXED" +%s)
