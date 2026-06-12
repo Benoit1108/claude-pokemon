@@ -3078,6 +3078,39 @@ _arena() {
   jq -j '.output' <<<"$out"
 }
 
+# Generic mutating-command bridge (Phase R3d-4b). The engine validates args,
+# applies the collection transform, and renders the result message in one call;
+# bash writes the returned state (guarded, non-empty/non-null) under flock and
+# prints the output. rc != 0 (incl. engine's exit 3 = command not ported) →
+# caller falls back to the bash view_*.
+_cmd() {
+  local name="$1"; shift
+  pokemon_engine_available || return 1
+  local lang locale args_json now
+  lang=$(jq -r '.language // "fr"' "$POKEMON_DATA" 2>/dev/null || echo fr)
+  locale="$POKEMON_LOCALES_DIR/$lang.json"; [ -f "$locale" ] || locale="$POKEMON_LOCALES_DIR/fr.json"
+  if [ "$#" -eq 0 ]; then args_json='[]'; else args_json=$(printf '%s\n' "$@" | jq -R . | jq -cs .); fi
+  now=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  mkdir -p "$POKEMON_DIR"; touch "$POKEMON_LOCK"
+  (
+    flock -x 200
+    local req out rc schanged
+    req=$(jq -cn --slurpfile st "$POKEMON_STATE" --slurpfile dt "$POKEMON_DATA" --slurpfile lc "$locale" \
+      --arg now "$now" --argjson args "$args_json" \
+      '{state:$st[0], data:$dt[0], locale:$lc[0], now:$now, args:$args}' 2>/dev/null) || exit 1
+    out=$(printf '%s' "$req" | node "$POKEMON_ENGINE" cmd "$name" 2>/dev/null); rc=$?
+    [ "$rc" -ne 0 ] && exit "$rc"
+    [ -n "$out" ] || exit 1
+    schanged=$(jq -r '.stateChanged' <<<"$out" 2>/dev/null) || exit 1
+    if [ "$schanged" = "true" ]; then
+      jq '.state' <<<"$out" > "$POKEMON_STATE.tmp" 2>/dev/null || exit 1
+      [ -s "$POKEMON_STATE.tmp" ] || { rm -f "$POKEMON_STATE.tmp"; exit 1; }
+      mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
+    fi
+    jq -j '.output' <<<"$out"
+  ) 200>"$POKEMON_LOCK"
+}
+
 # GitHub device-flow login via the engine (Phase R3d-4b). The engine runs the
 # poll loop itself and streams its progress to the tty (stderr, which we leave
 # attached) ; we capture only the session op on stdout and persist the token.
@@ -3151,9 +3184,9 @@ case "${1:-}" in
   inventory|inv|sac)  _render_view_live inventory || view_inventory ;;
   switch)             view_switch "${2:-}" ;;
   hatch)              view_hatch "${2:-}" ;;
-  deposit)            view_deposit "${2:-}" ;;
-  withdraw)           view_withdraw "${2:-}" ;;
-  release)            view_release "${2:-}" "${3:-}" "${4:-}" ;;
+  deposit)            _cmd deposit "${2:-}"            || view_deposit "${2:-}" ;;
+  withdraw)           _cmd withdraw "${2:-}"           || view_withdraw "${2:-}" ;;
+  release)            _cmd release "${2:-}" "${3:-}" "${4:-}" || view_release "${2:-}" "${3:-}" "${4:-}" ;;
   give)               view_give "${2:-}" ;;
   take)               view_take ;;
   trade)              view_trade "${2:-Anonymous}" ;;
