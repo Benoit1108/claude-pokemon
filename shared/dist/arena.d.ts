@@ -22,7 +22,10 @@ export interface ArenaOutput {
     output: string;
     dataChanged: boolean;
     secret: SecretOp;
+    state: Json;
+    stateChanged: boolean;
 }
+export declare function applyTrainerToState(state: Json, trainer: Json, now: string): Json;
 /** Returns null for live/pair/link/unknown → bash dispatcher falls back. */
 export declare function runArena(input: ArenaInput): Promise<ArenaOutput | null>;
 export {};

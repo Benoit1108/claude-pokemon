@@ -3065,6 +3065,11 @@ _arena() {
     [ -s "$POKEMON_DATA.tmp" ] || { rm -f "$POKEMON_DATA.tmp"; return 1; }
     mv "$POKEMON_DATA.tmp" "$POKEMON_DATA"
   fi
+  if [ "$(jq -r '.stateChanged' <<<"$out" 2>/dev/null)" = "true" ]; then
+    jq '.state' <<<"$out" > "$POKEMON_STATE.tmp" 2>/dev/null || return 1
+    [ -s "$POKEMON_STATE.tmp" ] || { rm -f "$POKEMON_STATE.tmp"; return 1; }
+    mv "$POKEMON_STATE.tmp" "$POKEMON_STATE"
+  fi
   sop=$(jq -r '.secret.action // "none"' <<<"$out" 2>/dev/null)
   case "$sop" in
     save)  _arena_save_secret "$(jq -r '.secret.value' <<<"$out")" ;;
