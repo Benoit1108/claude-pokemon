@@ -175,12 +175,12 @@ jobs:
       - run: npm ci
       - run: npm run -w shared typecheck
       - run: npm run -w shared test
-      - name: Verify shared dist is in sync with sources (committed build)
+      - name: Verify shared dist + committed bundles are in sync with sources
         run: |
           npm run -w shared build:gen
-          npm run -w shared build
-          if ! git diff --exit-code shared/dist shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts; then
-            echo "::error::shared dist/generated is stale. Run \`npm run build:data && npm run -w shared build\` and commit."
+          npm run -w shared build:engine
+          if ! git diff --exit-code shared/dist shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts lib/engine.mjs lib/statusline.mjs; then
+            echo "::error::shared dist/generated/bundles stale. Run \`npm run build:data && npm run -w shared build:engine\` and commit."
             exit 1
           fi
 
