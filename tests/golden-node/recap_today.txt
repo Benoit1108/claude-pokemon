@@ -6,8 +6,8 @@
   🎉 Events (5)
     11:00  🍇 🍒 Baie +500 XP
     11:10  🎯 🌿 Bulbizarre rencontré
-    11:20  ⚔️  battle won vs Bulbizarre Lv.12 (+900 XP)
-    11:30  💢 battle lost vs Bulbizarre Lv.40
+    11:20  ⚔️  victoire vs Bulbizarre Lv.12 (+900 XP)
+    11:30  💢 défaite vs Bulbizarre Lv.40
     11:40  🎁 🔥 Pierre Feu obtenu
 
   ✨ Évolutions

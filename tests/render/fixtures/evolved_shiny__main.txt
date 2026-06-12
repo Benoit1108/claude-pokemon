@@ -33,14 +33,14 @@
 ╰──────────────────────────────────────────────────────────────╯
 
 ╭─ HISTORIQUE ──────────────────────────────────────────────────╮
-  Lv.0    null  Héricendre             null
-  Lv.0    null  Feurisson               null
+  Lv.?    null  Héricendre              
+  Lv.?    null  Feurisson               
 
 ╰──────────────────────────────────────────────────────────────╯
 
 ╭─ CHAÎNE COMPLÈTE — Lignée Feu (Johto) ────────────────────────╮
-   ✓  Lv.0    🥚  Œuf                    0 tokens
-   ✓  Lv.1    🦔  Héricendre             1 000 000 tokens
+   ✓  Lv.0    🥚  Œuf                     0 tokens
+   ✓  Lv.1    🦔  Héricendre              1 000 000 tokens
    ✓  Lv.16   🔥  Feurisson               10 076 000 tokens
    ►  Lv.32   🌋  Typhlosion              35 243 000 tokens
       Lv.55   👻  Typhlosion d'Hisui      89 764 000 tokens

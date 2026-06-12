@@ -28,8 +28,8 @@
 ╰──────────────────────────────────────────────────────────────╯
 
 ╭─ CHAÎNE COMPLÈTE — Lignée Eevee ──────────────────────────────╮
-   ✓  Lv.0    🥚  Œuf                    0 tokens
-   ✓  Lv.1    🦊  Évoli                  1 000 000 tokens
+   ✓  Lv.0    🥚  Œuf                     0 tokens
+   ✓  Lv.1    🦊  Évoli                   1 000 000 tokens
    ►  Lv.30   💦  Aquali                  31 621 000 tokens
       Lv.30   ⚡  Voltali                 31 621 000 tokens
       Lv.30   🔥  Pyroli                  31 621 000 tokens

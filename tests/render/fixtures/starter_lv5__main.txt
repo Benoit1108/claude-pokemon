@@ -29,12 +29,12 @@
 ╰──────────────────────────────────────────────────────────────╯
 
 ╭─ CHAÎNE COMPLÈTE — Lignée Feu ────────────────────────────────╮
-   ✓  Lv.0    🥚  Œuf                    0 tokens
-   ►  Lv.1    🦎  Salamèche              1 000 000 tokens
+   ✓  Lv.0    🥚  Œuf                     0 tokens
+   ►  Lv.1    🦎  Salamèche               1 000 000 tokens
       Lv.16   🔥  Reptincel               10 076 000 tokens
       Lv.36   🐉  Dracaufeu               42 954 000 tokens
-      Lv.55   🐲  Méga-Dracaufeu X       89 764 000 tokens
-      Lv.100  🌋  Méga-Dracaufeu Y       311 845 000 tokens
+      Lv.55   🐲  Méga-Dracaufeu X        89 764 000 tokens
+      Lv.100  🌋  Méga-Dracaufeu Y        311 845 000 tokens
 ╰──────────────────────────────────────────────────────────────╯
 
   Sous-commandes         : team, pc, pokedex, stats, badges, switch, hatch, deposit, withdraw, give, take, trade, reset, --shiny

@@ -17,4 +17,6 @@
   Statut                 : ×0.75
   Combiné                : ×2.70
 
-  🥱 Compagnon FATIGUÉ — context >=90  ✦ Shiny Charm actif — chance shiny ×1.25 (1/100 → 1/80)
+  🥱 Compagnon FATIGUÉ — context >=90% pendant 7 ticks. Faire /clear pour reset.
+
+  ✦ Shiny Charm actif — chance shiny ×1.25 (1/100 → 1/80)

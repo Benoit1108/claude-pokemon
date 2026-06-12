@@ -2,13 +2,13 @@
   POKÉDEX — Lignées élevées
 
    ▢  Lignée Plante (Johto)  —
-   ▢  Lignée Feu (Johto)   —
-   ▢  Lignée Eevee         —
-   ▢  Lignée Électrik     —
-   ▢  Lignée Feu           —
-   ▢  Lignée Plante        —
-   ▢  Lignée Eau (Johto)   —
-   ▢  Lignée Eau           —
+   ▢  Lignée Feu (Johto)    —
+   ▢  Lignée Eevee          —
+   ▢  Lignée Électrik       —
+   ▢  Lignée Feu            —
+   ▢  Lignée Plante         —
+   ▢  Lignée Eau (Johto)    —
+   ▢  Lignée Eau            —
 
   POKÉDEX — Sauvages croisés   (0 / 251)
 

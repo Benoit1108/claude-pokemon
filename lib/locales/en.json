@@ -41,7 +41,8 @@
     "xp_rebalance_line2": "after Lv.16 (mid-game progression easier than early).",
     "xp_rebalance_line3": "Your total XP is preserved, but your level may have dropped.",
     "xp_rebalance_line4": "Level-ups are now monotonic. Details in the CHANGELOG.",
-    "xp_rebalance_footer": "(This message will only show once.)"
+    "xp_rebalance_footer": "(This message will only show once.)",
+    "since": "since %s"
   },
   "stats": {
     "title": "LIFETIME STATS",
@@ -254,7 +255,11 @@
     "hatch_progress": "Hatch progress",
     "events_title": "🎉 Events (%s)",
     "evolutions_title": "✨ Evolutions",
-    "badges_title": "🏆 Badges unlocked"
+    "badges_title": "🏆 Badges unlocked",
+    "ev_encountered": "encountered",
+    "ev_obtained": "obtained",
+    "battle_won_label": "battle won",
+    "battle_lost_label": "battle lost"
   },
   "share": {
     "title": "📡 SHARED STATS (anonymous, opt-in)",

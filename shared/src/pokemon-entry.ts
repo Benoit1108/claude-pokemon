@@ -139,7 +139,7 @@ async function main(): Promise<void> {
         sprite = lines
       }
     }
-    const { output } = renderView({ view, state, data, locale, lang, scriptName: 'pokemon-status.sh', nowEpoch, sprite })
+    const { output } = renderView({ view, state, data, locale, lang, nowEpoch, sprite })
     out(output)
     // Ack the one-time XP-rebalance notice (mirrors view_main: it writes the
     // flag while rendering). The engine render is pure, so the entrypoint
@@ -152,7 +152,7 @@ async function main(): Promise<void> {
   }
 
   if (sub === 'recap' || sub === 'summary') {
-    const { output } = renderView({ view: 'recap', state, data, locale, lang, scriptName: 'pokemon-status.sh', nowEpoch, scope: rest[0] || 'session' })
+    const { output } = renderView({ view: 'recap', state, data, locale, lang, nowEpoch, scope: rest[0] || 'session' })
     out(output)
     return
   }
@@ -277,7 +277,7 @@ async function main(): Promise<void> {
   }
 
   // Unknown → main view (matches the bash default).
-  const { output } = renderView({ view: 'main', state, data, locale, lang, scriptName: 'pokemon-status.sh', nowEpoch })
+  const { output } = renderView({ view: 'main', state, data, locale, lang, nowEpoch })
   out(output)
 }
 
