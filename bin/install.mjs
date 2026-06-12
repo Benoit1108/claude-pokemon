@@ -1,13 +1,9 @@
 #!/usr/bin/env node
-// Native Node installer (Phase R3d-5). Windows-native equivalent of
-// bin/install.sh: sets up ~/.claude/pokemon/ and registers the statusLine,
-// using only Node (no bash / jq / chafa / flock). Registers the NODE
-// entrypoints (statusline.mjs / pokemon.mjs), so a re-install here flips the
-// runtime to the bash-free path.
-//
-// NOT yet wired into bin/claude-pokemon (still calls install.sh) — that switch,
-// plus dropping bash + the Windows guard, is Phase R3d-5 piece 5. Idempotent;
-// preserves an existing state.json / data.json. Backs up settings.json.
+// Native Node installer. Sets up ~/.claude/pokemon/ and registers the
+// statusLine, using only Node (no bash / jq / chafa / flock). Registers the
+// Node entrypoints (statusline.mjs / pokemon.mjs) — the runtime is bash-free.
+// Idempotent; preserves an existing state.json / data.json. Backs up
+// settings.json.
 import { mkdirSync, copyFileSync, cpSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
@@ -43,11 +39,6 @@ const cp = (rel, dst = rel) => copyFileSync(join(ROOT, rel), join(TARGET, dst))
 cp('lib/engine.mjs', 'engine.mjs')
 cp('lib/statusline.mjs', 'statusline.mjs')
 cp('lib/pokemon.mjs', 'pokemon.mjs')
-// Bash scripts kept alongside as a fallback during the transition (piece 5
-// removes them). Harmless on POSIX; ignored on Windows.
-for (const f of ['lib/lib.sh', 'lib/statusline.sh', 'lib/pokemon-status.sh']) {
-  if (existsSync(join(ROOT, f))) cp(f, f.replace('lib/', ''))
-}
 cp('lib/locales/fr.json', 'locales/fr.json')
 cp('lib/locales/en.json', 'locales/en.json')
 copyFileSync(join(ROOT, 'skills/pokemon/SKILL.md'), join(SKILL_DIR, 'SKILL.md'))

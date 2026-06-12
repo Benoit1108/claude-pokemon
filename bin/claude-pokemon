@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 /**
  * claude-pokemon — CLI entry point.
- * Delegates to the Node-native bin/*.mjs commands (Phase R3d-5), falling back
- * to the legacy bin/*.sh on POSIX where a .mjs isn't present yet. The runtime
- * is now bash-free (engine/statusline/pokemon bundles + Node installers), so
- * Windows is supported — the old WSL-only guard is gone.
+ * Delegates to the Node-native bin/*.mjs commands. The runtime is bash-free
+ * (engine/statusline/pokemon bundles + Node installers), so Windows is
+ * supported natively — no WSL, no bash/chafa/flock.
  */
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
@@ -23,10 +22,10 @@ Usage:
   npx claude-pokemon <command>
 
 Commands:
-  install      Set up companion in ~/.claude/pokemon/ (creates dirs, downloads
-               sprites, patches settings.json, installs /pokemon skill).
-  update       Re-fetch sprites + migrate data.json schema if needed (preserves
-               state.json — your buddy lives on).
+  install      Set up companion in ~/.claude/pokemon/ (copies the Node runtime
+               + pre-rendered sprites, patches settings.json, installs the skill).
+  update       Refresh the runtime + sprites and migrate data.json if needed
+               (preserves state.json — your buddy lives on).
   uninstall    Remove ~/.claude/pokemon/, the skill, and the statusLine entry
                from settings.json. Backups created.
   status       Diagnostic: prereqs OK? files in place? state coherent?
@@ -55,22 +54,17 @@ if (!valid.includes(cmd)) {
   process.exit(1);
 }
 
-// Prefer the Node-native command; fall back to the legacy bash script (kept as
-// a safety net during the transition — Phase R3d-5).
+// Run the Node-native command (the runtime is bash-free since Phase R3d-6).
 const mjs = path.join(ROOT, 'bin', `${cmd}.mjs`);
-const sh = path.join(ROOT, 'bin', `${cmd}.sh`);
-const args = process.argv.slice(3);
-const env = { ...process.env, CLAUDE_POKEMON_ROOT: ROOT };
-
-let result;
-if (fs.existsSync(mjs)) {
-  result = spawnSync(process.execPath, [mjs, ...args], { stdio: 'inherit', env });
-} else if (fs.existsSync(sh)) {
-  result = spawnSync('bash', [sh, ...args], { stdio: 'inherit', env });
-} else {
-  console.error(`Script not found: ${cmd}.mjs / ${cmd}.sh`);
+if (!fs.existsSync(mjs)) {
+  console.error(`Script not found: ${cmd}.mjs`);
   process.exit(1);
 }
+const args = process.argv.slice(3);
+const result = spawnSync(process.execPath, [mjs, ...args], {
+  stdio: 'inherit',
+  env: { ...process.env, CLAUDE_POKEMON_ROOT: ROOT },
+});
 if (result.error) {
   console.error(result.error.message);
   process.exit(1);

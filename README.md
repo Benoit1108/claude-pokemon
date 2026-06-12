@@ -50,8 +50,7 @@ Since the runtime is now Node-native (the TypeScript engine renders everything; 
 | `python3` + `Pillow` | optional | sprite animations (idle bobbing) |
 | `chafa` | maintainer-only | re-rendering the shipped sprites (`scripts/build-sprites.sh`) |
 
-> Legacy `bash` scripts (`lib/*.sh`, `bin/*.sh`) are kept as a fallback during
-> the migration; they're not required for the Node path.
+> The CLI is fully Node — there are no `bash` scripts in the runtime path.
 
 **Windows** : supported natively (Node-only — no WSL required). `npx claude-pokemon install` works in PowerShell or cmd.
 

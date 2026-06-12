@@ -55,16 +55,18 @@ run "Validate top-level JSON sources (jq empty)" bash -c '
   done
 '
 
-run "shellcheck (errors only) on published scripts" bash -c '
+run "shellcheck (errors only) on maintainer scripts" bash -c '
   if ! command -v shellcheck >/dev/null 2>&1; then
     echo "  (shellcheck not installed locally, skipping — CI still enforces it)"
     exit 0
   fi
-  shellcheck -S error \
-    bin/install.sh bin/uninstall.sh bin/status.sh \
-    bin/update.sh bin/export.sh bin/import.sh \
-    lib/lib.sh lib/statusline.sh lib/pokemon-status.sh \
-    lib/build-data.sh
+  # Runtime is bash-free (R3d-6); only the maintainer build scripts remain.
+  shellcheck -S error lib/build-data.sh scripts/build-sprites.sh scripts/ci-pre-push.sh
+'
+
+run "Node-native CLI entrypoints syntax-check" bash -c '
+  for f in install update uninstall status export import; do node --check "bin/$f.mjs"; done
+  node --check bin/claude-pokemon
 '
 
 run "lib/data.default.json is in sync with lib/data/** sources" bash -c '

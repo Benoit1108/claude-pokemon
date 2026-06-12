@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+### Removed
+
+- **Suppression de bash du runtime — R3 terminé** (Phase R3d-6b — refonte). Le test full-Node étant vert, les scripts bash du runtime sont supprimés : `lib/{lib,statusline,pokemon-status}.sh` + `bin/{install,update,uninstall,status,export,import}.sh`. `bin/claude-pokemon` n'a plus de fallback `.sh` ; `install.mjs`/`update.mjs` ne copient plus de `.sh`. Restent uniquement les outils **mainteneur** (`lib/build-data.sh`, `scripts/build-sprites.sh`, `scripts/ci-pre-push.sh`). **Le CLI est 100 % Node.**
+- **Refonte de la suite de tests post-bash** : les ~20 bats qui validaient `engine vs bash` (différentiels de migration) ou testaient le CLI bash sont supprimés ; leur rôle est terminé. La couverture est désormais : **vitest shared** (113, logique moteur), `render-engine-parity.bats` (moteur vs fixtures R3a gelées), nouveau **`golden-node.bats`** (snapshots de sortie des entrypoints Node — vues riches, recap, statusline, notice — régénérables via `CAPTURE=1`), `install-node.bats` + `no-bash.bats` (CLI Node bout-en-bout). CI : shellcheck/install-dry-run ajustés (plus de `.sh` runtime).
+
 ### Added
 
 - **Preuve « runtime 100 % Node »** (Phase R3d-6 — refonte). `tests/cli/no-bash.bats` fait tourner tout le cycle de vie (install → statusline sur plusieurs ticks → **toutes** les branches `/pokemon` → layouts sprite → export/import/status) avec `bash` **saboté** (un stub `sh` prepend au PATH qui drapeaute toute invocation) et vérifie que bash n'est **jamais** appelé. Audit confirmé : les seuls spawns externes du chemin Node sont `git` (branche, optionnel) et `qrencode` (QR pairing, optionnel). Prépare la suppression des scripts bash.

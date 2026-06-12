@@ -1,0 +1,20 @@
+
+  STATISTIQUES DE VIE
+
+  Tokens cumulés         :  123 456 789
+  Évolutions totales     :  3
+  Shinies obtenus        :  4
+  Niveau max atteint     :  Lv.40
+  Compagnons élevés      :  2
+  Lignées complétées     :  2 / 8
+  Premier shiny          :  2026-05-08
+
+  MULTIPLICATEURS (dernier tick)
+
+  Contexte               : ×2.0
+  Type matchup (lignée)  : ×1.2
+  Bonus quotidien        : ×1.5
+  Statut                 : ×0.75
+  Combiné                : ×2.70
+
+  🥱 Compagnon FATIGUÉ — context >=90  ✦ Shiny Charm actif — chance shiny ×1.25 (1/100 → 1/80)

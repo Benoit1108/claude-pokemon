@@ -151,7 +151,7 @@
   "team": {
     "title": "ÉQUIPE",
     "empty": "Équipe vide. Atteins Lv.100 ou utilise /pokemon switch / withdraw pour ajouter un compagnon.",
-    "pc_overflow": "+ %d compagnon(s) en PC storage — bash %s pc"
+    "pc_overflow": "+ %d compagnon(s) en PC storage — /pokemon pc"
   },
   "pc": {
     "title": "PC STORAGE",

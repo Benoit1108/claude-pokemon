@@ -31,9 +31,6 @@ const cp = (rel, dst) => copyFileSync(join(ROOT, rel), join(TARGET, dst))
 cp('lib/engine.mjs', 'engine.mjs')
 cp('lib/statusline.mjs', 'statusline.mjs')
 cp('lib/pokemon.mjs', 'pokemon.mjs')
-for (const f of ['lib.sh', 'statusline.sh', 'pokemon-status.sh']) {
-  if (existsSync(join(ROOT, 'lib', f))) cp(`lib/${f}`, f)
-}
 mkdirSync(join(TARGET, 'locales'), { recursive: true })
 cp('lib/locales/fr.json', 'locales/fr.json')
 cp('lib/locales/en.json', 'locales/en.json')

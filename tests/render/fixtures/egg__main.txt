@@ -22,5 +22,5 @@
 ╰──────────────────────────────────────────────────────────────╯
 
   Sous-commandes         : team, pc, pokedex, stats, badges, switch, hatch, deposit, withdraw, give, take, trade, reset, --shiny
-  Exemple                : bash ~/.claude/pokemon-status.sh team
+  Exemple                : /pokemon team
 
