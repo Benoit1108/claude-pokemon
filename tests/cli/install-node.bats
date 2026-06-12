@@ -93,3 +93,50 @@ teardown() { [ -n "${TD:-}" ] && rm -rf "$TD"; }
   [ "$status" -eq 0 ]
   [ -d "$TD/.claude/pokemon" ]
 }
+
+# ── Flip (piece 5): bin/claude-pokemon prefers the .mjs commands ───────────────
+@test "claude-pokemon CLI routes install → install.mjs (Node-native)" {
+  setup_node_install
+  run node "$REPO_ROOT/bin/claude-pokemon" install
+  [ "$status" -eq 0 ]
+  [[ "$(jq -r '.statusLine.command' "$TD/.claude/settings.json")" == *statusline.mjs ]]
+}
+@test "claude-pokemon CLI export + import via .mjs" {
+  setup_node_install
+  node "$REPO_ROOT/bin/install.mjs" >/dev/null
+  run node "$REPO_ROOT/bin/claude-pokemon" export "$TD/backup.json"
+  [ "$status" -eq 0 ]
+  [ -f "$TD/backup.json" ]
+  run node "$REPO_ROOT/bin/claude-pokemon" import "$TD/backup.json"
+  [ "$status" -eq 0 ]
+}
+@test "claude-pokemon CLI status + uninstall via .mjs" {
+  setup_node_install
+  node "$REPO_ROOT/bin/install.mjs" >/dev/null
+  run node "$REPO_ROOT/bin/claude-pokemon" status
+  [ "$status" -eq 0 ]
+  run node "$REPO_ROOT/bin/claude-pokemon" uninstall --confirm
+  [ "$status" -eq 0 ]
+  [ ! -d "$TD/.claude/pokemon" ]
+}
+@test "export.mjs without an install errors cleanly (no stack trace)" {
+  setup_node_install
+  run node "$REPO_ROOT/bin/export.mjs" "$TD/x.json"
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"introuvable"* ]]
+  [[ "$output" != *"    at "* ]]
+}
+
+@test "end-to-end: registered Node statusline renders + pokemon.mjs dispatches" {
+  setup_node_install
+  node "$REPO_ROOT/bin/install.mjs" >/dev/null
+  # The registered statusLine command is `node <dir>/statusline.mjs`.
+  cmd=$(jq -r '.statusLine.command' "$TD/.claude/settings.json")
+  run bash -c "echo '{\"model\":{\"display_name\":\"Sonnet\"},\"context_window\":{\"used_percentage\":30},\"session_id\":\"s1\"}' | $cmd"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"%"* ]]
+  # /pokemon dispatch through the Node entrypoint.
+  run node "$TD/.claude/pokemon/pokemon.mjs" stats
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"STATISTIQUES"* || "$output" == *"STATS"* ]]
+}

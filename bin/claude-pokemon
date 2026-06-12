@@ -1,38 +1,14 @@
 #!/usr/bin/env node
 /**
  * claude-pokemon — CLI entry point.
- * Delegates to bin/install.sh, bin/uninstall.sh, etc.
+ * Delegates to the Node-native bin/*.mjs commands (Phase R3d-5), falling back
+ * to the legacy bin/*.sh on POSIX where a .mjs isn't present yet. The runtime
+ * is now bash-free (engine/statusline/pokemon bundles + Node installers), so
+ * Windows is supported — the old WSL-only guard is gone.
  */
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
-
-// Native Windows is not supported (CLI uses bash + chafa + flock + POSIX paths).
-// WSL works perfectly. Emit a friendly message instead of letting things fail
-// later with a confusing bash-not-found error.
-if (process.platform === 'win32') {
-  console.error(`
-\x1b[31m❌ claude-pokemon requires a POSIX shell environment.\x1b[0m
-
-Native Windows is not supported because the CLI relies on bash, chafa
-(ANSI sprite rendering), flock (atomic state writes), and POSIX paths.
-
-\x1b[1mOn Windows, install WSL first:\x1b[0m
-
-  1. In PowerShell (admin, one-time):
-     \x1b[2mwsl --install\x1b[0m
-
-  2. Open a WSL terminal, then:
-     \x1b[2mnpm install -g claude-pokemon\x1b[0m
-     \x1b[2mnpx claude-pokemon install\x1b[0m
-
-\x1b[1mPhase 2 (web arena, coming soon)\x1b[0m will work directly in any browser:
-the leaderboard, trainer cards, and global stats won't need the CLI.
-
-See: https://github.com/Benoit1108/claude-pokemon#windows-users
-`);
-  process.exit(1);
-}
 
 const ROOT = path.join(__dirname, '..');
 const cmd = process.argv[2] || 'install';
@@ -79,15 +55,25 @@ if (!valid.includes(cmd)) {
   process.exit(1);
 }
 
-const script = path.join(ROOT, 'bin', `${cmd}.sh`);
-if (!fs.existsSync(script)) {
-  console.error(`Script not found: ${script}`);
+// Prefer the Node-native command; fall back to the legacy bash script (kept as
+// a safety net during the transition — Phase R3d-5).
+const mjs = path.join(ROOT, 'bin', `${cmd}.mjs`);
+const sh = path.join(ROOT, 'bin', `${cmd}.sh`);
+const args = process.argv.slice(3);
+const env = { ...process.env, CLAUDE_POKEMON_ROOT: ROOT };
+
+let result;
+if (fs.existsSync(mjs)) {
+  result = spawnSync(process.execPath, [mjs, ...args], { stdio: 'inherit', env });
+} else if (fs.existsSync(sh)) {
+  result = spawnSync('bash', [sh, ...args], { stdio: 'inherit', env });
+} else {
+  console.error(`Script not found: ${cmd}.mjs / ${cmd}.sh`);
   process.exit(1);
 }
-
-const args = process.argv.slice(3);
-const result = spawnSync('bash', [script, ...args], {
-  stdio: 'inherit',
-  env: { ...process.env, CLAUDE_POKEMON_ROOT: ROOT }
-});
-process.exit(result.status || 0);
+if (result.error) {
+  console.error(result.error.message);
+  process.exit(1);
+}
+// status is null when the child was killed by a signal — treat as failure.
+process.exit(result.status ?? 1);

@@ -1,6 +1,6 @@
 ---
 name: pokemon
-description: Compagnon Pokémon de la statusline Claude Code. Affiche l'état (sprite, niveau, XP, badges) et permet de gérer une équipe de Pokémon (switch, hatch, deposit, withdraw, release). Sous-commandes - team / pc / pokedex / stats / badges / inventory / switch / hatch / deposit / withdraw / release / reset / --shiny. Lance ~/.claude/pokemon-status.sh. Mots-clés - pokemon, compagnon, statusline, evolution, xp, level, shiny, équipe, badges, pokedex, stats, switch, hatch, deposit, withdraw.
+description: Compagnon Pokémon de la statusline Claude Code. Affiche l'état (sprite, niveau, XP, badges) et permet de gérer une équipe de Pokémon (switch, hatch, deposit, withdraw, release). Sous-commandes - team / pc / pokedex / stats / badges / inventory / switch / hatch / deposit / withdraw / release / reset / --shiny. Lance ~/.claude/pokemon/pokemon.mjs. Mots-clés - pokemon, compagnon, statusline, evolution, xp, level, shiny, équipe, badges, pokedex, stats, switch, hatch, deposit, withdraw.
 ---
 
 Compagnon Pokémon de la statusline Claude Code, avec gestion complète d'équipe (max 6) + PC storage (illimité).
@@ -12,17 +12,17 @@ Compagnon Pokémon de la statusline Claude Code, avec gestion complète d'équip
 Exécution :
 
 ```
-bash $HOME/.claude/pokemon-status.sh <subcommand> [<arg1>] [<arg2>] [<arg3>]
+node $HOME/.claude/pokemon/pokemon.mjs <subcommand> [<arg1>] [<arg2>] [<arg3>]
 ```
 
 Exemples :
-- `/pokemon` → `bash ... pokemon-status.sh`
-- `/pokemon team` → `bash ... pokemon-status.sh team`
-- `/pokemon switch 0` → `bash ... pokemon-status.sh switch 0`
-- `/pokemon hatch fire` → `bash ... pokemon-status.sh hatch fire`
-- `/pokemon deposit 2` → `bash ... pokemon-status.sh deposit 2`
-- `/pokemon withdraw 0` → `bash ... pokemon-status.sh withdraw 0`
-- `/pokemon release pc 1 --confirm` → `bash ... pokemon-status.sh release pc 1 --confirm`
+- `/pokemon` → `node ... pokemon.mjs`
+- `/pokemon team` → `node ... pokemon.mjs team`
+- `/pokemon switch 0` → `node ... pokemon.mjs switch 0`
+- `/pokemon hatch fire` → `node ... pokemon.mjs hatch fire`
+- `/pokemon deposit 2` → `node ... pokemon.mjs deposit 2`
+- `/pokemon withdraw 0` → `node ... pokemon.mjs withdraw 0`
+- `/pokemon release pc 1 --confirm` → `node ... pokemon.mjs release pc 1 --confirm`
 
 Restituer la sortie telle quelle dans la réponse.
 

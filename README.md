@@ -32,54 +32,30 @@ npx claude-pokemon install
 ```
 
 The installer will:
-1. Verify prerequisites (`jq`, `chafa`, `flock`, `curl`, optionally `gifsicle`)
-2. Create `~/.claude/pokemon/` with default config
-3. Download ~50 Pokémon sprites from Pokémon Showdown (~1MB)
-4. Patch your `~/.claude/settings.json` (non-destructive — backups created)
-5. Install the `/pokemon` skill
+1. Create `~/.claude/pokemon/` with default config
+2. Install the Node runtime (engine + statusline + dispatcher) and the pre-rendered sprites (shipped in the package — no download)
+3. Patch your `~/.claude/settings.json` (non-destructive — backups created)
+4. Install the `/pokemon` skill
 
 Then **restart Claude Code** and type `/pokemon`.
 
 ## Prerequisites
 
+Since the runtime is now Node-native (the TypeScript engine renders everything; sprites ship pre-rendered), the **only requirement is Node.js** — the same Node that runs Claude Code. No `bash`, `chafa`, `flock`, or sprite download needed.
+
 | Tool | Required | Why |
 |---|---|---|
-| `jq` | yes | JSON parsing/manipulation (state, data) |
-| `chafa` | yes | PNG → ANSI sprite conversion |
-| `flock` | yes | concurrent state.json write protection |
-| `curl` | yes | sprite download |
-| `awk` | yes | float arithmetic |
-| `gifsicle` | optional | (replaced by Python+PIL pipeline) |
-| `python3` + `Pillow` | optional | sprite animations (5 frames idle bobbing per Pokémon) |
+| `node` | yes | the whole runtime (statusline, `/pokemon`, install tooling) |
+| `git` | optional | branch name in the statusline |
+| `python3` + `Pillow` | optional | sprite animations (idle bobbing) |
+| `chafa` | maintainer-only | re-rendering the shipped sprites (`scripts/build-sprites.sh`) |
 
-**Linux (Debian/Ubuntu)** :
-```bash
-sudo apt install jq chafa util-linux curl gifsicle
-```
+> Legacy `bash` scripts (`lib/*.sh`, `bin/*.sh`) are kept as a fallback during
+> the migration; they're not required for the Node path.
 
-**macOS (Homebrew)** :
-```bash
-brew install jq chafa util-linux curl gifsicle
-```
+**Windows** : supported natively (Node-only — no WSL required). `npx claude-pokemon install` works in PowerShell or cmd.
 
-<a id="windows-users"></a>
-**Windows users (WSL required)** :
-
-The CLI requires a POSIX shell environment (bash, chafa, flock, POSIX paths). Native Windows isn't supported, but **WSL works perfectly** :
-
-```powershell
-# In PowerShell (admin, one-time)
-wsl --install
-```
-
-Then in your WSL terminal :
-```bash
-sudo apt install jq chafa util-linux curl gifsicle
-npm install -g claude-pokemon
-npx claude-pokemon install
-```
-
-The upcoming **web arena** (Phase 2 of the [roadmap](ROADMAP.md)) will let you consult the leaderboard, trainer cards, and global stats from any browser — no CLI needed for the social features.
+The **web arena** (Phase 2 of the [roadmap](ROADMAP.md)) also lets you consult the leaderboard, trainer cards, and global stats from any browser.
 
 ## Usage
 
