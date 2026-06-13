@@ -43,7 +43,10 @@ describe('MockKV.list — pagination (limit/cursor)', () => {
   beforeEach(async () => {
     kv = new MockKV()
     for (let i = 0; i < 25; i++) {
-      await kv.put(`stats:id${String(i).padStart(3, '0')}`, JSON.stringify(statsRecord(`id${i}`, i)))
+      await kv.put(
+        `stats:id${String(i).padStart(3, '0')}`,
+        JSON.stringify(statsRecord(`id${i}`, i)),
+      )
     }
     // A non-matching key to prove prefix filtering survives pagination.
     await kv.put('other:zzz', 'noise')
