@@ -60,7 +60,12 @@ describe('runLogin', () => {
 
   it('polls past authorization_pending then exchanges for a session token', async () => {
     stubFetch({
-      device: { device_code: 'dc', user_code: 'WXYZ-1234', verification_uri: 'https://gh/device', interval: 1 },
+      device: {
+        device_code: 'dc',
+        user_code: 'WXYZ-1234',
+        verification_uri: 'https://gh/device',
+        interval: 1,
+      },
       tokenQueue: [{ error: 'authorization_pending' }, { access_token: 'gho_abc' }],
       session: { session_token: 'sess_123', github: { login: 'octocat' } },
     })

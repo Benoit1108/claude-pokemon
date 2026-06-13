@@ -28,7 +28,7 @@ function golden(name: string): Array<Record<string, unknown>> {
   return readFileSync(path, 'utf8')
     .trim()
     .split('\n')
-    .map((line) => JSON.parse(line) as Record<string, unknown>)
+    .map(line => JSON.parse(line) as Record<string, unknown>)
 }
 
 describe('XP curve parity with the bash engine (R0 goldens)', () => {

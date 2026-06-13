@@ -6,12 +6,18 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe('httpJson', () => {
   it('returns ok with status + parsed body (incl. non-2xx JSON)', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ status: 429, json: async () => ({ cooldown_remaining_s: 7 }) })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({ status: 429, json: async () => ({ cooldown_remaining_s: 7 }) })),
+    )
     const r = await httpJson('https://x/v1/submit', { method: 'POST' })
     expect(r).toEqual({ ok: true, status: 429, body: { cooldown_remaining_s: 7 } })
   })
   it('network failure → kind network with the real detail', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new Error('ECONNREFUSED 127.0.0.1'))))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Promise.reject(new Error('ECONNREFUSED 127.0.0.1'))),
+    )
     const r = await httpJson('https://x/v1/aggregate')
     expect(r.ok).toBe(false)
     if (!r.ok) {
@@ -20,7 +26,13 @@ describe('httpJson', () => {
     }
   })
   it('non-JSON body → kind parse carrying the HTTP status', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => ({ status: 502, json: async () => Promise.reject(new SyntaxError('Unexpected token <')) })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        status: 502,
+        json: async () => Promise.reject(new SyntaxError('Unexpected token <')),
+      })),
+    )
     const r = await httpJson('https://x/v1/leaderboard')
     expect(r.ok).toBe(false)
     if (!r.ok) {

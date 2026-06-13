@@ -40,7 +40,11 @@
       "import": "./dist/state-types.js"
     }
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -53,12 +57,17 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "format": "prettier --write 'src/**/*.ts'",
-    "format:check": "prettier --check 'src/**/*.ts'",
+    "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts' 'tests/**/*.ts'",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prepare": "tsc -p tsconfig.json"
   },
-  "keywords": ["pokemon", "battle", "deterministic", "claude-code"],
+  "keywords": [
+    "pokemon",
+    "battle",
+    "deterministic",
+    "claude-code"
+  ],
   "license": "MIT",
   "author": "Benoit Bruneau",
   "homepage": "https://github.com/Benoit1108/claude-pokemon",

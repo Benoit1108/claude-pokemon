@@ -153,8 +153,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
       - run: npm ci
+      - run: npm run -w shared lint
+      - run: npm run -w shared format:check
       - run: npm run -w shared typecheck
-      - run: npm run -w shared test
+      - run: npm run -w shared test:coverage
       - name: Verify shared generated data is in sync with sources
         run: |
           npm run -w shared build:gen
@@ -179,8 +181,10 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - run: npm run -w shared build
+      - run: npm run -w cli lint
+      - run: npm run -w cli format:check
       - run: npm run -w cli typecheck
-      - run: npm run -w cli test
+      - run: npm run -w cli test:coverage
       - name: Verify committed engine bundles are in sync with sources
         run: |
           npm run -w cli build:engine

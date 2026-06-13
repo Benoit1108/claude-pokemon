@@ -31,7 +31,7 @@ interface Case {
 const cases: Case[] = readFileSync(fixture, 'utf8')
   .trim()
   .split('\n')
-  .map((l) => JSON.parse(l) as Case)
+  .map(l => JSON.parse(l) as Case)
 
 function run(c: Case): unknown {
   switch (c.fn) {
@@ -64,7 +64,7 @@ describe('collection transforms — parity with the bash jq functions', () => {
   }
 
   it('does not mutate the input state', () => {
-    const c = cases.find((x) => x.fn === 'active_to_archive' && Array.isArray(x.input.team))!
+    const c = cases.find(x => x.fn === 'active_to_archive' && Array.isArray(x.input.team))!
     const before = JSON.stringify(c.input)
     run(c)
     expect(JSON.stringify(c.input)).toBe(before)

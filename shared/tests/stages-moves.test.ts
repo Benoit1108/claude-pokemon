@@ -10,9 +10,7 @@ import {
 
 describe('LINEAGE_STAGES', () => {
   it('every lineage has an egg + at least one Lv.1 stage', () => {
-    for (const lineage of Object.keys(LINEAGE_STAGES) as Array<
-      keyof typeof LINEAGE_STAGES
-    >) {
+    for (const lineage of Object.keys(LINEAGE_STAGES) as Array<keyof typeof LINEAGE_STAGES>) {
       const stages = LINEAGE_STAGES[lineage]
       expect(stages[0]?.showdown_id).toBe('egg')
       expect(stages.find(s => s.min_level === 1)).toBeDefined()
@@ -20,9 +18,7 @@ describe('LINEAGE_STAGES', () => {
   })
 
   it('stages are sorted by min_level ascending', () => {
-    for (const lineage of Object.keys(LINEAGE_STAGES) as Array<
-      keyof typeof LINEAGE_STAGES
-    >) {
+    for (const lineage of Object.keys(LINEAGE_STAGES) as Array<keyof typeof LINEAGE_STAGES>) {
       const stages = LINEAGE_STAGES[lineage]
       for (let i = 1; i < stages.length; i++) {
         expect(stages[i]!.min_level).toBeGreaterThanOrEqual(stages[i - 1]!.min_level)

@@ -35,9 +35,10 @@ describe('lineageToCombatType', () => {
 describe('TYPE_CHART (18 canonical types)', () => {
   it('covers every type both ways', () => {
     expect(COMBAT_TYPES).toHaveLength(18)
-    for (const a of COMBAT_TYPES) for (const d of COMBAT_TYPES) {
-      expect(typeof TYPE_CHART[a][d]).toBe('number')
-    }
+    for (const a of COMBAT_TYPES)
+      for (const d of COMBAT_TYPES) {
+        expect(typeof TYPE_CHART[a][d]).toBe('number')
+      }
   })
 
   it('honours canonical immunities (0×)', () => {

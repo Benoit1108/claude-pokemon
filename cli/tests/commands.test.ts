@@ -16,17 +16,31 @@ const strip = (s: string): string => s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '') // 
 const NOW = '2026-06-11T12:00:00Z'
 const data = {
   language: 'en',
-  wild_pool: [{ id: 'pikachu', type: 'Electric', national_dex: 25, name_fr: 'Pikachu', name_en: 'Pikachu' }],
+  wild_pool: [
+    { id: 'pikachu', type: 'Electric', national_dex: 25, name_fr: 'Pikachu', name_en: 'Pikachu' },
+  ],
   trade_cooldown_hours: 24,
 }
 
 function trade(state: unknown, decisions: unknown, args: string[] = ['Ash']) {
-  return runCommand({ name: 'trade', args, state, data, locale: en, now: NOW, nowEpoch: 0, decisions } as never)!
+  return runCommand({
+    name: 'trade',
+    args,
+    state,
+    data,
+    locale: en,
+    now: NOW,
+    nowEpoch: 0,
+    decisions,
+  } as never)!
 }
 
 describe('runCommand: trade pull', () => {
   it('adds a wild trade entry to the team (deterministic given decisions)', () => {
-    const r = trade({ team: [], pc_storage: [] }, { pool_idx: 0, trade_level: 20, trade_shiny: false })
+    const r = trade(
+      { team: [], pc_storage: [] },
+      { pool_idx: 0, trade_level: 20, trade_shiny: false },
+    )
     expect(r.stateChanged).toBe(true)
     expect(r.state.team).toHaveLength(1)
     const e = r.state.team[0]
@@ -36,15 +50,27 @@ describe('runCommand: trade pull', () => {
     expect(e.max_stage).toBe('Pikachu')
     expect(e.source).toBe('trade')
     expect(r.state.last_trade_at).toBe(NOW)
-    expect(r.state.recent_events[0]).toMatchObject({ type: 'trade', id: 'pikachu', name: 'Pikachu', at: NOW })
+    expect(r.state.recent_events[0]).toMatchObject({
+      type: 'trade',
+      id: 'pikachu',
+      name: 'Pikachu',
+      at: NOW,
+    })
     const out = strip(r.output)
     expect(out).toContain('#025 Pikachu Lv.20')
     expect(out).toContain('(par Ash)')
   })
 
   it('marks a shiny pull and routes a full team to the PC', () => {
-    const six = Array.from({ length: 6 }, (_, i) => ({ lineage: 'fire', level: 50, max_stage: `M${i}` }))
-    const r = trade({ team: six, pc_storage: [] }, { pool_idx: 0, trade_level: 30, trade_shiny: true })
+    const six = Array.from({ length: 6 }, (_, i) => ({
+      lineage: 'fire',
+      level: 50,
+      max_stage: `M${i}`,
+    }))
+    const r = trade(
+      { team: six, pc_storage: [] },
+      { pool_idx: 0, trade_level: 30, trade_shiny: true },
+    )
     expect(r.state.team).toHaveLength(6) // unchanged
     expect(r.state.pc_storage).toHaveLength(1)
     expect(r.state.pc_storage[0].is_shiny).toBe(true)
