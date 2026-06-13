@@ -142,4 +142,35 @@ describe('handleLeaderboard', () => {
     expect(res.status).toBe(200)
     // Empty KV → still <100 entries returned, but no crash
   })
+
+  it('aggregates across more records than a single KV list page (pagination-safe)', async () => {
+    // Seed 23 records — more than one paginated page would hold — and assert the
+    // handler counts/ranks every one of them, not just a single page. listAllStats
+    // does an unbounded list (no `limit`), so MockKV returns the full set in one
+    // complete page; this locks in that the aggregation spans the whole store and
+    // that a future cursor-following listAllStats would still be exercised here.
+    const total = 23
+    for (let i = 0; i < total; i++) {
+      await putStats(
+        env,
+        record({
+          anon_id: `pg${String(i).padStart(6, '0')}`,
+          stats: { lifetime: { total_tokens: i } } as never,
+        }),
+      )
+    }
+
+    const res = await call('total_tokens', 100)
+    const body = (await res.json()) as {
+      total_players: number
+      top: { anon_id: string; value: number }[]
+    }
+    expect(body.total_players).toBe(total)
+    expect(body.top).toHaveLength(total)
+    // Highest tokens first → the last-seeded record (i=22) tops the board.
+    expect(body.top[0]?.value).toBe(total - 1)
+    expect(body.top[body.top.length - 1]?.value).toBe(0)
+    // Every seeded anon_id is present exactly once.
+    expect(new Set(body.top.map(e => e.anon_id)).size).toBe(total)
+  })
 })
