@@ -8,7 +8,7 @@
 // engine streams its human-facing text via a `write` callback (→ stderr, which
 // bash leaves attached to the terminal) and emits only the session op on stdout.
 
-import { httpJson } from './http.js'
+import { httpJson, sanitizeForTerminal } from './http.js'
 
 const GITHUB_DEVICE_CODE_URL = 'https://github.com/login/device/code'
 const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
@@ -107,8 +107,8 @@ export async function runLogin(
     10_000,
   )
   const deviceCode: string = dc.device_code ?? ''
-  const userCode: string = dc.user_code ?? ''
-  const verificationUri: string = dc.verification_uri ?? ''
+  const userCode: string = sanitizeForTerminal(dc.user_code ?? '')
+  const verificationUri: string = sanitizeForTerminal(dc.verification_uri ?? '')
   let interval = coerceInterval(dc.interval)
   if (!deviceCode) {
     write('  GitHub device-flow request failed (is Device Flow enabled on the OAuth app?).\n')
@@ -134,7 +134,7 @@ export async function runLogin(
     )
     accessToken = poll.access_token ?? ''
     if (accessToken) break
-    const err: string = poll.error ?? ''
+    const err: string = sanitizeForTerminal(poll.error ?? '')
     if (err === 'slow_down') interval += 5
     else if (err === 'authorization_pending' || err === '') {
       // keep polling
@@ -154,7 +154,7 @@ export async function runLogin(
     10_000,
   )
   const sessionToken: string = sess.session_token ?? ''
-  const loginName: string = sess.github?.login ?? ''
+  const loginName: string = sanitizeForTerminal(sess.github?.login ?? '')
   if (!sessionToken) {
     write('  Session exchange with the arena failed.\n')
     return { sessionToken: null }

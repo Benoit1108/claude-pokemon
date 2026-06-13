@@ -62,8 +62,10 @@ export function describeFailure(r: Extract<HttpResult, { ok: false }>): string {
  * title writes or OSC52 clipboard access; keeps printable text intact).
  */
 export function sanitizeForTerminal(s: string): string {
+  // C0 controls + DEL + C1 controls (\x80-\x9f, where the 8-bit CSI/OSC
+  // introducers live) — a MITM/malicious server can't smuggle ANSI/OSC escapes.
   // eslint-disable-next-line no-control-regex
-  return s.replace(/[\x00-\x1f\x7f]/g, '')
+  return s.replace(/[\x00-\x1f\x7f-\x9f]/g, '')
 }
 
 /** sanitizeForTerminal over a JSON.stringify of an unknown server body. */
