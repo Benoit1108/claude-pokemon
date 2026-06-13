@@ -3,8 +3,8 @@
 // from `claude-pokemon-shared/contracts` — the single source of truth shared
 // with the Worker, so they can't drift. The response-envelope DTOs below
 // mirror api/src/types.ts (kept in sync manually).
-export type { Lineage, LifetimeStats, ActiveStats } from 'claude-pokemon-shared/contracts'
 import type { Lineage, LifetimeStats, ActiveStats } from 'claude-pokemon-shared/contracts'
+export type { Lineage, LifetimeStats, ActiveStats } from 'claude-pokemon-shared/contracts'
 
 export type LeaderboardMetric =
   | 'total_tokens'
