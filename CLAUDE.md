@@ -31,9 +31,12 @@ claude-pokemon/
 │   │   ├── special/eevee.json Friendship + evolution_rules
 │   │   ├── lineages/gen{N}.json    Lignées par génération
 │   │   └── wild_pool/gen{N}.json   Wilds par génération
+│   └── locales/{fr,en}.json   UI strings i18n
+├── scripts/                   Outils mainteneur (hors tarball npm)
 │   ├── build-data.sh          Concatène lib/data/** → lib/data.default.json (-S déterministe)
-│   ├── locales/{fr,en}.json   UI strings i18n
-│   └── extract_animations.py  Pipeline Python+PIL (canvas 96x96 centré)
+│   ├── build-sprites.sh       Re-render des sprites ANSI
+│   ├── extract_animations.py  Pipeline Python+PIL (canvas 96x96 centré)
+│   └── ci-pre-push.sh         Miroir local des gates CI
 ├── skills/pokemon/SKILL.md    Slash command Claude Code
 ├── assets/demo.gif            GIF démo référencé dans le README
 ├── .demo/                     Scripts asciinema (regen reproductible du GIF)
@@ -50,7 +53,7 @@ L'**état utilisateur** vit dans `~/.claude/pokemon/state.json` (préservé entr
 - **PR workflow** (à partir de 2026-05-12) : feature branches off `main`, squash on merge. `main` branch-protected. Pre-push hook Claude Code lance les CI gates avant chaque push.
 - **CHANGELOG discipline** : chaque PR ajoute une entrée dans `[Unreleased]` du `CHANGELOG.md`. Sections Keep-a-Changelog (`Added` / `Changed` / `Fixed` / `Removed` / `Security`). Au moment de bump une version, on renomme `[Unreleased]` → `[X.Y.Z] — YYYY-MM-DD`.
 - **Strings UI** : toujours via `pokemon_t <key>` (jamais hardcoded en français/anglais)
-- **Data** : éditer **uniquement** `lib/data/**`, jamais `lib/data.default.json` directement. Re-build avec `npm run build:data` (ou `bash lib/build-data.sh`) avant commit. CI échoue si la source diverge du build.
+- **Data** : éditer **uniquement** `lib/data/**`, jamais `lib/data.default.json` directement. Re-build avec `npm run build:data` (ou `bash scripts/build-data.sh`) avant commit. CI échoue si la source diverge du build.
 - **JSON keys** : ASCII uniquement, accents seulement dans les values
 - **Backward-compat schema** : ajout de champs en `// {}` defaults dans jq (jamais retirer un champ de `state.json`)
 - **printf format** : si plusieurs `%s`, vérifier le nombre d'args (printf cycle si trop d'args → bug fréquent qui duplique les sorties)
@@ -193,7 +196,7 @@ bash bin/install.sh && bash bin/status.sh
 
 1. `jq empty` sur tous les JSON sources + locales
 2. `shellcheck -S error` (si installé)
-3. `bash lib/build-data.sh` + diff check (data.default.json en sync)
+3. `bash scripts/build-data.sh` + diff check (data.default.json en sync)
 4. `api/` : ESLint, Prettier, tsc --noEmit, vitest 312
 
 Bypass : `git push --no-verify` ou `--dry-run`. **Ne PAS bypass sans demande explicite user.**
