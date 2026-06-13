@@ -8,6 +8,13 @@ workers_dev = true
 [observability]
 enabled = false
 
+# Volumetric/per-IP rate limiting is delegated to a Cloudflare *edge* Rate
+# Limiting rule (dashboard → Security → Rate limiting), NOT app code — this
+# keeps the no-IP invariant above (the Worker never reads cf-connecting-ip).
+# Recommended: ≤60 req/min per IP on POST|DELETE|PATCH /v1/*. Per-actor
+# cooldowns (submit 24h, live-invite 30s, challenge) live in the handlers.
+# See SECURITY.md → "Rate limiting & abuse".
+
 # Public, non-secret values. GitHub OAuth client_id is exposed in the browser
 # authorize URL anyway, so it's safe to commit. The matching client_secret is a
 # wrangler secret (NOT here) : `npx wrangler secret put GITHUB_CLIENT_SECRET`.
