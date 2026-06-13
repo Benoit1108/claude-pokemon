@@ -11,7 +11,8 @@ otherwise loosely coupled :
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
-│  shared/ — TS rules engine (source of truth) + esbuild entrypoints │
+│  shared/ — pure TS rules engine (single source of truth)          │
+│  cli/    — CLI runtime + esbuild entrypoints → lib/*.mjs           │
 │  bin/    — CLI dispatcher + Node installers (*.mjs)                │
 │  lib/    — committed Node runtime bundles + data + pre-rendered    │
 │            ANSI sprites                                             │
@@ -62,14 +63,21 @@ monorepo (npm workspaces — root = CLI, + api/ shared/ web/)
 claude-pokemon/
 ├── shared/                         TS rules engine = SINGLE SOURCE OF TRUTH.
 │   ├── src/                        Pure, IO-free rules :
-│   │   ├── tick.ts, battle.ts,     Game logic (ticks, combat, moves, XP,
-│   │   │   moves.ts, xp.ts,        species, stages).
-│   │   │   species.ts, stages.ts
-│   │   ├── render/                 ANSI sprites, views, printf, i18n.
+│   │   ├── battle.ts, xp.ts,       Game logic (combat, XP, species,
+│   │   │   species.ts, stages.ts,  stages, moves) + contracts/state types.
+│   │   │   moves.ts, types.ts,
+│   │   │   state-types.ts,
+│   │   │   contracts.ts
+│   │   └── *.generated.ts          Built species/learnset data — do not edit.
+│   └── dist/                       tsc output (gitignored, rebuilt on prepare).
+├── cli/                            CLI runtime workspace (rendering, commands, IO).
+│   ├── src/                        Node-side, imports shared :
 │   │   ├── pokemon-entry.ts        esbuild entrypoint → lib/pokemon.mjs.
 │   │   ├── statusline-entry.ts     esbuild entrypoint → lib/statusline.mjs.
-│   │   └── *.generated.ts          Built species/learnset data — do not edit.
-│   ├── scripts/build-engine.mjs    esbuild dist/*-entry.js → lib/*.mjs.
+│   │   ├── render/                 ANSI sprites, views, printf, i18n.
+│   │   ├── commands/               /pokemon sub-command handlers.
+│   │   └── arena.ts, live.ts, ...  HTTP client, auth, collection, tick, IO glue.
+│   ├── scripts/build-engine.mjs    esbuild cli/dist/*-entry.js → lib/*.mjs.
 │   └── dist/                       tsc output (gitignored, rebuilt on prepare).
 ├── bin/                            Node CLI (no bash).
 │   ├── claude-pokemon              Dispatcher (npx target). Bash-free runtime
@@ -134,18 +142,21 @@ bin/{install|update|...}.mjs   (Node installers — file copy, settings.json pat
         ▼
 lib/statusline.mjs   (statusline render, 1 output / tick)
 lib/pokemon.mjs      (/pokemon sub-commands : views + actions)
-        │ both are esbuild bundles of shared/src/*-entry.ts
+        │ both are esbuild bundles of cli/src/*-entry.ts
         │ read
         ▼
 ~/.claude/pokemon/state.json      User state (preserved across updates).
 ~/.claude/pokemon/data.json       Default config (updated via merge).
 ```
 
-*Business logic* lives only in `shared/src/` (the TS engine). `lib/pokemon.mjs`
-and `lib/statusline.mjs` are committed esbuild bundles — never hand-edit them;
-regenerate with `npm run build:data`. The `bin/*.mjs` scripts are thin
-orchestrators (file copy, settings.json patch). New sub-commands go in the
-`shared/` engine with locale strings in `lib/locales/`.
+The *pure rules* live only in `shared/src/` (the IO-free TS engine: battle,
+XP, species, stages, moves). The CLI *rendering, commands and IO* live in
+`cli/src/` (ANSI views, sub-command handlers, HTTP/auth/collection glue). The
+`lib/pokemon.mjs` and `lib/statusline.mjs` bundles are committed esbuild builds
+of `cli/src/*-entry.ts` — never hand-edit them; regenerate with
+`npm run build:data`. The `bin/*.mjs` scripts are thin orchestrators (file
+copy, settings.json patch). New rules go in `shared/`; new CLI commands/views
+go in `cli/`, with locale strings in `lib/locales/`.
 
 ### Worker side (TypeScript)
 
@@ -211,7 +222,7 @@ src/env.d.ts                  Worker bindings (env.STATS).
 ```
 statusline tick (every Claude Code statusline render)
     │
-    ├─ if stats_share.enabled && last_submit > 24h  (shared/src/autosubmit.ts)
+    ├─ if stats_share.enabled && last_submit > 24h  (cli/src/autosubmit.ts)
     ▼
 build payload (whitelist : lifetime stats + active pokemon + badge IDs)
     │
@@ -247,8 +258,9 @@ Worker reads KV → JSON response (CORS open, cached client-side)
 
 ### Adding a CLI sub-command
 
-1. Add the view/command in `shared/src/` (engine + `render/views.ts`).
-2. Wire it into the dispatch in `shared/src/pokemon-entry.ts`.
+1. Add any new rules in `shared/src/`; add the view/command in `cli/src/`
+   (`commands/` + `render/views.ts`).
+2. Wire it into the dispatch in `cli/src/pokemon-entry.ts`.
 3. Add locale strings to `lib/locales/{fr,en}.json` (parity is checked in CI).
 4. Run `npm run build:data` to regenerate the `lib/*.mjs` bundles (+ data if touched).
 5. Test via `node lib/pokemon.mjs <name>` and `npm run -w shared test`.
@@ -267,7 +279,7 @@ build time (single source of truth). On `update`, game **content** is copied
 fresh from the package (`bin/update.mjs` → `content.json`, no merge): balance
 changes to lineages/items/thresholds always reach existing users. Only the user
 **config** is preserved (the `CONFIG_KEYS` allowlist in `bin/update.mjs`, mirroring
-`shared/src/entry-io.ts`) — never the content keys.
+`cli/src/entry-io.ts`) — never the content keys.
 
 ## Testing strategy
 

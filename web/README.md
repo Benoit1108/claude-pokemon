@@ -13,7 +13,7 @@ The **web arena** for [`claude-pokemon`](https://github.com/Benoit1108/claude-po
 - 🎴 **Public trainer cards** at `/trainer/[anonId]` — sprite, lineage, badges, quote, bio, pinned badges, lifetime stats
 - 📖 **Pokédex** (251 species, Gen 1 + Gen 2) — type/generation/rarity filters, FR/EN names toggle, greyed-out species for un-encountered (auto when signed in, manual via `?trainer=...`)
 - ⚔️ **Arena pool** for async PvP — challenge any opted-in trainer, replay battles tour-par-tour
-- 🤺 **Live PvP 1v1** via Cloudflare Durable Objects — matchmaking, 30s turn timer, reconnection grace
+- 🤺 **Live PvP 1v1** via the KV-backed Worker — matchmaking, 30s turn timer, reconnection grace
 - 🏞️ **Wild zones** (`/zones`) — 8 biomes, explore + fight + flee, lineage-tinted maps
 - 🗻 **Trail** (`/ladder`) — 8 scripted bot trainers (Bug Catcher → Champion), auto + manual play modes with juice pack (confetti, screen shake, floating damage)
 - 👤 **Web-native signup** (`/signup`) — no CLI needed, pick a starter + display name, get a recovery key
