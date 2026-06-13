@@ -8,12 +8,12 @@
 // ported faithfully (pokemon_theme_accent / pokemon_ansi_color /
 // pokemon_rainbow_name), reading data.theme.
 import { evoField } from './render/views/index.js'
+import { RESET, BOLD, DIM } from './render/ansi.js'
 import { progressPct, xpMultiplier } from 'claude-pokemon-shared/xp'
 import type { PokemonState, PokemonData } from 'claude-pokemon-shared/state-types'
 
-const RESET = '\x1b[0m'
-const BOLD = '\x1b[1m'
-const DIM = '\x1b[2m'
+// Statusline-specific palette (hot path renders WITH ansi codes; parity is
+// checked against the sl_* goldens). RESET/BOLD/DIM come from render/ansi.ts.
 const WHITE = '\x1b[37m'
 const CYAN = '\x1b[36m'
 const YELLOW = '\x1b[33m'
@@ -21,6 +21,7 @@ const BRIGHT_RED = '\x1b[91m'
 const BRIGHT_YELLOW = '\x1b[93m'
 const BRIGHT_GREEN = '\x1b[92m'
 const BRIGHT_MAGENTA = '\x1b[95m'
+const BRIGHT_CYAN = '\x1b[96m'
 
 export function themeAccent(theme: string): string {
   switch (theme) {
@@ -182,7 +183,7 @@ export function renderInline(state: PokemonState, data: PokemonData): string {
   const xpLabel = xpFmt(xpInLevel)
   const nextLabel = xpFmt(nextLevelSize)
 
-  const pctColor = pct >= 75 ? themeAccent(theme) : '\x1b[36m'
+  const pctColor = pct >= 75 ? themeAccent(theme) : CYAN
 
   const gaugeWidth = 10
   let filled = Math.trunc(pct / 10)
@@ -193,12 +194,12 @@ export function renderInline(state: PokemonState, data: PokemonData): string {
   const gaugeEmpty = '▱'.repeat(empty)
 
   let gaugeColor = colorCode
-  if (color === 'dim' && !shinyColor) gaugeColor = '\x1b[96m'
+  if (color === 'dim' && !shinyColor) gaugeColor = BRIGHT_CYAN
 
-  const LEVEL_COLOR = '\x1b[2m\x1b[37m'
+  const LEVEL_COLOR = DIM + WHITE
 
   if (flash > 0) {
-    const sparkle = '\x1b[93m✨\x1b[0m'
+    const sparkle = `${BRIGHT_YELLOW}✨${RESET}`
     return (
       `${shinyPrefix}${colorCode}${BOLD}${emoji} ${sparkle}${name}${sparkle}${RESET} ` +
       `${LEVEL_COLOR}Lv.${level}${RESET} ${colorCode}${xpLabel}${RESET}/${DIM}${nextLabel}${RESET} ` +
