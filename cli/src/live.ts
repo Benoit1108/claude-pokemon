@@ -3,7 +3,7 @@
 // Renders HP/state + the local player's move hints.
 import { bashPrintf } from './render/printf.js'
 import { t, type Locale } from './render/i18n.js'
-import { lineageEmoji } from './render/views.js'
+import { lineageEmoji } from './render/views/index.js'
 import { httpJson, describeFailure, describeBody, sanitizeForTerminal } from './http.js'
 import { movesForParticipant } from 'claude-pokemon-shared/moves'
 import { RESET, BOLD, DIM, GOLD } from './render/ansi.js'

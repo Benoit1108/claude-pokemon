@@ -16,8 +16,8 @@ import {
   type LiveBattleSide,
   type LiveBattleView,
 } from '../types'
-import { TYPE_CHART, attackPower, hashSeed, maxHp, mulberry32 } from './battle'
-import { movesForParticipant, type Move } from './moves'
+import { TYPE_CHART, attackPower, hashSeed, maxHp, mulberry32 } from 'claude-pokemon-shared/battle'
+import { movesForParticipant, type Move } from 'claude-pokemon-shared/moves'
 
 export function liveBattleView(record: LiveBattleRecord): LiveBattleView {
   const c = record.challenger

@@ -6,7 +6,7 @@ import {
   maxHp,
   mulberry32,
   resolveBattle,
-} from '../../src/lib/battle'
+} from 'claude-pokemon-shared/battle'
 import type { BattleParticipant } from '../../src/types'
 
 const challenger: BattleParticipant = {

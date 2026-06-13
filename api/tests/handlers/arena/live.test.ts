@@ -6,7 +6,8 @@ import { handleLiveStatus } from '../../../src/handlers/arena/live-status'
 import { handleLiveForfeit } from '../../../src/handlers/arena/live-forfeit'
 import { handleLiveCommit } from '../../../src/handlers/arena/live-commit'
 import { getLiveBattle, putLiveBattle } from '../../../src/lib/kv'
-import { movesForStage, stageFor } from '../../../src/lib/moves'
+import { movesForStage } from 'claude-pokemon-shared/moves'
+import { stageFor } from 'claude-pokemon-shared/stages'
 import { MockKV, makeEnv } from '../../helpers/mockKV'
 
 const challenger = {

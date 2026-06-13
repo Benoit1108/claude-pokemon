@@ -12,7 +12,7 @@ import {
   renderTrainerCard,
   renderRecap,
   type RenderContext,
-} from './views.js'
+} from './views/index.js'
 import type { Locale } from './i18n.js'
 import type { PokemonState, PokemonData } from 'claude-pokemon-shared/state-types'
 

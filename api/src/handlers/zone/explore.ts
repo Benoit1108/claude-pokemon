@@ -44,7 +44,7 @@ import {
   ZONE_SHINY_RATE,
   type WildZone,
 } from '../../data/zones'
-import { speciesToCombatType } from '../../data/species-types'
+import { speciesToCombatType } from 'claude-pokemon-shared'
 import { ANON_ID_RE, POKEDEX_MAX_IDS, type ItemDrop, type PendingEncounter } from '../../types'
 
 interface ExploreSuccess {

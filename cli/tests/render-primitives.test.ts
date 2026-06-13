@@ -13,7 +13,7 @@ import {
   lineageEmoji,
   resolveStageDefault,
   evoField,
-} from '../src/render/views.js'
+} from '../src/render/views/index.js'
 import { jqStr } from '../src/render/views/format.js'
 import { renderView, SUPPORTED_VIEWS } from '../src/render/index.js'
 import type { PokemonState, PokemonData } from 'claude-pokemon-shared/state-types'

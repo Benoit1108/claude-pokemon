@@ -1,9 +1,8 @@
 // Barrel for the CLI view renderers (split out of the former single views.ts in
-// a pure structural refactor). Preserves the EXACT public import surface: every
-// symbol the old `./views.js` exported is re-exported here, from the same
-// specifier, so sibling files (`render/index.ts`, `render/net.ts`, `live.ts`,
-// `arena.ts`, `commands.ts`, `statusline.ts`, `tick.ts`, `pokemon-entry.ts`)
-// and the tests keep resolving `./views.js` / `../render/views.js` unchanged.
+// a pure structural refactor). Re-exports every renderer + primitive from the
+// sibling modules in this directory; importers point at `./views/index.js`
+// (`render/index.ts`, `render/net.ts`, `live.ts`, `arena.ts`, `commands/game.ts`,
+// `statusline.ts`, `tick.ts`, `pokemon-entry.ts`) and the tests.
 
 // Shared formatting primitives + the RenderContext shape.
 export { padChars, tPad, fmtInt, lineageEmoji } from './format.js'

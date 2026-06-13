@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { runCommand } from '../src/commands.js'
+import { runCommand } from '../src/commands/index.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..', '..')
