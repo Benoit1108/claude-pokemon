@@ -38,6 +38,10 @@
     "./state-types": {
       "types": "./dist/state-types.d.ts",
       "import": "./dist/state-types.js"
+    },
+    "./contracts": {
+      "types": "./dist/contracts.d.ts",
+      "import": "./dist/contracts.js"
     }
   },
   "files": [

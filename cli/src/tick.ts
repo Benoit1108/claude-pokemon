@@ -311,21 +311,26 @@ function computeMultipliers(c: TickCtx): void {
 function applyRandomEvents(c: TickCtx): void {
   const { s, data, now, decisions } = c
   if (decisions.berry.fired) {
-    // fired implies the index was rolled against this pool — entry exists.
-    const b = (data.berries ?? [])[decisions.berry.index]!
-    s.total_xp = (s.total_xp ?? 0) + (b.xp_bonus ?? 0)
-    s.recent_events = prepend10(s.recent_events, {
-      type: 'berry',
-      id: b.id,
-      name: b.name,
-      emoji: b.emoji,
-      xp: b.xp_bonus,
-      at: now,
-    })
+    // fired implies the index was rolled against this pool — but guard rather
+    // than assert: an empty pool simply no-ops the event instead of throwing.
+    const b = (data.berries ?? [])[decisions.berry.index]
+    if (b) {
+      s.total_xp = (s.total_xp ?? 0) + (b.xp_bonus ?? 0)
+      s.recent_events = prepend10(s.recent_events, {
+        type: 'berry',
+        id: b.id,
+        name: b.name,
+        emoji: b.emoji,
+        xp: b.xp_bonus,
+        at: now,
+      })
+    }
   }
   if (decisions.encounter.fired) {
-    // fired implies the index was rolled against this pool — entry exists.
-    const w = (data.wild_pool ?? [])[decisions.encounter.index]!
+    // fired implies the index was rolled against this pool — but guard rather
+    // than assert: an empty pool simply no-ops the encounter (last block here).
+    const w = (data.wild_pool ?? [])[decisions.encounter.index]
+    if (!w) return
     const wild = (s.pokedex_wild ??= {})
     wild[w.id] = {
       count: (wild[w.id]?.count ?? 0) + 1,
@@ -363,17 +368,19 @@ function applyRandomEvents(c: TickCtx): void {
       // jq `.items | keys` is sorted lexicographically — match it (the index
       // was rolled against the same sorted length on the engine side).
       const itemKeys = Object.keys(data.items ?? {}).sort()
-      // index was rolled against this same sorted-keys length — entry exists.
-      const itemId = itemKeys[decisions.item.index]!
-      const inv = (s.items ??= {})
-      inv[itemId] = (inv[itemId] ?? 0) + 1
-      s.recent_events = prepend10(s.recent_events, {
-        type: 'item',
-        id: itemId,
-        name: data.items?.[itemId]?.name,
-        emoji: data.items?.[itemId]?.emoji,
-        at: now,
-      })
+      // index rolled against this same sorted-keys length — guard, don't assert.
+      const itemId = itemKeys[decisions.item.index]
+      if (itemId) {
+        const inv = (s.items ??= {})
+        inv[itemId] = (inv[itemId] ?? 0) + 1
+        s.recent_events = prepend10(s.recent_events, {
+          type: 'item',
+          id: itemId,
+          name: data.items?.[itemId]?.name,
+          emoji: data.items?.[itemId]?.emoji,
+          at: now,
+        })
+      }
     }
   }
 }
