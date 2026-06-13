@@ -86,7 +86,6 @@ claude-pokemon/
 │   │   ├── lineages/gen{N}.json    Lineages per generation.
 │   │   ├── wild_pool/gen{N}.json   Wild pokédex per generation.
 │   │   └── ...                     items, berries, seasons, special.
-│   ├── build-data.sh               (maintainer) Concat lib/data/** → data.default.json (deterministic, sorted keys).
 │   ├── sprites/, sprites-mini/     Pre-rendered ANSI sprites (committed).
 │   └── locales/{fr,en}.json        UI strings i18n.
 ├── api/                            Cloudflare Worker (separate npm root).

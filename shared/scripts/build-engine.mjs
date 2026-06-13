@@ -20,6 +20,11 @@ const common = {
   format: 'esm',
   platform: 'node',
   target: 'node18',
+  // Pin esbuild's module-boundary path comments to repoRoot so the output is
+  // byte-identical no matter the invoking CWD (repo root vs the `shared`
+  // workspace). Without this, the `// <path>.js` markers flip between
+  // `shared/dist/…` and `dist/…` and the committed-bundle drift check fails.
+  absWorkingDir: repoRoot,
   // Deterministic output (no timestamp/path noise) — the bundles are committed
   // and drift-checked, so byte-stability across machines matters.
   banner: {

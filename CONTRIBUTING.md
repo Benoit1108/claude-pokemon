@@ -51,7 +51,7 @@ L'**état utilisateur** est dans `~/.claude/pokemon/state.json`. Il survit aux u
 
 ### Scripts mainteneur uniquement
 
-- **`lib/build-data.sh`** : concatène `lib/data/**` → `lib/data.default.json` (déterministe, clés triées).
+- **`scripts/build-data.sh`** : concatène `lib/data/**` → `lib/data.default.json` (déterministe, clés triées).
 - **`scripts/build-sprites.sh`** : régénère les sprites ANSI pré-rendus.
 - **`scripts/ci-pre-push.sh`** : miroir local de la CI (lancé par le hook pre-push via `npm run ci:pre-push`).
 

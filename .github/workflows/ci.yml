@@ -52,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       # Runtime is bash-free (R3d-6); only the maintainer build scripts remain.
-      - run: shellcheck -S error lib/build-data.sh scripts/build-sprites.sh scripts/ci-pre-push.sh
+      - run: shellcheck -S error scripts/build-data.sh scripts/build-sprites.sh scripts/ci-pre-push.sh
 
   bash-json:
     name: 🌍 Data JSON validate + locale parity + build drift
@@ -72,7 +72,7 @@ jobs:
           done
       - name: Verify data.default.json is in sync with sources
         run: |
-          bash lib/build-data.sh
+          bash scripts/build-data.sh
           if ! git diff --exit-code lib/data.default.json; then
             echo "::error::lib/data.default.json is stale. Run \`npm run build:data\` and commit."
             exit 1

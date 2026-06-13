@@ -61,7 +61,7 @@ run "shellcheck (errors only) on maintainer scripts" bash -c '
     exit 0
   fi
   # Runtime is bash-free (R3d-6); only the maintainer build scripts remain.
-  shellcheck -S error lib/build-data.sh scripts/build-sprites.sh scripts/ci-pre-push.sh
+  shellcheck -S error scripts/build-data.sh scripts/build-sprites.sh scripts/ci-pre-push.sh
 '
 
 run "Node-native CLI entrypoints syntax-check" bash -c '
@@ -70,7 +70,7 @@ run "Node-native CLI entrypoints syntax-check" bash -c '
 '
 
 run "lib/data.default.json is in sync with lib/data/** sources" bash -c '
-  bash lib/build-data.sh >/dev/null
+  bash scripts/build-data.sh >/dev/null
   if ! git diff --exit-code --quiet lib/data.default.json; then
     echo "  ::error:: data.default.json is stale. Run \`npm run build:data\` and stage the result."
     git --no-pager diff --stat lib/data.default.json
