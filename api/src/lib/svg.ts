@@ -46,7 +46,7 @@ export function escapeXml(s: unknown): string {
           '"': '&quot;',
           "'": '&apos;',
         }) as Record<string, string>
-      )[c],
+      )[c]!, // the regex only matches chars that are keys of this map
   )
 }
 

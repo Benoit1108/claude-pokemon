@@ -29,7 +29,7 @@ function randomHex(byteLen: number): string {
   let out = ''
   for (let i = 0; i < bytes.length; i++) {
     const b = bytes[i]!
-    out += HEX[b >> 4] + HEX[b & 0x0f]
+    out += HEX[b >> 4]! + HEX[b & 0x0f]! // nibbles are 0–15, HEX has 16 chars
   }
   return out
 }

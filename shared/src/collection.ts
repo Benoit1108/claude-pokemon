@@ -48,7 +48,7 @@ export function activeToArchive(state: PokemonState, now: string): PokemonState 
   if (team.length > 6) {
     const pc = Array.isArray(s.pc_storage) ? s.pc_storage : []
     s.pc_storage = pc
-    pc.push(team[0])
+    pc.push(team[0]!) // team.length > 6 here, so team[0] exists
     s.team = team.slice(1)
   }
   const ls = (s.lifetime_stats = s.lifetime_stats ?? {})
@@ -99,7 +99,7 @@ function loadEntryToActive(s: PokemonState, entry: CompanionEntry, now: string):
 export function loadTeamToActive(state: PokemonState, now: string, idx: number): PokemonState {
   const s = clone(state)
   const team = s.team ?? []
-  loadEntryToActive(s, team[idx], now)
+  loadEntryToActive(s, team[idx]!, now) // idx is bounds-checked by the caller
   s.team = removeAt(team, idx)
   return s
 }
@@ -110,7 +110,7 @@ export function teamToPc(state: PokemonState, idx: number): PokemonState {
   const team = s.team ?? []
   const pc = Array.isArray(s.pc_storage) ? s.pc_storage : []
   s.pc_storage = pc
-  pc.push(team[idx])
+  pc.push(team[idx]!) // idx is bounds-checked by the caller
   s.team = removeAt(team, idx)
   return s
 }
@@ -123,14 +123,14 @@ export function pcToTeamOrActive(state: PokemonState, now: string, idx: number):
   const s = clone(state)
   const pc = s.pc_storage ?? []
   if (activeEmpty) {
-    loadEntryToActive(s, pc[idx], now)
+    loadEntryToActive(s, pc[idx]!, now) // idx is bounds-checked by the caller
     s.pc_storage = removeAt(pc, idx)
     return s
   }
   if (!teamFull) {
     const team = Array.isArray(s.team) ? s.team : []
     s.team = team
-    team.push(pc[idx])
+    team.push(pc[idx]!) // idx is bounds-checked by the caller
     s.pc_storage = removeAt(pc, idx)
     return s
   }

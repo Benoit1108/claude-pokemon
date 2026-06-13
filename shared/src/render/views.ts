@@ -363,7 +363,7 @@ function renderRebalanceNotice(ctx: RenderContext, totalXp: number): string {
 export function renderMain(ctx: RenderContext): string {
   const { state, data, locale } = ctx
   const thresholds: number[] = data.thresholds ?? []
-  const threshold = (lvl: number): number => thresholds[lvl]
+  const threshold = (lvl: number): number => thresholds[lvl]! // lvl is always an in-bounds level index
   const maxLevel = thresholds.length - 1
 
   const lineage = state.lineage ?? 'fire'
@@ -718,7 +718,7 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
       const lb = b[1].last_seen ?? ''
       return la < lb ? -1 : la > lb ? 1 : 0
     })
-    return entries[entries.length - 1][0]
+    return entries[entries.length - 1]![0] // entries.length > 0 checked above
   }
 
   let sinceIso: string

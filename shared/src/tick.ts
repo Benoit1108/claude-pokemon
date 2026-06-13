@@ -84,8 +84,10 @@ export function tick(input: TickInput): { state: PokemonState } {
   }
   if (linNow !== '' && s.is_shiny === true && (pokedex[linNow]?.shiny_seen ?? false) === false) {
     const pd = pokedex[linNow]
-    pd.shiny_seen = true
-    pd.shiny_count = (pd.shiny_count ?? 0) + 1
+    if (pd) {
+      pd.shiny_seen = true
+      pd.shiny_count = (pd.shiny_count ?? 0) + 1
+    }
   }
   if (s.is_shiny === true && ls.total_shinies === 0) {
     ls.total_shinies = 1
@@ -203,7 +205,7 @@ export function tick(input: TickInput): { state: PokemonState } {
   // ── Random events (resolved upstream via `decisions`) ──
   if (decisions.berry.fired) {
     // fired implies the index was rolled against this pool — entry exists.
-    const b = (data.berries ?? [])[decisions.berry.index]
+    const b = (data.berries ?? [])[decisions.berry.index]!
     s.total_xp = (s.total_xp ?? 0) + (b.xp_bonus ?? 0)
     s.recent_events = prepend10(s.recent_events, {
       type: 'berry',
@@ -215,7 +217,8 @@ export function tick(input: TickInput): { state: PokemonState } {
     })
   }
   if (decisions.encounter.fired) {
-    const w = (data.wild_pool ?? [])[decisions.encounter.index]
+    // fired implies the index was rolled against this pool — entry exists.
+    const w = (data.wild_pool ?? [])[decisions.encounter.index]!
     const wild = (s.pokedex_wild ??= {})
     wild[w.id] = {
       count: (wild[w.id]?.count ?? 0) + 1,
@@ -253,7 +256,8 @@ export function tick(input: TickInput): { state: PokemonState } {
       // jq `.items | keys` is sorted lexicographically — match it (the index
       // was rolled against the same sorted length on the engine side).
       const itemKeys = Object.keys(data.items ?? {}).sort()
-      const itemId = itemKeys[decisions.item.index]
+      // index was rolled against this same sorted-keys length — entry exists.
+      const itemId = itemKeys[decisions.item.index]!
       const inv = (s.items ??= {})
       inv[itemId] = (inv[itemId] ?? 0) + 1
       s.recent_events = prepend10(s.recent_events, {
@@ -297,7 +301,7 @@ export function tick(input: TickInput): { state: PokemonState } {
       isShiny = decisions.shiny
       s.is_shiny = isShiny
       if (isShiny) {
-        const pd = pokedex[lineage]
+        const pd = (pokedex[lineage] ??= { seen: false, shiny_seen: false, count: 0, shiny_count: 0, first_seen_at: null })
         pd.shiny_seen = true
         pd.shiny_count = (pd.shiny_count ?? 0) + 1
         ls.total_shinies = (ls.total_shinies ?? 0) + 1
@@ -322,16 +326,16 @@ export function tick(input: TickInput): { state: PokemonState } {
         if (friendship >= threshold) {
           chosenForm = (hour >= 6 && hour < 18 ? rules.day_default : rules.night_default) ?? ''
         } else {
-          const fallback = ['fire_stone', 'water_stone', 'thunder_stone'][decisions.eevee_fallback_index]
+          const fallback = ['fire_stone', 'water_stone', 'thunder_stone'][decisions.eevee_fallback_index] ?? ''
           chosenForm = rules[fallback] ?? ''
         }
       }
       s.eevee_form = chosenForm
       if (usedStone) {
-        // usedStone was found in s.items above — the inventory exists.
+        // usedStone was found in s.items above (> 0) — the entry exists.
         const inv = s.items as Record<string, number>
-        inv[usedStone] -= 1
-        if (inv[usedStone] <= 0) delete inv[usedStone]
+        inv[usedStone]! -= 1
+        if (inv[usedStone]! <= 0) delete inv[usedStone]
       }
     }
 
