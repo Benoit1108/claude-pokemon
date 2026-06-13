@@ -6,7 +6,7 @@
 //
 // State/data writes are atomic (tmp + rename); no flock (the /pokemon commands
 // are rare + sequential — the statusline tick has its own single-writer path).
-import { readFileSync, writeFileSync, unlinkSync } from 'node:fs'
+import { readFileSync, writeFileSync, unlinkSync, chmodSync } from 'node:fs'
 import { join } from 'node:path'
 import { randomBytes } from 'node:crypto'
 import { renderView } from './render/index.js'
@@ -43,6 +43,10 @@ function readText(path: string): string {
 }
 function writeSecretFile(path: string, value: string): void {
   writeFileSync(path, value, { mode: 0o600 })
+  // `mode` only applies on CREATE — an existing file (older install, restored
+  // backup, manual edit) keeps its old perms. Re-tighten explicitly so a
+  // pre-existing world-readable secret can't survive a rotation.
+  chmodSync(path, 0o600)
 }
 function rm(path: string): void {
   try {

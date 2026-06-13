@@ -136,7 +136,14 @@ export function renderAggregate(_data: PokemonData, locale: Locale, result: NetR
   const dist: [string, number][] = Object.entries(resp.active_lineage_distribution ?? {})
   dist.sort((a, b) => Number(b[1]) - Number(a[1]))
   for (const [lin, count] of dist) {
-    out += bashPrintf('    %s %s%-12s%s : %d\n', lineageEmoji(lin), DIM, lin, RESET, Number(count))
+    out += bashPrintf(
+      '    %s %s%-12s%s : %d\n',
+      lineageEmoji(lin),
+      DIM,
+      sanitizeForTerminal(lin),
+      RESET,
+      Number(count),
+    )
   }
   return out + '\n'
 }

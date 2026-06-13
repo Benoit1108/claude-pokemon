@@ -162,7 +162,7 @@ export function renderBattle(locale: Locale, raw: BattleResp): string {
     out += bashPrintf(`  %s%s${t(locale, 'arena.winner_defender', dName)}%s\n\n`, BOLD, GOLD, RESET)
   else out += bashPrintf(`  %s${t(locale, 'arena.winner_draw')}%s\n\n`, DIM, RESET)
   out += bashPrintf(
-    `  %s${t(locale, 'arena.battle_summary', (b.turns ?? []).length, b.reason)}%s\n\n`,
+    `  %s${t(locale, 'arena.battle_summary', (b.turns ?? []).length, sanitizeForTerminal(String(b.reason ?? '')))}%s\n\n`,
     DIM,
     RESET,
   )

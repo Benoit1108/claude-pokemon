@@ -70,7 +70,7 @@ export default {
         return await handleAggregate(env)
       }
       if (url.pathname === '/v1/forget' && request.method === 'DELETE') {
-        return await handleForget(url, env)
+        return await handleForget(request, url, env)
       }
       if (url.pathname.startsWith('/v1/badge/') && request.method === 'GET') {
         return await handleBadge(url.pathname, env)

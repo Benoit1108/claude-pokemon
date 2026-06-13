@@ -1,34 +1,33 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { handleForget } from '../../src/handlers/forget'
-import { putStats, setCooldown, getStats, getCooldown } from '../../src/lib/kv'
+import { handleArenaEnable } from '../../src/handlers/arena/enable'
+import { setCooldown, getStats, getCooldown } from '../../src/lib/kv'
 import { MockKV, makeEnv } from '../helpers/mockKV'
-import type { KVRecord } from '../../src/types'
 
-const sampleRecord: KVRecord = {
+const trainer = {
   anon_id: 'abc12345',
-  display_name: null,
-  quote: null,
-  bio: null,
-  pinned_badges: [],
-  origin: 'cli',
-  schema_version: 1,
-  client_version: '1.0.0',
-  submitted_at: '2026-05-06T10:00:00Z',
-  stats: {
-    lifetime: {
-      total_tokens: 0,
-      total_evolutions: 0,
-      total_shinies: 0,
-      max_level: 0,
-      total_companions: 0,
-      lineages_completed: [],
-      games_won: 0,
-      games_played: 0,
-    },
-    active: { lineage: null, current_level: 0, is_shiny: false },
-    badges: [],
-    pokedex_seen_count: 0,
-  },
+  display_name: 'Ash',
+  lineage: 'fire',
+  level: 25,
+  is_shiny: false,
+}
+
+async function enable(env: ReturnType<typeof makeEnv>): Promise<string> {
+  const res = await handleArenaEnable(
+    new Request('https://x', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(trainer),
+    }),
+    env,
+  )
+  return ((await res.json()) as { arena_secret: string }).arena_secret
+}
+
+function forgetReq(secret: string | null, anonId = 'abc12345'): Request {
+  const headers: Record<string, string> = {}
+  if (secret) headers.authorization = `Bearer ${secret}`
+  return new Request(`https://test/v1/forget?anon_id=${anonId}`, { method: 'DELETE', headers })
 }
 
 describe('handleForget', () => {
@@ -38,40 +37,47 @@ describe('handleForget', () => {
     env = makeEnv(new MockKV())
   })
 
-  it('purges record + cooldown for valid anon_id', async () => {
-    await putStats(env, sampleRecord)
+  it('purges record + cooldown for the owner (valid secret)', async () => {
+    const secret = await enable(env)
     await setCooldown(env, 'abc12345', 86400)
+    expect(await getStats(env, 'abc12345')).not.toBeNull()
 
-    const url = new URL('https://test/v1/forget?anon_id=abc12345')
-    const res = await handleForget(url, env)
+    const res = await handleForget(forgetReq(secret), new URL(forgetReq(secret).url), env)
     expect(res.status).toBe(200)
     const body = (await res.json()) as { ok: boolean; forgotten: string }
     expect(body.ok).toBe(true)
     expect(body.forgotten).toBe('abc12345')
-
     expect(await getStats(env, 'abc12345')).toBeNull()
     expect(await getCooldown(env, 'abc12345')).toBeNull()
   })
 
-  it('returns 400 on missing anon_id query param', async () => {
-    const url = new URL('https://test/v1/forget')
-    const res = await handleForget(url, env)
-    expect(res.status).toBe(400)
-    const body = (await res.json()) as { error: string }
-    expect(body.error).toBe('invalid_anon_id')
+  it('rejects an unauthenticated delete (no Bearer) — the security fix', async () => {
+    await enable(env)
+    const req = forgetReq(null)
+    const res = await handleForget(req, new URL(req.url), env)
+    expect(res.status).toBe(401)
+    expect(await getStats(env, 'abc12345')).not.toBeNull() // record survives
   })
 
-  it('returns 400 on malformed anon_id', async () => {
-    const url = new URL('https://test/v1/forget?anon_id=BAD-ID!')
-    const res = await handleForget(url, env)
-    expect(res.status).toBe(400)
+  it('rejects a wrong secret with 401', async () => {
+    await enable(env)
+    const req = forgetReq('deadbeefdeadbeefdeadbeefdeadbeef')
+    const res = await handleForget(req, new URL(req.url), env)
+    expect(res.status).toBe(401)
+    expect(await getStats(env, 'abc12345')).not.toBeNull()
   })
 
-  it('returns 200 even when anon_id has no record (idempotent)', async () => {
-    const url = new URL('https://test/v1/forget?anon_id=deadbeef')
-    const res = await handleForget(url, env)
-    expect(res.status).toBe(200)
-    const body = (await res.json()) as { forgotten: string }
-    expect(body.forgotten).toBe('deadbeef')
+  it('returns 403 for a trainer that never enabled the arena (no secret to prove)', async () => {
+    // well-formed bearer (passes extractBearer's hex check) but no arena record
+    const req = forgetReq('deadbeefdeadbeefdeadbeefdeadbeef')
+    const res = await handleForget(req, new URL(req.url), env)
+    expect(res.status).toBe(403)
+  })
+
+  it('returns 400 on missing / malformed anon_id', async () => {
+    const r1 = new Request('https://test/v1/forget', { method: 'DELETE' })
+    expect((await handleForget(r1, new URL(r1.url), env)).status).toBe(400)
+    const r2 = forgetReq('x', 'BAD-ID!')
+    expect((await handleForget(r2, new URL(r2.url), env)).status).toBe(400)
   })
 })

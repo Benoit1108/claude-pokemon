@@ -50,12 +50,14 @@ export function renderLiveStatus(resp: LiveStatusResp, me: string): string {
   // No `?? ''` on the anon ids: bash uses bare `jq -r '.challenger.anon_id'`,
   // so a missing id prints `''` here vs the literal `null` bash emits — an
   // intentional, untested-path drift (strictly nicer). Don't add a fallback.
-  const cId = c.anon_id
+  // Sanitize when present; keep undefined undefined to preserve the no-fallback
+  // behavior above (a missing id prints '' via bashPrintf, not 'undefined').
+  const cId = c.anon_id === undefined ? undefined : sanitizeForTerminal(c.anon_id)
   const cLin = c.snapshot?.lineage ?? '?'
   const cLvl = c.snapshot?.level ?? 0
   const cHp = c.hp ?? 0
   const cPending = c.has_pending_action === true
-  const dId = d.anon_id
+  const dId = d.anon_id === undefined ? undefined : sanitizeForTerminal(d.anon_id)
   const dLin = d.snapshot?.lineage ?? '?'
   const dLvl = d.snapshot?.level ?? 0
   const dHp = d.hp
