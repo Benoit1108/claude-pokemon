@@ -3,8 +3,10 @@
 // Authenticated: anon_id is public (it appears on the leaderboard), so the
 // delete must prove ownership via the arena_secret — same credential as every
 // other mutating route. A submit-only record that never enabled the arena has
-// no secret and therefore can't be force-deleted remotely (acceptable: it's
-// just public stats keyed by a random anon_id, deletable by re-submitting).
+// no secret to prove ownership and returns 403: it can't be force-deleted
+// remotely (it holds only public, anonymous stats keyed by a random anon_id;
+// it otherwise expires with its KV TTL). A regulator-facing erase, if ever
+// needed, would be an out-of-band admin path — not this public endpoint.
 
 import type { Env } from '../env.d'
 import { jsonResp } from '../lib/http'
