@@ -210,6 +210,7 @@ export function applyTrainerToState(
   s.lifetime_stats.total_shinies = lt.total_shinies ?? 0
   s.lifetime_stats.max_level = lt.max_level ?? 0
   s.lifetime_stats.total_companions = lt.total_companions ?? lt.total_compagnons ?? 0
+  delete s.lifetime_stats.total_compagnons
   s.lifetime_stats.lineages_completed = lt.lineages_completed ?? []
   s.lifetime_stats.games_won = lt.games_won ?? 0
   s.lifetime_stats.games_played = lt.games_played ?? 0
