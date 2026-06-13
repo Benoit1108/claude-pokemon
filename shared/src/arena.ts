@@ -196,6 +196,217 @@ async function postJson(url: string, init: RequestInit): Promise<{ body: ArenaRe
   return { body: r.body as ArenaResp, failure: null }
 }
 
+// Shared context handed to every subcommand handler. `data` is the working
+// (deep-cloned) copy; mutating it is how handlers persist arena/stats_share
+// changes (caller reads `ctx.data` back after dispatch). `out` is append-only
+// via `append`; `line` is the indented one-liner helper. Handlers set the
+// mutation flags / secretOp directly on the context.
+interface ArenaCtx {
+  input: ArenaInput
+  data: PokemonData
+  locale: Locale
+  now: string
+  endpoint: string
+  webUrl: string
+  anonId: string
+  displayName: string
+  enabled: boolean
+  secret: string
+  L: (k: string, ...a: Array<string | number>) => string
+  append: (s: string) => void
+  line: (k: string, color: string, ...a: Array<string | number>) => void
+  ensureArena: () => NonNullable<PokemonData['arena']>
+  secretOp: SecretOp
+  dataChanged: boolean
+  stateOut: PokemonState
+  stateChanged: boolean
+}
+
+async function handleEnable(ctx: ArenaCtx): Promise<void> {
+  const { input, endpoint, anonId, displayName, enabled, now, L, append, line, ensureArena } = ctx
+  if (!anonId) { line('arena.no_anon_id', DIM); return }
+  if (enabled) { line('arena.already_enabled', DIM); return }
+  if (input.args[1] !== '--confirm') {
+    line('arena.privacy_notice', DIM)
+    line('arena.confirm_hint', BOLD)
+    return
+  }
+  const team = buildTeam(input.state, anonId, displayName)
+  if (!team) { line('arena.no_active', DIM); return }
+  const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/enable`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(team),
+  })
+  const sec = resp.arena_secret ?? ''
+  if (!sec) {
+    const errCode = resp.error ?? ''
+    let errMsg: string
+    if (errCode === 'validation') errMsg = sanitizeForTerminal((resp.details ?? []).join('; '))
+    else if (errCode === 'already_enabled') errMsg = L('arena.already_enabled')
+    else if (errCode === '') errMsg = failure ?? describeBody(resp)
+    else errMsg = sanitizeForTerminal(String(errCode))
+    // err message as an arg, never in the format (a literal % would corrupt).
+    append(bashPrintf('  %s%s%s\n\n', DIM, L('arena.enable_failed', errMsg), RESET))
+    return
+  }
+  ctx.secretOp = { action: 'save', value: sec }
+  const arena = ensureArena()
+  arena.enabled = true
+  arena.enabled_at = now
+  ctx.dataChanged = true
+  line('arena.enabled', GOLD, anonId)
+}
+
+async function handleDisable(ctx: ArenaCtx): Promise<void> {
+  const { endpoint, anonId, enabled, secret, line, ensureArena } = ctx
+  if (!enabled) { line('arena.already_disabled', DIM); return }
+  if (!secret) { line('arena.no_secret', DIM); return }
+  // Best-effort — failures only surface via POKEMON_DEBUG.
+  await httpJson(`${endpoint}/v1/arena/disable?anon_id=${anonId}`, {
+    method: 'DELETE',
+    headers: { authorization: `Bearer ${secret}` },
+  })
+  ctx.secretOp = { action: 'clear' }
+  ensureArena().enabled = false
+  ctx.dataChanged = true
+  line('arena.disabled', DIM)
+}
+
+async function handleRegenerate(ctx: ArenaCtx): Promise<void> {
+  const { input, endpoint, anonId, displayName, enabled, secret, line } = ctx
+  if (!enabled) { line('arena.not_enabled', DIM); return }
+  if (!secret) { line('arena.no_secret', DIM); return }
+  const team = buildTeam(input.state, anonId, displayName)
+  if (!team) { line('arena.no_active', DIM); return }
+  const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/regenerate`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
+    body: JSON.stringify(team),
+  })
+  const newSec = resp.arena_secret ?? ''
+  if (!newSec) { line('arena.regen_failed', DIM, failure ?? describeBody(resp)); return }
+  ctx.secretOp = { action: 'save', value: newSec }
+  line('arena.regen_ok', GOLD)
+}
+
+async function handleOpponents(ctx: ArenaCtx): Promise<void> {
+  const { input, endpoint, L, append, line } = ctx
+  const limit = input.args[1] ?? '10'
+  const resp = await getJson<ArenaResp>(`${endpoint}/v1/arena/opponents?limit=${limit}`)
+  if (resp === null) { line('arena.fetch_failed', DIM); return }
+  line('arena.opponents_count', DIM, resp.total ?? 0)
+  for (const o of resp.opponents ?? []) {
+    const shinyMark = o.is_shiny === true ? ' ★' : ''
+    append(bashPrintf(
+      '  %s#%s%s  %s  Lv.%s  %s%s\n',
+      DIM, sanitizeForTerminal(String(o.anon_id ?? '')), RESET, lineageEmoji(o.lineage), o.level,
+      sanitizeForTerminal(String(o.display_name ?? o.anon_id ?? '')), shinyMark,
+    ))
+  }
+  append(bashPrintf(`\n  %s${L('arena.opponents_hint')}%s\n\n`, DIM, RESET))
+}
+
+async function handleChallenge(ctx: ArenaCtx): Promise<void> {
+  const { input, locale, endpoint, webUrl, anonId, enabled, secret, append, line, ensureArena } = ctx
+  const target = input.args[1] ?? ''
+  if (!target) { line('arena.challenge_usage', DIM); return }
+  if (!enabled) { line('arena.not_enabled', DIM); return }
+  if (!secret) { line('arena.no_secret', DIM); return }
+  const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/challenge`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
+    body: JSON.stringify({ challenger_anon_id: anonId, defender_anon_id: target }),
+  })
+  const battleId = resp.battle?.battle_id ?? ''
+  if (!battleId) { line('arena.challenge_failed', DIM, failure ?? describeBody(resp)); return }
+  ensureArena().last_battle_id = battleId
+  ctx.dataChanged = true
+  append(renderBattle(locale, resp as BattleResp))
+  line('arena.replay', DIM, webUrl, battleId)
+}
+
+async function handleBattle(ctx: ArenaCtx): Promise<void> {
+  const { input, data, locale, endpoint, webUrl, append, line } = ctx
+  const id = input.args[1] || (data.arena?.last_battle_id ?? '')
+  if (!id) { line('arena.battle_usage', DIM); return }
+  const resp = await getJson<BattleResp>(`${endpoint}/v1/arena/battle/${id}`)
+  if (resp === null) { line('arena.battle_not_found', DIM, id); return }
+  append(renderBattle(locale, resp))
+  line('arena.replay', DIM, webUrl, id)
+}
+
+function handleStatus(ctx: ArenaCtx): void {
+  const { endpoint, anonId, enabled, L, append } = ctx
+  if (enabled) append(bashPrintf(`  %s${L('arena.status_enabled', anonId)}%s\n`, GOLD, RESET))
+  else append(bashPrintf(`  %s${L('arena.status_disabled')}%s\n`, DIM, RESET))
+  append(bashPrintf(`  %s${L('arena.status_endpoint', endpoint)}%s\n\n`, DIM, RESET))
+  append(bashPrintf(`  %s${L('arena.usage')}%s\n\n`, DIM, RESET))
+}
+
+async function handlePair(ctx: ArenaCtx): Promise<void> {
+  const { endpoint, anonId, enabled, secret, webUrl, L, append, line } = ctx
+  // bash prints arena.title (already in `out`) then pair.title.
+  append(bashPrintf(`\n  %s%s${L('pair.title')}%s\n\n`, BOLD, GOLD, RESET))
+  if (!enabled || !anonId) { line('live.not_enabled', DIM); return }
+  if (!secret) { line('arena.no_secret', DIM); return }
+  const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/pair/init`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
+    body: JSON.stringify({ anon_id: anonId }),
+  })
+  const code = resp.code ?? ''
+  if (!code) { line('pair.failed', DIM, failure ?? describeBody(resp)); return }
+  const pairUrl = `${webUrl}/pair?code=${code}`
+  append(bashPrintf(`  %s${L('pair.code_label')}%s   %s%s%s\n\n`, DIM, RESET, BOLD + GOLD, code, RESET))
+  append(bashPrintf(`  %s${L('pair.url_label')}%s\n`, DIM, RESET))
+  append(bashPrintf('  %s%s%s\n\n', BOLD, pairUrl, RESET))
+  const qr = qrBlock(pairUrl)
+  if (qr !== null) {
+    append(bashPrintf(`  %s${L('pair.qr_label')}%s\n`, DIM, RESET))
+    append(qr + '\n\n')
+  } else {
+    append(bashPrintf(`  %s${L('pair.qr_hint')}%s\n\n`, DIM, RESET))
+  }
+  append(bashPrintf(`  %s${L('pair.expires', resp.expires_at ?? '')}%s\n\n`, DIM, RESET))
+  append(bashPrintf(`  %s${L('pair.warning')}%s\n\n`, DIM, RESET))
+}
+
+async function handleLink(ctx: ArenaCtx): Promise<void> {
+  const { input, data, endpoint, anonId, enabled, now, L, append, ensureArena } = ctx
+  // bash prints arena.title (already in `out`) then link.title.
+  append(bashPrintf(`\n  %s%s${L('link.title')}%s\n\n`, BOLD, GOLD, RESET))
+  const code = input.args[1] ?? ''
+  if (!code) { append(bashPrintf(`  %s${L('link.usage')}%s\n\n`, DIM, RESET)); return }
+  const upper = code.toUpperCase()
+  if (!PAIR_CODE_RE.test(upper)) { append(bashPrintf(`  %s${L('link.invalid_code')}%s\n\n`, DIM, RESET)); return }
+  if (enabled && anonId) append(bashPrintf(`  %s${L('link.warn_existing', anonId)}%s\n\n`, DIM, RESET))
+  const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/pair/redeem`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ code: upper }),
+  })
+  const newAnon = resp.anon_id ?? ''
+  const newSecret = resp.arena_secret ?? ''
+  if (!newAnon || !newSecret) { append(bashPrintf(`  %s${L('link.failed', failure ?? describeBody(resp))}%s\n\n`, DIM, RESET)); return }
+  ctx.secretOp = { action: 'save', value: newSecret }
+  const arena = ensureArena()
+  data.stats_share ??= {}
+  data.stats_share.anon_id = newAnon
+  arena.enabled = true
+  arena.enabled_at = now
+  ctx.dataChanged = true
+  const trainer = await getJson<TrainerResp>(`${endpoint}/v1/trainer/${newAnon}`)
+  if (trainer !== null) {
+    ctx.stateOut = applyTrainerToState(input.state, trainer, now)
+    ctx.stateChanged = true
+    append(bashPrintf(`  %s${L('link.state_synced')}%s\n`, DIM, RESET))
+  } else {
+    append(bashPrintf(`  %s${L('link.no_remote_state')}%s\n`, DIM, RESET))
+  }
+  append(bashPrintf(`  %s${L('link.success', newAnon)}%s\n\n`, GOLD, RESET))
+}
+
 /** Returns null for live/pair/link/unknown → bash dispatcher falls back. */
 export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
   const { locale, now } = input
@@ -208,212 +419,67 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
   const displayName = data.stats_share?.display_name ?? ''
   const enabled = data.arena?.enabled === true
   const secret = input.arenaSecret
-  let secretOp: SecretOp = null
-  let dataChanged = false
-  let stateOut: PokemonState = input.state
-  let stateChanged = false
   let out = bashPrintf(`\n  %s%s${L('arena.title')}%s\n\n`, BOLD, GOLD, RESET)
-  const line = (k: string, color: string, ...a: Array<string | number>): void => {
-    out += bashPrintf(`  %s${L(k, ...a)}%s\n\n`, color, RESET)
+  const ctx: ArenaCtx = {
+    input, data, locale, now, endpoint, webUrl, anonId, displayName, enabled, secret, L,
+    append: (s: string): void => { out += s },
+    line: (k: string, color: string, ...a: Array<string | number>): void => {
+      out += bashPrintf(`  %s${L(k, ...a)}%s\n\n`, color, RESET)
+    },
+    ensureArena: (): NonNullable<PokemonData['arena']> => (data.arena ??= {}),
+    secretOp: null,
+    dataChanged: false,
+    stateOut: input.state,
+    stateChanged: false,
   }
-  const ensureArena = (): NonNullable<PokemonData['arena']> => (data.arena ??= {})
 
   switch (sub) {
     case 'enable':
-    case 'on': {
-      if (!anonId) { line('arena.no_anon_id', DIM); break }
-      if (enabled) { line('arena.already_enabled', DIM); break }
-      if (input.args[1] !== '--confirm') {
-        line('arena.privacy_notice', DIM)
-        line('arena.confirm_hint', BOLD)
-        break
-      }
-      const team = buildTeam(input.state, anonId, displayName)
-      if (!team) { line('arena.no_active', DIM); break }
-      const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/enable`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(team),
-      })
-      const sec = resp.arena_secret ?? ''
-      if (!sec) {
-        const errCode = resp.error ?? ''
-        let errMsg: string
-        if (errCode === 'validation') errMsg = sanitizeForTerminal((resp.details ?? []).join('; '))
-        else if (errCode === 'already_enabled') errMsg = L('arena.already_enabled')
-        else if (errCode === '') errMsg = failure ?? describeBody(resp)
-        else errMsg = sanitizeForTerminal(String(errCode))
-        // err message as an arg, never in the format (a literal % would corrupt).
-        out += bashPrintf('  %s%s%s\n\n', DIM, L('arena.enable_failed', errMsg), RESET)
-        break
-      }
-      secretOp = { action: 'save', value: sec }
-      const arena = ensureArena()
-      arena.enabled = true
-      arena.enabled_at = now
-      dataChanged = true
-      line('arena.enabled', GOLD, anonId)
+    case 'on':
+      await handleEnable(ctx)
       break
-    }
     case 'disable':
-    case 'off': {
-      if (!enabled) { line('arena.already_disabled', DIM); break }
-      if (!secret) { line('arena.no_secret', DIM); break }
-      // Best-effort — failures only surface via POKEMON_DEBUG.
-      await httpJson(`${endpoint}/v1/arena/disable?anon_id=${anonId}`, {
-        method: 'DELETE',
-        headers: { authorization: `Bearer ${secret}` },
-      })
-      secretOp = { action: 'clear' }
-      ensureArena().enabled = false
-      dataChanged = true
-      line('arena.disabled', DIM)
+    case 'off':
+      await handleDisable(ctx)
       break
-    }
     case 'regenerate':
-    case 'rotate': {
-      if (!enabled) { line('arena.not_enabled', DIM); break }
-      if (!secret) { line('arena.no_secret', DIM); break }
-      const team = buildTeam(input.state, anonId, displayName)
-      if (!team) { line('arena.no_active', DIM); break }
-      const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/regenerate`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
-        body: JSON.stringify(team),
-      })
-      const newSec = resp.arena_secret ?? ''
-      if (!newSec) { line('arena.regen_failed', DIM, failure ?? describeBody(resp)); break }
-      secretOp = { action: 'save', value: newSec }
-      line('arena.regen_ok', GOLD)
+    case 'rotate':
+      await handleRegenerate(ctx)
       break
-    }
     case 'opponents':
-    case 'list': {
-      const limit = input.args[1] ?? '10'
-      const resp = await getJson<ArenaResp>(`${endpoint}/v1/arena/opponents?limit=${limit}`)
-      if (resp === null) { line('arena.fetch_failed', DIM); break }
-      line('arena.opponents_count', DIM, resp.total ?? 0)
-      for (const o of resp.opponents ?? []) {
-        const shinyMark = o.is_shiny === true ? ' ★' : ''
-        out += bashPrintf(
-          '  %s#%s%s  %s  Lv.%s  %s%s\n',
-          DIM, sanitizeForTerminal(String(o.anon_id ?? '')), RESET, lineageEmoji(o.lineage), o.level,
-          sanitizeForTerminal(String(o.display_name ?? o.anon_id ?? '')), shinyMark,
-        )
-      }
-      out += bashPrintf(`\n  %s${L('arena.opponents_hint')}%s\n\n`, DIM, RESET)
+    case 'list':
+      await handleOpponents(ctx)
       break
-    }
     case 'challenge':
-    case 'fight': {
-      const target = input.args[1] ?? ''
-      if (!target) { line('arena.challenge_usage', DIM); break }
-      if (!enabled) { line('arena.not_enabled', DIM); break }
-      if (!secret) { line('arena.no_secret', DIM); break }
-      const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/challenge`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
-        body: JSON.stringify({ challenger_anon_id: anonId, defender_anon_id: target }),
-      })
-      const battleId = resp.battle?.battle_id ?? ''
-      if (!battleId) { line('arena.challenge_failed', DIM, failure ?? describeBody(resp)); break }
-      ensureArena().last_battle_id = battleId
-      dataChanged = true
-      out += renderBattle(locale, resp as BattleResp)
-      line('arena.replay', DIM, webUrl, battleId)
+    case 'fight':
+      await handleChallenge(ctx)
       break
-    }
     case 'battle':
-    case 'view': {
-      const id = input.args[1] || (data.arena?.last_battle_id ?? '')
-      if (!id) { line('arena.battle_usage', DIM); break }
-      const resp = await getJson<BattleResp>(`${endpoint}/v1/arena/battle/${id}`)
-      if (resp === null) { line('arena.battle_not_found', DIM, id); break }
-      out += renderBattle(locale, resp)
-      line('arena.replay', DIM, webUrl, id)
+    case 'view':
+      await handleBattle(ctx)
       break
-    }
     case 'status':
-    case '': {
-      if (enabled) out += bashPrintf(`  %s${L('arena.status_enabled', anonId)}%s\n`, GOLD, RESET)
-      else out += bashPrintf(`  %s${L('arena.status_disabled')}%s\n`, DIM, RESET)
-      out += bashPrintf(`  %s${L('arena.status_endpoint', endpoint)}%s\n\n`, DIM, RESET)
-      out += bashPrintf(`  %s${L('arena.usage')}%s\n\n`, DIM, RESET)
+    case '':
+      handleStatus(ctx)
       break
-    }
-    case 'pair': {
-      // bash prints arena.title (already in `out`) then pair.title.
-      out += bashPrintf(`\n  %s%s${L('pair.title')}%s\n\n`, BOLD, GOLD, RESET)
-      if (!enabled || !anonId) { line('live.not_enabled', DIM); break }
-      if (!secret) { line('arena.no_secret', DIM); break }
-      const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/pair/init`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${secret}` },
-        body: JSON.stringify({ anon_id: anonId }),
-      })
-      const code = resp.code ?? ''
-      if (!code) { line('pair.failed', DIM, failure ?? describeBody(resp)); break }
-      const pairUrl = `${webUrl}/pair?code=${code}`
-      out += bashPrintf(`  %s${L('pair.code_label')}%s   %s%s%s\n\n`, DIM, RESET, BOLD + GOLD, code, RESET)
-      out += bashPrintf(`  %s${L('pair.url_label')}%s\n`, DIM, RESET)
-      out += bashPrintf('  %s%s%s\n\n', BOLD, pairUrl, RESET)
-      const qr = qrBlock(pairUrl)
-      if (qr !== null) {
-        out += bashPrintf(`  %s${L('pair.qr_label')}%s\n`, DIM, RESET)
-        out += qr + '\n\n'
-      } else {
-        out += bashPrintf(`  %s${L('pair.qr_hint')}%s\n\n`, DIM, RESET)
-      }
-      out += bashPrintf(`  %s${L('pair.expires', resp.expires_at ?? '')}%s\n\n`, DIM, RESET)
-      out += bashPrintf(`  %s${L('pair.warning')}%s\n\n`, DIM, RESET)
+    case 'pair':
+      await handlePair(ctx)
       break
-    }
-    case 'link': {
-      // bash prints arena.title (already in `out`) then link.title.
-      out += bashPrintf(`\n  %s%s${L('link.title')}%s\n\n`, BOLD, GOLD, RESET)
-      const code = input.args[1] ?? ''
-      if (!code) { out += bashPrintf(`  %s${L('link.usage')}%s\n\n`, DIM, RESET); break }
-      const upper = code.toUpperCase()
-      if (!PAIR_CODE_RE.test(upper)) { out += bashPrintf(`  %s${L('link.invalid_code')}%s\n\n`, DIM, RESET); break }
-      if (enabled && anonId) out += bashPrintf(`  %s${L('link.warn_existing', anonId)}%s\n\n`, DIM, RESET)
-      const { body: resp, failure } = await postJson(`${endpoint}/v1/arena/pair/redeem`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ code: upper }),
-      })
-      const newAnon = resp.anon_id ?? ''
-      const newSecret = resp.arena_secret ?? ''
-      if (!newAnon || !newSecret) { out += bashPrintf(`  %s${L('link.failed', failure ?? describeBody(resp))}%s\n\n`, DIM, RESET); break }
-      secretOp = { action: 'save', value: newSecret }
-      const arena = ensureArena()
-      data.stats_share ??= {}
-      data.stats_share.anon_id = newAnon
-      arena.enabled = true
-      arena.enabled_at = now
-      dataChanged = true
-      const trainer = await getJson<TrainerResp>(`${endpoint}/v1/trainer/${newAnon}`)
-      if (trainer !== null) {
-        stateOut = applyTrainerToState(input.state, trainer, now)
-        stateChanged = true
-        out += bashPrintf(`  %s${L('link.state_synced')}%s\n`, DIM, RESET)
-      } else {
-        out += bashPrintf(`  %s${L('link.no_remote_state')}%s\n`, DIM, RESET)
-      }
-      out += bashPrintf(`  %s${L('link.success', newAnon)}%s\n\n`, GOLD, RESET)
+    case 'link':
+      await handleLink(ctx)
       break
-    }
     case 'live': {
       // bash prints arena.title (already in `out`) then delegates to the live
       // subcommand, which does its own enabled/secret gate.
       if (!enabled || !anonId) { out += bashPrintf(`\n  %s${L('live.not_enabled')}%s\n\n`, DIM, RESET); break }
       if (!secret) { out += bashPrintf(`\n  %s${L('arena.no_secret')}%s\n\n`, DIM, RESET); break }
       const r = await runLive({ args: input.args.slice(1), data, locale, secret })
-      return { data: r.data, output: out + r.output, dataChanged: r.dataChanged, secret: null, state: stateOut, stateChanged: false }
+      return { data: r.data, output: out + r.output, dataChanged: r.dataChanged, secret: null, state: ctx.stateOut, stateChanged: false }
     }
     default:
       // unknown → bash handles it.
       return null
   }
 
-  return { data, output: out, dataChanged, secret: secretOp, state: stateOut, stateChanged }
+  return { data, output: out, dataChanged: ctx.dataChanged, secret: ctx.secretOp, state: ctx.stateOut, stateChanged: ctx.stateChanged }
 }
