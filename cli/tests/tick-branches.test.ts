@@ -236,10 +236,7 @@ describe('tick — multiplier branches', () => {
   })
 
   it('held oran_berry while injured is consumed and clears the injury', () => {
-    const out = runTick(
-      baseState({ injured_ticks_remaining: 3, held_item: 'oran_berry' }),
-      DEC_OFF,
-    )
+    const out = runTick(baseState({ injured_ticks_remaining: 3, held_item: 'oran_berry' }), DEC_OFF)
     expect(out.held_item).toBeNull()
     expect(out.injured_ticks_remaining).toBe(0)
   })

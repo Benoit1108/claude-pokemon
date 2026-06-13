@@ -93,7 +93,6 @@ export type LeaderboardMetric =
   | 'games_won'
   | 'pokedex_seen_count'
 
-
 export interface PlayerStats {
   lifetime: LifetimeStats
   active: ActiveStats
