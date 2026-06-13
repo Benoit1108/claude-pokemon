@@ -10,24 +10,86 @@ import { lineageEmoji } from './render/views.js'
 import { runLive } from './live.js'
 import { httpJson, describeFailure, describeBody, sanitizeForTerminal } from './http.js'
 import { RESET, BOLD, DIM, GOLD } from './render/ansi.js'
+import type { PokemonData, PokemonState, WildSeenEntry } from './state-types.js'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = any
-
+// External arena-worker payloads. Only the read fields are typed; the rest
+// stays unknown at the httpJson boundary.
+interface ArenaTeam {
+  anon_id: string
+  lineage: string
+  level: number
+  is_shiny: boolean
+  display_name?: string
+}
+interface BattleTurn {
+  turn?: number | string
+  actor?: string
+  effectiveness?: number | string
+  critical?: boolean
+  damage?: number
+}
+interface BattleSide {
+  display_name?: string
+  anon_id?: string
+  lineage?: string
+  is_shiny?: boolean
+  level?: number
+}
+interface BattleBody {
+  challenger?: BattleSide
+  defender?: BattleSide
+  turns?: BattleTurn[]
+  winner?: string
+  reason?: string
+  battle_id?: string
+}
+interface BattleResp extends BattleBody {
+  /** Some endpoints nest the battle under `.battle`, others return it flat. */
+  battle?: BattleBody
+}
+interface TrainerStats {
+  active?: { lineage?: string | null; is_shiny?: boolean; current_level?: number }
+  lifetime?: {
+    total_tokens?: number
+    total_evolutions?: number
+    total_shinies?: number
+    max_level?: number
+    total_compagnons?: number
+    lineages_completed?: string[]
+    games_won?: number
+    games_played?: number
+  }
+  badges?: string[]
+  pokedex_seen_ids?: string[]
+}
+interface TrainerResp {
+  stats?: TrainerStats
+}
+interface ArenaResp {
+  arena_secret?: string
+  error?: string
+  details?: string[]
+  battle?: BattleBody
+  total?: number
+  opponents?: Array<{ anon_id?: string; lineage?: string; level?: number; display_name?: string; is_shiny?: boolean }>
+  code?: string
+  expires_at?: string
+  anon_id?: string
+}
 
 // Port of _arena_build_team — null when there's no active companion.
-export function buildTeam(state: Json, anonId: string, displayName: string): Json | null {
+export function buildTeam(state: PokemonState, anonId: string, displayName: string): ArenaTeam | null {
   const lineage = state.lineage ?? ''
   const level = Number(state.current_level ?? 0)
   if (!lineage || level < 1) return null
-  const team: Json = { anon_id: anonId, lineage, level, is_shiny: state.is_shiny ?? false }
+  const team: ArenaTeam = { anon_id: anonId, lineage, level, is_shiny: state.is_shiny ?? false }
   if (displayName !== '') team.display_name = displayName
   return team
 }
 
 // Port of _arena_render_battle — challenger vs defender + turn log + winner.
-export function renderBattle(locale: Locale, raw: Json): string {
-  const b = raw.battle ?? raw
+export function renderBattle(locale: Locale, raw: BattleResp): string {
+  const b: BattleBody = raw.battle ?? raw
   const c = b.challenger ?? {}
   const d = b.defender ?? {}
   // Server-controlled strings — strip terminal controls before printing raw.
@@ -61,8 +123,8 @@ export function renderBattle(locale: Locale, raw: Json): string {
 
 export interface ArenaInput {
   args: string[]
-  data: Json
-  state: Json
+  data: PokemonData
+  state: PokemonState
   locale: Locale
   /** Current arena_secret file contents ('' if none). */
   arenaSecret: string
@@ -72,19 +134,19 @@ export interface ArenaInput {
 export type SecretOp = { action: 'save'; value: string } | { action: 'clear' } | null
 
 export interface ArenaOutput {
-  data: Json
+  data: PokemonData
   output: string
   dataChanged: boolean
   secret: SecretOp
-  state: Json
+  state: PokemonState
   stateChanged: boolean
 }
 
 const PAIR_CODE_RE = /^[A-HJ-NP-TV-Z2-9]{6}$/
 
 // Port of _link_apply_trainer_to_state: rewrite state from a TrainerResponse.
-export function applyTrainerToState(state: Json, trainer: Json, now: string): Json {
-  const s: Json = JSON.parse(JSON.stringify(state))
+export function applyTrainerToState(state: PokemonState, trainer: TrainerResp, now: string): PokemonState {
+  const s: PokemonState = JSON.parse(JSON.stringify(state))
   const active = trainer.stats?.active ?? {}
   const lt = trainer.stats?.lifetime ?? {}
   s.lineage = active.lineage
@@ -99,8 +161,8 @@ export function applyTrainerToState(state: Json, trainer: Json, now: string): Js
   s.lifetime_stats.lineages_completed = lt.lineages_completed ?? []
   s.lifetime_stats.games_won = lt.games_won ?? 0
   s.lifetime_stats.games_played = lt.games_played ?? 0
-  s.badges = (trainer.stats?.badges ?? []).map((id: string) => ({ id, earned_at: now }))
-  const wild: Json = {}
+  s.badges = (trainer.stats?.badges ?? []).map((id) => ({ id, earned_at: now }))
+  const wild: Record<string, WildSeenEntry> = {}
   for (const id of trainer.stats?.pokedex_seen_ids ?? []) wild[id] = { count: 1, first_seen_at: now }
   s.pokedex_wild = wild
   s.last_updated = now
@@ -119,25 +181,25 @@ function qrBlock(url: string): string | null {
 }
 
 // GET with curl -sf semantics: null on network failure OR non-2xx.
-async function getJson(url: string): Promise<Json | null> {
+async function getJson<T>(url: string): Promise<T | null> {
   const r = await httpJson(url)
   if (!r.ok || r.status < 200 || r.status >= 300) return null
-  return r.body as Json
+  return r.body as T
 }
 // POST that keeps the parsed body even on HTTP errors (the worker speaks JSON
 // on errors); `failure` carries a real description when there was no body at
 // all (network / non-JSON) — threaded into the *_failed messages instead of
 // the old bare "{}".
-async function postJson(url: string, init: RequestInit): Promise<{ body: Json; failure: string | null }> {
+async function postJson(url: string, init: RequestInit): Promise<{ body: ArenaResp; failure: string | null }> {
   const r = await httpJson(url, init)
   if (!r.ok) return { body: {}, failure: describeFailure(r) }
-  return { body: r.body as Json, failure: null }
+  return { body: r.body as ArenaResp, failure: null }
 }
 
 /** Returns null for live/pair/link/unknown → bash dispatcher falls back. */
 export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
   const { locale, now } = input
-  const data: Json = JSON.parse(JSON.stringify(input.data))
+  const data: PokemonData = JSON.parse(JSON.stringify(input.data))
   const L = (k: string, ...a: Array<string | number>): string => t(locale, k, ...a)
   const sub = input.args[0] ?? 'status'
   const endpoint = data.stats_share?.endpoint ?? ''
@@ -148,13 +210,13 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
   const secret = input.arenaSecret
   let secretOp: SecretOp = null
   let dataChanged = false
-  let stateOut: Json = input.state
+  let stateOut: PokemonState = input.state
   let stateChanged = false
   let out = bashPrintf(`\n  %s%s${L('arena.title')}%s\n\n`, BOLD, GOLD, RESET)
   const line = (k: string, color: string, ...a: Array<string | number>): void => {
     out += bashPrintf(`  %s${L(k, ...a)}%s\n\n`, color, RESET)
   }
-  const ensureArena = (): Json => (data.arena ??= {})
+  const ensureArena = (): NonNullable<PokemonData['arena']> => (data.arena ??= {})
 
   switch (sub) {
     case 'enable':
@@ -186,8 +248,9 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
         break
       }
       secretOp = { action: 'save', value: sec }
-      ensureArena().enabled = true
-      data.arena.enabled_at = now
+      const arena = ensureArena()
+      arena.enabled = true
+      arena.enabled_at = now
       dataChanged = true
       line('arena.enabled', GOLD, anonId)
       break
@@ -227,7 +290,7 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
     case 'opponents':
     case 'list': {
       const limit = input.args[1] ?? '10'
-      const resp = await getJson(`${endpoint}/v1/arena/opponents?limit=${limit}`)
+      const resp = await getJson<ArenaResp>(`${endpoint}/v1/arena/opponents?limit=${limit}`)
       if (resp === null) { line('arena.fetch_failed', DIM); break }
       line('arena.opponents_count', DIM, resp.total ?? 0)
       for (const o of resp.opponents ?? []) {
@@ -256,7 +319,7 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
       if (!battleId) { line('arena.challenge_failed', DIM, failure ?? describeBody(resp)); break }
       ensureArena().last_battle_id = battleId
       dataChanged = true
-      out += renderBattle(locale, resp)
+      out += renderBattle(locale, resp as BattleResp)
       line('arena.replay', DIM, webUrl, battleId)
       break
     }
@@ -264,7 +327,7 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
     case 'view': {
       const id = input.args[1] || (data.arena?.last_battle_id ?? '')
       if (!id) { line('arena.battle_usage', DIM); break }
-      const resp = await getJson(`${endpoint}/v1/arena/battle/${id}`)
+      const resp = await getJson<BattleResp>(`${endpoint}/v1/arena/battle/${id}`)
       if (resp === null) { line('arena.battle_not_found', DIM, id); break }
       out += renderBattle(locale, resp)
       line('arena.replay', DIM, webUrl, id)
@@ -322,13 +385,13 @@ export async function runArena(input: ArenaInput): Promise<ArenaOutput | null> {
       const newSecret = resp.arena_secret ?? ''
       if (!newAnon || !newSecret) { out += bashPrintf(`  %s${L('link.failed', failure ?? describeBody(resp))}%s\n\n`, DIM, RESET); break }
       secretOp = { action: 'save', value: newSecret }
-      ensureArena()
+      const arena = ensureArena()
       data.stats_share ??= {}
       data.stats_share.anon_id = newAnon
-      data.arena.enabled = true
-      data.arena.enabled_at = now
+      arena.enabled = true
+      arena.enabled_at = now
       dataChanged = true
-      const trainer = await getJson(`${endpoint}/v1/trainer/${newAnon}`)
+      const trainer = await getJson<TrainerResp>(`${endpoint}/v1/trainer/${newAnon}`)
       if (trainer !== null) {
         stateOut = applyTrainerToState(input.state, trainer, now)
         stateChanged = true

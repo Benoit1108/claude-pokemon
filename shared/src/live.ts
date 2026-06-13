@@ -7,9 +7,26 @@ import { lineageEmoji } from './render/views.js'
 import { httpJson, describeFailure, describeBody, sanitizeForTerminal } from './http.js'
 import { movesForParticipant } from './moves.js'
 import { RESET, BOLD, DIM, GOLD } from './render/ansi.js'
+import type { PokemonData } from './state-types.js'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = any
+// External arena-worker live-battle payloads. Only the read fields are typed;
+// httpJson hands them back as unknown and we narrow at the call boundary.
+interface LiveParticipant {
+  anon_id?: string
+  snapshot?: { lineage?: string; level?: number }
+  hp?: number | null
+  has_pending_action?: boolean
+}
+interface LiveStatusResp {
+  state?: string
+  turn_no?: number
+  challenger?: LiveParticipant
+  defender?: LiveParticipant
+  winner?: string
+  reason?: string
+  error?: string
+  battle_id?: string
+}
 
 
 // Move hints come from the SAME pool the worker validates against
@@ -26,7 +43,7 @@ function printMoves(lin: string, lvl: number): string {
 }
 
 // Port of _live_render_status — HP/state + (if it's my turn) move hints.
-export function renderLiveStatus(resp: Json, me: string): string {
+export function renderLiveStatus(resp: LiveStatusResp, me: string): string {
   const state = sanitizeForTerminal(String(resp.state ?? ''))
   const turnNo = resp.turn_no ?? 0
   const c = resp.challenger ?? {}
@@ -76,32 +93,32 @@ export function renderLiveStatus(resp: Json, me: string): string {
 
 export interface LiveInput {
   args: string[]
-  data: Json
+  data: PokemonData
   locale: Locale
   secret: string
 }
 export interface LiveOutput {
-  data: Json
+  data: PokemonData
   output: string
   dataChanged: boolean
 }
 
 // GET with curl -sf semantics (null on failure or non-2xx).
-async function getLive(url: string): Promise<Json | null> {
+async function getLive(url: string): Promise<LiveStatusResp | null> {
   const r = await httpJson(url)
   if (!r.ok || r.status < 200 || r.status >= 300) return null
-  return r.body as Json
+  return r.body as LiveStatusResp
 }
 // POST keeping the body on HTTP errors; `failure` = real description when none.
-async function postLive(url: string, init: RequestInit): Promise<{ body: Json; failure: string | null }> {
+async function postLive(url: string, init: RequestInit): Promise<{ body: LiveStatusResp; failure: string | null }> {
   const r = await httpJson(url, init)
   if (!r.ok) return { body: {}, failure: describeFailure(r) }
-  return { body: r.body as Json, failure: null }
+  return { body: r.body as LiveStatusResp, failure: null }
 }
 
 export async function runLive(input: LiveInput): Promise<LiveOutput> {
   const { locale, secret } = input
-  const data: Json = JSON.parse(JSON.stringify(input.data))
+  const data: PokemonData = JSON.parse(JSON.stringify(input.data))
   const L = (k: string, ...a: Array<string | number>): string => t(locale, k, ...a)
   const sub = input.args[0] ?? 'status'
   const endpoint = data.stats_share?.endpoint ?? ''

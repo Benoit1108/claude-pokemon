@@ -198,11 +198,13 @@ export interface SeasonDef {
 
 export interface StatsShareConfig {
   enabled?: boolean
-  anon_id?: string
-  display_name?: string
+  // Nullable: reset operations (config quote/bio, share regen) write literal
+  // null to clear the field — preserved from the jq/bash era. Reads use `?? ''`.
+  anon_id?: string | null
+  display_name?: string | null
   endpoint?: string
-  quote?: string
-  bio?: string
+  quote?: string | null
+  bio?: string | null
   pins?: string[]
   [extra: string]: unknown
 }

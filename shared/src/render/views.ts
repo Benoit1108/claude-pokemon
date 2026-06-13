@@ -8,13 +8,21 @@
 import { bashPrintf } from './printf.js'
 import { t, type Locale } from './i18n.js'
 import { RESET, BOLD, DIM, GOLD } from './ansi.js'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = any
+import type {
+  PokemonState,
+  PokemonData,
+  BadgeEntry,
+  CompanionEntry,
+  EvolutionEntry,
+  RecentEvent,
+  StageDef,
+  WildPoolEntry,
+  XpMultipliers,
+} from '../state-types.js'
 
 export interface RenderContext {
-  state: Json
-  data: Json
+  state: PokemonState
+  data: PokemonData
   locale: Locale
   /** Active UI language; read by the pokedex slice (data.wild_pool name_<lang>). */
   lang: string
@@ -44,7 +52,7 @@ export function tPad(locale: Locale, key: string, width: number): string {
 }
 
 // fmt_int: group digits in 3s with a SPACE separator (matches the awk version).
-export function fmtInt(n: number | string): string {
+export function fmtInt(n: number | string | undefined): string {
   let s = String(Math.trunc(Number(n) || 0))
   let neg = ''
   if (s.startsWith('-')) {
@@ -105,7 +113,7 @@ const BADGE_ORDER = [
 export function renderBadges(ctx: RenderContext): string {
   const { state, locale } = ctx
   let out = bashPrintf(`\n  %s%s${t(locale, 'badges.title')}%s\n\n`, BOLD, GOLD, RESET)
-  const badges: Json[] = Array.isArray(state.badges) ? state.badges : []
+  const badges: BadgeEntry[] = Array.isArray(state.badges) ? state.badges : []
   for (const id of BADGE_ORDER) {
     const earnedAt = badges.find((b) => b && b.id === id)?.earned_at ?? ''
     const emoji = BADGE_EMOJI[id] ?? '?'
@@ -137,7 +145,7 @@ export function renderBadges(ctx: RenderContext): string {
 export function renderInventory(ctx: RenderContext): string {
   const { state, data, locale } = ctx
   let out = bashPrintf(`\n  %s%s${t(locale, 'inventory.title')}%s\n\n`, BOLD, GOLD, RESET)
-  const items: Record<string, Json> = state.items && typeof state.items === 'object' ? state.items : {}
+  const items: Record<string, number> = state.items && typeof state.items === 'object' ? state.items : {}
   const entries = Object.entries(items)
   if (entries.length === 0) {
     out += bashPrintf(`  %s${t(locale, 'inventory.empty')}%s\n\n`, DIM, RESET)
@@ -146,7 +154,7 @@ export function renderInventory(ctx: RenderContext): string {
       const meta = data.items?.[itemId]
       const name = meta?.name ?? itemId
       const emoji = meta?.emoji ?? '?'
-      const desc = meta?.desc ?? ''
+      const desc = meta?.desc == null ? '' : String(meta.desc)
       out += bashPrintf(
         '   %s  %s%-18s%s  %s×%d%s\n     %s%s%s\n',
         emoji,
@@ -165,7 +173,7 @@ export function renderInventory(ctx: RenderContext): string {
   }
   const eeveeForm = state.eevee_form ?? ''
   if (eeveeForm) {
-    const stages: Json[] = data.lineages?.eevee?.stages ?? []
+    const stages: StageDef[] = data.lineages?.eevee?.stages ?? []
     const formName = stages.find((s) => s && s.showdown_id === eeveeForm)?.name
     const msg = t(locale, 'inventory.eevee_form', formName)
     out += bashPrintf('  %s%s%s\n\n', DIM, msg, RESET)
@@ -174,10 +182,10 @@ export function renderInventory(ctx: RenderContext): string {
 }
 
 // ── roster (team / pc) ─────────────────────────────────────────────────────────
-function renderRoster(ctx: RenderContext, field: string, title: string): string {
+function renderRoster(ctx: RenderContext, field: 'team' | 'pc_storage', title: string): string {
   const { state, data } = ctx
   let out = bashPrintf('\n  %s%s%s%s\n\n', BOLD, GOLD, title, RESET)
-  const list: Json[] = Array.isArray(state[field]) ? state[field] : []
+  const list: CompanionEntry[] = Array.isArray(state[field]) ? (state[field] as CompanionEntry[]) : []
   if (list.length === 0) {
     out += bashPrintf(`  %s${t(ctx.locale, 'team.empty')}%s\n\n`, DIM, RESET)
     return out
@@ -245,8 +253,8 @@ const LINEAGE_EMOJI: Record<string, string> = {
   cyndaquil: '🦔',
   totodile: '🐊',
 }
-export function lineageEmoji(lineage: string): string {
-  return LINEAGE_EMOJI[lineage] ?? '❓'
+export function lineageEmoji(lineage: string | undefined): string {
+  return LINEAGE_EMOJI[lineage ?? ''] ?? '❓'
 }
 
 // ── shared helpers for the main view ────────────────────────────────────────────
@@ -275,8 +283,8 @@ function boxBottom(width: number): string {
 // Resolve the active stage by the default rule (highest min_level ≤ level),
 // reproducing jq semantics: `min_level <= null` is always FALSE (null is the
 // smallest value in jq), unlike JS where null coerces to 0.
-export function resolveStageDefault(data: Json, lineage: string, level: unknown): Json | null {
-  const stages: Json[] = data.lineages?.[lineage]?.stages ?? []
+export function resolveStageDefault(data: PokemonData, lineage: string, level: unknown): StageDef | null {
+  const stages: StageDef[] = data.lineages?.[lineage]?.stages ?? []
   const n = Number(level)
   if (level === null || level === undefined || level === '' || !Number.isFinite(n)) return null
   const candidates = stages.filter((s) => s.min_level <= n)
@@ -285,13 +293,13 @@ export function resolveStageDefault(data: Json, lineage: string, level: unknown)
   return stages.find((s) => s.min_level === maxLvl) ?? null
 }
 
-function eeveeFormStage(data: Json, form: string): Json | null {
-  const stages: Json[] = data.lineages?.eevee?.stages ?? []
+function eeveeFormStage(data: PokemonData, form: string): StageDef | null {
+  const stages: StageDef[] = data.lineages?.eevee?.stages ?? []
   return stages.find((s) => s.showdown_id === form) ?? null
 }
 
 // pokemon_evo_field: Eevee Lv.30+ resolves via state.eevee_form; else default.
-export function evoField(data: Json, state: Json, lineage: string, level: unknown, field: string): string {
+export function evoField(data: PokemonData, state: PokemonState, lineage: string, level: unknown, field: string): string {
   const n = Number(level)
   const valid = level !== null && level !== undefined && level !== '' && Number.isFinite(n)
   if (lineage === 'eevee' && valid && n >= 30) {
@@ -308,11 +316,11 @@ export function evoField(data: Json, state: Json, lineage: string, level: unknow
 // Resolve a stage field that the bash view reads "eevee-form-first, fallback to
 // default if empty" (moves/types/pokedex_entry). Returns the resolved value.
 function stageFieldWithFallback(
-  data: Json,
-  state: Json,
+  data: PokemonData,
+  state: PokemonState,
   lineage: string,
   level: number,
-  read: (stage: Json) => string,
+  read: (stage: StageDef) => string,
 ): string {
   let value = ''
   if (lineage === 'eevee' && level >= 30) {
@@ -374,7 +382,7 @@ export function renderMain(ctx: RenderContext): string {
   // Current stage min_level + next stage min_level.
   const curStage = resolveStageDefault(data, lineage, level)
   const curStageLvl = curStage ? Number(curStage.min_level) : 0
-  const stages: Json[] = data.lineages?.[lineage]?.stages ?? []
+  const stages: StageDef[] = data.lineages?.[lineage]?.stages ?? []
   const nextStages = stages.filter((s) => s.min_level > level)
   const nextLvl =
     nextStages.length === 0 ? null : Math.min(...nextStages.map((s) => Number(s.min_level)))
@@ -476,13 +484,13 @@ export function renderMain(ctx: RenderContext): string {
 
   // Moves
   const moves = stageFieldWithFallback(data, state, lineage, level, (s) => {
-    const m: Json[] = s.moves ?? []
+    const m: unknown[] = Array.isArray(s.moves) ? s.moves : []
     return m.length === 0 ? '' : m.join(', ')
   })
   if (moves) out += bashPrintf(`  %s${tPad(locale, 'main.moves', 22)}%s :  %s\n\n`, DIM, RESET, moves)
 
   // Types (lang from data.json, as in bash)
-  const typesStage = (() => {
+  const typesStage: unknown[] = (() => {
     if (lineage === 'eevee' && level >= 30 && state.eevee_form) {
       const st = eeveeFormStage(data, state.eevee_form)
       if (st && Array.isArray(st.types)) return st.types
@@ -495,7 +503,7 @@ export function renderMain(ctx: RenderContext): string {
     let first = true
     for (const ty of typesStage) {
       if (!first) line += ' '
-      line += `${''}[ ${ty} ]${RESET}`
+      line += `${''}[ ${String(ty)} ]${RESET}`
       first = false
     }
     out += line + '\n\n'
@@ -544,7 +552,7 @@ export function renderMain(ctx: RenderContext): string {
   }
 
   // Badges summary
-  const badges: Json[] = Array.isArray(state.badges) ? state.badges : []
+  const badges: BadgeEntry[] = Array.isArray(state.badges) ? state.badges : []
   if (badges.length > 0) {
     let line = bashPrintf(`  %s${tPad(locale, 'main.badges', 22)}%s :  `, DIM, RESET)
     for (const b of badges) line += bashPrintf('%s ', BADGE_EMOJI[b.id] ?? '?')
@@ -556,7 +564,7 @@ export function renderMain(ctx: RenderContext): string {
   out += '\n'
 
   // Recent events (no scenario exercises this; ported for completeness)
-  const events: Json[] = Array.isArray(state.recent_events) ? state.recent_events : []
+  const events: RecentEvent[] = Array.isArray(state.recent_events) ? state.recent_events : []
   if (events.length > 0) {
     out += bashPrintf(`  %s${t(locale, 'main.recent_events')}%s\n`, BOLD, RESET)
     for (const ev of events.slice(0, 3)) {
@@ -566,12 +574,12 @@ export function renderMain(ctx: RenderContext): string {
       const eid = jqStr(ev.id ?? '')
       const exp = ev.xp ?? 0
       const wildName = (id: string): string => {
-        const w = (data.wild_pool ?? []).find((p: Json) => p.id === id)
-        return jqStr(w?.[`name_${lang}`])
+        const w = (data.wild_pool ?? []).find((p) => p.id === id)
+        return jqStr(w?.[`name_${lang}` as keyof WildPoolEntry])
       }
       const wildEmoji = (id: string): string => {
-        const w = (data.wild_pool ?? []).find((p: Json) => p.id === id)
-        return jqStr(w?.emoji)
+        const w = (data.wild_pool ?? []).find((p) => p.id === id)
+        return jqStr((w as { emoji?: unknown } | undefined)?.emoji)
       }
       switch (ev.type) {
         case 'berry':
@@ -600,7 +608,7 @@ export function renderMain(ctx: RenderContext): string {
   }
 
   // Evolution history
-  const history: Json[] = Array.isArray(state.evolution_history) ? state.evolution_history : []
+  const history: EvolutionEntry[] = Array.isArray(state.evolution_history) ? state.evolution_history : []
   if (history.length > 0) {
     out += boxTop(t(locale, 'main.history'), 64)
     for (const h of history) {
@@ -701,13 +709,13 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
   const { state, data, locale } = ctx
   let out = bashPrintf(`\n  %s%s${t(locale, 'recap.title')}%s\n\n`, BOLD, GOLD, RESET)
 
-  const sessions: Json = state.sessions ?? {}
+  const sessions = state.sessions ?? {}
   const activeSid = (): string => {
     const entries = Object.entries(sessions)
     if (entries.length === 0) return ''
     entries.sort((a, b) => {
-      const la = (a[1] as Json).last_seen ?? ''
-      const lb = (b[1] as Json).last_seen ?? ''
+      const la = a[1].last_seen ?? ''
+      const lb = b[1].last_seen ?? ''
       return la < lb ? -1 : la > lb ? 1 : 0
     })
     return entries[entries.length - 1][0]
@@ -741,7 +749,7 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
   out += bashPrintf(`  %s${t(locale, 'recap.context', label, durLabel)}%s\n\n`, DIM, RESET)
 
   if (scope === 'session' || scope === '') {
-    const baseline: Json = sessions[sid]?.baseline ?? null
+    const baseline = sessions[sid]?.baseline ?? null
     if (baseline !== null) {
       const xpDelta = Number(state.total_xp) - Number(baseline.total_xp)
       const frDelta = Number(state.friendship ?? 0) - Number(baseline.friendship)
@@ -782,12 +790,12 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
   // bash: `jq '.wild_pool[] | select(.id==$id) | .[…]'` → empty string on no
   // match (not the literal "null"); a matched-but-null field → "null".
   const wildName = (id: string): string => {
-    const w = (data.wild_pool ?? []).find((p: Json) => p.id === id)
-    return w === undefined ? '' : jqStr(w[`name_${lang}`])
+    const w = (data.wild_pool ?? []).find((p) => p.id === id)
+    return w === undefined ? '' : jqStr(w[`name_${lang}` as keyof WildPoolEntry])
   }
   const wildEmoji = (id: string): string => {
-    const w = (data.wild_pool ?? []).find((p: Json) => p.id === id)
-    return w === undefined ? '' : jqStr(w.emoji)
+    const w = (data.wild_pool ?? []).find((p) => p.id === id)
+    return w === undefined ? '' : jqStr((w as { emoji?: unknown }).emoji)
   }
 
   // jq `select(.at >= $since)`: a MISSING timestamp is null, and `null >= "str"`
@@ -795,7 +803,7 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
   // ("null" >= date is true lexicographically).
   const sinceFilter = (v: unknown): boolean => typeof v === 'string' && v >= sinceIso
 
-  const allEvents: Json[] = Array.isArray(state.recent_events) ? state.recent_events : []
+  const allEvents: RecentEvent[] = Array.isArray(state.recent_events) ? state.recent_events : []
   const events = allEvents.filter((e) => sinceFilter(e.at))
   if (events.length === 0) {
     out += bashPrintf(`  %s${t(locale, 'recap.no_events')}%s\n\n`, DIM, RESET)
@@ -854,7 +862,7 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
     out += '\n'
   }
 
-  const allEvos: Json[] = Array.isArray(state.evolution_history) ? state.evolution_history : []
+  const allEvos: EvolutionEntry[] = Array.isArray(state.evolution_history) ? state.evolution_history : []
   const evos = allEvos.filter((e) => sinceFilter(e.evolved_at))
   if (evos.length > 0) {
     out += bashPrintf(`  %s%s${t(locale, 'recap.evolutions_title')}%s\n`, BOLD, GOLD, RESET)
@@ -873,7 +881,7 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
     out += '\n'
   }
 
-  const allBadges: Json[] = Array.isArray(state.badges) ? state.badges : []
+  const allBadges: BadgeEntry[] = Array.isArray(state.badges) ? state.badges : []
   const newBadges = allBadges.filter((b) => sinceFilter(b.earned_at))
   if (newBadges.length > 0) {
     out += bashPrintf(`  %s%s${t(locale, 'recap.badges_title')}%s\n`, BOLD, GOLD, RESET)
@@ -904,8 +912,8 @@ export function renderTrainerCard(ctx: RenderContext): string {
   const level = Number(state.current_level)
   const isShiny = state.is_shiny === true
   const createdAt = jqStr(state.created_at ?? '—')
-  const ls: Json = state.lifetime_stats ?? {}
-  const share: Json = data.stats_share ?? {}
+  const ls = state.lifetime_stats ?? {}
+  const share = data.stats_share ?? {}
   // jq '… // ""' → null becomes "".
   const shareEnabled = share.enabled === true
   const shareAnon = share.anon_id ?? ''
@@ -974,7 +982,7 @@ export function renderTrainerCard(ctx: RenderContext): string {
     Object.keys(state.pokedex_wild ?? {}).length,
   )
 
-  const badges: Json[] = Array.isArray(state.badges) ? state.badges : []
+  const badges: BadgeEntry[] = Array.isArray(state.badges) ? state.badges : []
   if (badges.length > 0) {
     out += bashPrintf(`  %s%s${t(locale, 'trainer_card.badges_section', badges.length)}%s\n`, BOLD, GOLD, RESET)
     for (const b of badges) {
@@ -1000,7 +1008,7 @@ export function renderTrainerCard(ctx: RenderContext): string {
 // ── stats ──────────────────────────────────────────────────────────────────────
 export function renderStats(ctx: RenderContext): string {
   const { state, data, locale } = ctx
-  const ls: Json = state.lifetime_stats ?? {}
+  const ls = state.lifetime_stats ?? {}
   let out = bashPrintf(`\n  %s%s${t(locale, 'stats.title')}%s\n\n`, BOLD, GOLD, RESET)
 
   const shinies = Number(ls.total_shinies ?? 0)
@@ -1037,7 +1045,7 @@ export function renderStats(ctx: RenderContext): string {
     String(firstShiny).slice(0, 10),
   )
 
-  const mults: Json = state.last_xp_multipliers
+  const mults: XpMultipliers | undefined = state.last_xp_multipliers
   if (mults != null) {
     out += bashPrintf(`  %s%s${t(locale, 'stats.multipliers_title')}%s\n\n`, BOLD, GOLD, RESET)
     const ctxM = mults.context
@@ -1068,10 +1076,10 @@ export function renderPokedex(ctx: RenderContext): string {
   const { state, data, locale } = ctx
   let out = bashPrintf(`\n  %s%s${t(locale, 'pokedex.title_lineages')}%s\n\n`, BOLD, GOLD, RESET)
 
-  const dex: Json = state.pokedex ?? {}
-  for (const [lin, info] of Object.entries(data.lineages ?? {}) as [string, Json][]) {
-    const label = info.label
-    const entry: Json = dex[lin] ?? {}
+  const dex = state.pokedex ?? {}
+  for (const [lin, info] of Object.entries(data.lineages ?? {})) {
+    const label = info.label as string
+    const entry = dex[lin] ?? {}
     const seen = entry.seen ?? false
     const shiny = entry.shiny_seen ?? false
     const count = Number(entry.count ?? 0)
@@ -1095,9 +1103,9 @@ export function renderPokedex(ctx: RenderContext): string {
   }
 
   // Wild encounters — language comes from data.json (as in the bash view).
-  const wild: Json = state.pokedex_wild ?? {}
+  const wild = state.pokedex_wild ?? {}
   const wildSeen = Object.keys(wild).length
-  const pool: Json[] = Array.isArray(data.wild_pool) ? data.wild_pool : []
+  const pool: WildPoolEntry[] = Array.isArray(data.wild_pool) ? data.wild_pool : []
   const totalWild = pool.length
   const lang = data.language ?? 'fr'
 
@@ -1119,8 +1127,8 @@ export function renderPokedex(ctx: RenderContext): string {
     const seen = Object.prototype.hasOwnProperty.call(wild, id)
     const marker = seen ? `${BOLD}✓${RESET}` : `${DIM}▢${RESET}`
     const style = seen ? '' : DIM
-    const nameDisp = seen ? jqStr(w[`name_${lang}`]) : '???'
-    const rarity = w.rarity ?? 'common'
+    const nameDisp = seen ? jqStr(w[`name_${lang}` as keyof WildPoolEntry]) : '???'
+    const rarity = (w as { rarity?: unknown }).rarity ?? 'common'
     const rarityMarker = rarity === 'legendary' ? `${GOLD}★${RESET}` : ' '
     // The wild-grid name field is padded by AWK %-12s (lib/pokemon-status.sh),
     // which counts CHARACTERS in a UTF-8 locale — unlike bash printf's byte

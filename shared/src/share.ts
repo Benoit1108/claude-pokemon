@@ -6,23 +6,53 @@
 import { bashPrintf } from './render/printf.js'
 import { t, type Locale } from './render/i18n.js'
 import { RESET, BOLD, DIM, GOLD } from './render/ansi.js'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = any
-
+import type { PokemonData, PokemonState, StatsShareConfig } from './state-types.js'
 
 const NAME_RE = /^[a-zA-Z0-9_-]{2,24}$/
 
+// The strict submit whitelist sent to POST /v1/submit (mirrors the worker's
+// SubmitPayload contract). Defined here so the engine has no api dependency.
+interface SubmitPayload {
+  anon_id: string
+  display_name: string | null
+  quote: string | null
+  bio: string | null
+  pinned_badges: string[]
+  schema_version: number
+  client_version: string
+  submitted_at: string
+  stats: {
+    lifetime: {
+      total_tokens: number
+      total_evolutions: number
+      total_shinies: number
+      max_level: number
+      total_compagnons: number
+      lineages_completed: string[]
+      games_won: number
+      games_played: number
+    }
+    active: {
+      lineage: string | null
+      current_level: number
+      is_shiny: boolean
+    }
+    badges: string[]
+    pokedex_seen_count: number
+    pokedex_seen_ids: string[]
+  }
+}
+
 export interface ShareInput {
   args: string[]
-  data: Json
+  data: PokemonData
   locale: Locale
   /** anon_id for `enable --confirm` (engine generates via crypto). */
   anonId: string
 }
 
 export interface ShareOutput {
-  data: Json
+  data: PokemonData
   output: string
   changed: boolean
 }
@@ -34,13 +64,13 @@ export interface ShareOutput {
 // Port of _share_build_payload (lib/pokemon-status.sh): the strict submit
 // whitelist from data.stats_share + state.
 export function buildSubmitPayload(
-  data: Json,
-  state: Json,
+  data: PokemonData,
+  state: PokemonState,
   anonId: string,
   clientVer: string,
   displayName: string,
   now: string,
-): Json {
+): SubmitPayload {
   const share = data.stats_share ?? {}
   const ls = state.lifetime_stats ?? {}
   const orNull = (v: string): string | null => (v === '' ? null : v)
@@ -49,7 +79,7 @@ export function buildSubmitPayload(
     display_name: orNull(displayName),
     quote: orNull(share.quote ?? ''),
     bio: orNull(share.bio ?? ''),
-    pinned_badges: share.pinned_badges ?? [],
+    pinned_badges: (share.pinned_badges as string[] | undefined) ?? [],
     schema_version: 1,
     client_version: clientVer,
     submitted_at: now,
@@ -69,7 +99,7 @@ export function buildSubmitPayload(
         current_level: state.current_level ?? 0,
         is_shiny: state.is_shiny ?? false,
       },
-      badges: (state.badges ?? []).map((b: Json) => b.id),
+      badges: (state.badges ?? []).map((b) => b.id),
       pokedex_seen_count: Object.keys(state.pokedex_wild ?? {}).length,
       pokedex_seen_ids: Object.keys(state.pokedex_wild ?? {}),
     },
@@ -84,8 +114,8 @@ const shareTitle = (locale: Locale): string =>
   bashPrintf(`\n  %s%s${t(locale, 'share.title')}%s\n\n`, BOLD, GOLD, RESET)
 
 // forget: the command fetches DELETE /v1/forget?anon_id; ok = success.
-export function renderForget(data: Json, locale: Locale, anonId: string, ok: boolean): ShareOutput {
-  const d: Json = JSON.parse(JSON.stringify(data))
+export function renderForget(data: PokemonData, locale: Locale, anonId: string, ok: boolean): ShareOutput {
+  const d: PokemonData = JSON.parse(JSON.stringify(data))
   let out = shareTitle(locale)
   let changed = false
   if (!anonId) {
@@ -104,14 +134,14 @@ export function renderForget(data: Json, locale: Locale, anonId: string, ok: boo
 
 // submit: the command fetches POST /v1/submit; code = HTTP status.
 export function renderSubmit(
-  state: Json,
+  state: PokemonState,
   locale: Locale,
   enabled: boolean,
   code: number,
   cooldownS: number,
   now: string,
-): { state: Json; output: string; changed: boolean } {
-  const s: Json = JSON.parse(JSON.stringify(state))
+): { state: PokemonState; output: string; changed: boolean } {
+  const s: PokemonState = JSON.parse(JSON.stringify(state))
   let out = shareTitle(locale)
   let changed = false
   if (!enabled) {
@@ -132,7 +162,7 @@ export function renderSubmit(
  *  → the bash dispatcher falls back. */
 export function runShare(input: ShareInput): ShareOutput | null {
   const { args, locale, anonId } = input
-  const data: Json = JSON.parse(JSON.stringify(input.data))
+  const data: PokemonData = JSON.parse(JSON.stringify(input.data))
   const L = (k: string, ...a: Array<string | number>): string => t(locale, k, ...a)
   const sub = args[0] ?? ''
   const share = data.stats_share ?? {}
@@ -141,7 +171,7 @@ export function runShare(input: ShareInput): ShareOutput | null {
   const anonCur = share.anon_id ?? ''
   const displayName = share.display_name ?? ''
   let changed = false
-  const ensure = (): Json => (data.stats_share ??= {})
+  const ensure = (): StatsShareConfig => (data.stats_share ??= {})
 
   let out = bashPrintf(`\n  %s%s${L('share.title')}%s\n\n`, BOLD, GOLD, RESET)
 
@@ -158,8 +188,9 @@ export function runShare(input: ShareInput): ShareOutput | null {
         out += bashPrintf(`  %s${L('share.confirm_hint')}%s\n\n`, BOLD, RESET)
         break
       }
-      ensure().enabled = true
-      data.stats_share.anon_id = anonId
+      const sh = ensure()
+      sh.enabled = true
+      sh.anon_id = anonId
       changed = true
       out += bashPrintf(`  %s${L('share.enabled', anonId)}%s\n\n`, GOLD, RESET)
       break
