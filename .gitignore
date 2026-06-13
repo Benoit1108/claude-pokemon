@@ -31,3 +31,6 @@ sprites-mini-anim/
 .claude/scheduled_tasks.lock
 shared/dist/
 cli/dist/
+
+# Vitest coverage output (per-workspace)
+coverage/

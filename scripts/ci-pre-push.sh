@@ -91,11 +91,15 @@ run "shared generated data + engine bundle in sync" bash -c '
   fi
 '
 
+run "shared : ESLint"           npm run -s -w shared lint
+run "shared : Prettier check"   npm run -s -w shared format:check
 run "shared : TypeScript check" npm run -s -w shared typecheck
-run "shared : Vitest"           npm run -s -w shared test
+run "shared : Vitest (coverage)" npm run -s -w shared test:coverage
 
+run "cli : ESLint"           npm run -s -w cli lint
+run "cli : Prettier check"   npm run -s -w cli format:check
 run "cli : TypeScript check" npm run -s -w cli typecheck
-run "cli : Vitest"           npm run -s -w cli test
+run "cli : Vitest (coverage)" npm run -s -w cli test:coverage
 
 run "api : ESLint"           npm run -s -w api lint
 run "api : Prettier check"   npm run -s -w api format:check

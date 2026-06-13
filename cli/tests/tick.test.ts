@@ -35,7 +35,9 @@ function baseState(over: Record<string, any> = {}): any {
     evolution_history: [{ level: 1, name: 'x' }],
     eevee_form: null,
     // no credit: current_tokens == last_tick_tokens
-    sessions: { s1: { last_tick_tokens: 50000, last_seen: NOW, first_seen: NOW, last_xp_credit_at: EPOCH } },
+    sessions: {
+      s1: { last_tick_tokens: 50000, last_seen: NOW, first_seen: NOW, last_xp_credit_at: EPOCH },
+    },
     badges: [],
     team: [],
     pc_storage: [],
@@ -43,14 +45,21 @@ function baseState(over: Record<string, any> = {}): any {
     pokedex_wild: {},
     items: {},
     friendship: 10,
-    lifetime_stats: { total_tokens: 0, total_evolutions: 1, total_shinies: 0, max_level: 50, lineages_completed: [] },
+    lifetime_stats: {
+      total_tokens: 0,
+      total_evolutions: 1,
+      total_shinies: 0,
+      max_level: 50,
+      lineages_completed: [],
+    },
     last_daily_bonus_date: '2026-06-11',
     created_at: '2026-06-01T00:00:00Z',
     ...over,
   }
 }
 
-function runTick(state: unknown, decisions: TickDecisions): any { // eslint-disable-line @typescript-eslint/no-explicit-any
+function runTick(state: unknown, decisions: TickDecisions): any {
+  // eslint-disable-line @typescript-eslint/no-explicit-any
   return tick({
     state,
     data,
@@ -65,7 +74,11 @@ function runTick(state: unknown, decisions: TickDecisions): any { // eslint-disa
 
 describe('tick — battle branch', () => {
   it('battle won adds scaled bonus XP + a battle_won event', () => {
-    const dec = { ...DEC_OFF, encounter: { fired: true, index: 0 }, battle: { fired: true, wild_level: 30, bonus_xp_raw: 1000 } }
+    const dec = {
+      ...DEC_OFF,
+      encounter: { fired: true, index: 0 },
+      battle: { fired: true, wild_level: 30, bonus_xp_raw: 1000 },
+    }
     const out = runTick(baseState(), dec)
     // bonus = floor(1000 * 30 / 25) = 1200
     expect(out.total_xp).toBe(thresholds[50] + 1000 + 1200)
@@ -75,8 +88,19 @@ describe('tick — battle branch', () => {
 
   it('battle lost sets injured ticks + a battle_lost event (no XP)', () => {
     // own level 5 vs wild 40 → lost
-    const dec = { ...DEC_OFF, encounter: { fired: true, index: 0 }, battle: { fired: true, wild_level: 40, bonus_xp_raw: 1000 } }
-    const out = runTick(baseState({ current_level: 5, total_xp: thresholds[5] + 100, lifetime_stats: { max_level: 5, total_tokens: 0, lineages_completed: [] } }), dec)
+    const dec = {
+      ...DEC_OFF,
+      encounter: { fired: true, index: 0 },
+      battle: { fired: true, wild_level: 40, bonus_xp_raw: 1000 },
+    }
+    const out = runTick(
+      baseState({
+        current_level: 5,
+        total_xp: thresholds[5] + 100,
+        lifetime_stats: { max_level: 5, total_tokens: 0, lineages_completed: [] },
+      }),
+      dec,
+    )
     expect(out.injured_ticks_remaining).toBe(data.battle_injured_ticks ?? 5)
     expect(out.recent_events[0]).toMatchObject({ type: 'battle_lost', wild_level: 40 })
   })
@@ -91,7 +115,13 @@ describe('tick — Eevee evolution at Lv.30', () => {
       total_xp: thresholds[30] - 100,
       evolution_history: [{ level: 1, name: 'Évoli' }],
       pokedex: { eevee: { seen: true, count: 1, shiny_seen: false, shiny_count: 0 } },
-      lifetime_stats: { total_tokens: 0, total_evolutions: 1, total_shinies: 0, max_level: 29, lineages_completed: [] },
+      lifetime_stats: {
+        total_tokens: 0,
+        total_evolutions: 1,
+        total_shinies: 0,
+        max_level: 29,
+        lineages_completed: [],
+      },
       sessions: { s1: { last_tick_tokens: 0, last_seen: NOW, first_seen: NOW } }, // credit fires → crosses Lv.30
       ...over,
     })

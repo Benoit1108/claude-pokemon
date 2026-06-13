@@ -40,6 +40,8 @@ describe('bashPrintf', () => {
     expect(bashPrintf('A%pB%s', 'X')).toBe('A%pBX')
     expect(bashPrintf('start%z end')).toBe('start%z end')
     expect(bashPrintf('tail%')).toBe('tail%')
-    expect(bashPrintf('  %s>=90% pendant %d ticks%s\n', '', 7, '')).toBe('  >=90% pendant 7 ticks\n')
+    expect(bashPrintf('  %s>=90% pendant %d ticks%s\n', '', 7, '')).toBe(
+      '  >=90% pendant 7 ticks\n',
+    )
   })
 })

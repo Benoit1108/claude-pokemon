@@ -15,7 +15,7 @@ function extractKeys(relPath: string): string[] {
   const src = readFileSync(join(repoRoot, relPath), 'utf8')
   const m = /CONFIG_KEYS\s*=\s*\[([\s\S]*?)\]/.exec(src)
   if (!m) throw new Error(`CONFIG_KEYS array not found in ${relPath}`)
-  return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1])
+  return [...m[1].matchAll(/'([^']+)'/g)].map(x => x[1])
 }
 
 describe('CONFIG_KEYS stays in sync across the 3 declarations', () => {

@@ -19,8 +19,22 @@ describe('renderLeaderboard', () => {
     const resp = {
       total_players: 3,
       top: [
-        { anon_id: 'abcd1234', display_name: 'Me', value: 1234567, lineage: 'fire', level: 40, is_shiny: true },
-        { anon_id: 'zzzz9999', display_name: '', value: 500, lineage: 'water', level: 0, is_shiny: false },
+        {
+          anon_id: 'abcd1234',
+          display_name: 'Me',
+          value: 1234567,
+          lineage: 'fire',
+          level: 40,
+          is_shiny: true,
+        },
+        {
+          anon_id: 'zzzz9999',
+          display_name: '',
+          value: 500,
+          lineage: 'water',
+          level: 0,
+          is_shiny: false,
+        },
       ],
     }
     const out = strip(renderLeaderboard(data, en, 'total_tokens', { resp }))

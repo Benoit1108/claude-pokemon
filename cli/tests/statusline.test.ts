@@ -6,7 +6,14 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { themeAccent, ansiColor, rainbowName, trimSprite, renderInline, renderStatusline } from '../src/statusline.js'
+import {
+  themeAccent,
+  ansiColor,
+  rainbowName,
+  trimSprite,
+  renderInline,
+  renderStatusline,
+} from '../src/statusline.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const data = JSON.parse(readFileSync(join(root, 'lib', 'data.default.json'), 'utf8'))
@@ -39,7 +46,13 @@ describe('trimSprite', () => {
 })
 
 describe('renderInline', () => {
-  const base = { lineage: 'fire', current_level: 40, total_xp: 120_000_000, is_shiny: false, evolution_flash_remaining: 0 }
+  const base = {
+    lineage: 'fire',
+    current_level: 40,
+    total_xp: 120_000_000,
+    is_shiny: false,
+    evolution_flash_remaining: 0,
+  }
   it('renders name/level/gauge with stage color (no ANSI strip)', () => {
     const out = renderInline(base, data)
     expect(out).toContain('Lv.40')
@@ -62,7 +75,13 @@ describe('renderInline', () => {
 describe('renderStatusline', () => {
   const noSprite = { readSprite: () => null, animFrameCount: () => 0 }
   const ctx = (over = {}) => ({
-    state: { lineage: 'fire', current_level: 40, total_xp: 120_000_000, is_shiny: false, evolution_flash_remaining: 0 },
+    state: {
+      lineage: 'fire',
+      current_level: 40,
+      total_xp: 120_000_000,
+      is_shiny: false,
+      evolution_flash_remaining: 0,
+    },
     data,
     used: '30',
     project: 'arena',

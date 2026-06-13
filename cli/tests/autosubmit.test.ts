@@ -9,7 +9,12 @@ const NOW_EPOCH = Math.floor(Date.parse(NOW) / 1000)
 
 const data: PokemonData = {
   version: '1.0.0',
-  stats_share: { enabled: true, anon_id: 'abcd1234', endpoint: 'https://api', display_name: 'Sacha' },
+  stats_share: {
+    enabled: true,
+    anon_id: 'abcd1234',
+    endpoint: 'https://api',
+    display_name: 'Sacha',
+  },
 }
 const state: PokemonState = {
   lineage: 'fire',
@@ -22,7 +27,11 @@ describe('planAutoSubmit', () => {
     const plan = planAutoSubmit(state, data, NOW, NOW_EPOCH)
     expect(plan).not.toBeNull()
     expect(plan!.url).toBe('https://api/v1/submit')
-    const p = plan!.payload as { anon_id: string; submitted_at: string; stats: { active: { lineage: string } } }
+    const p = plan!.payload as {
+      anon_id: string
+      submitted_at: string
+      stats: { active: { lineage: string } }
+    }
     expect(p.anon_id).toBe('abcd1234')
     expect(p.submitted_at).toBe(NOW)
     expect(p.stats.active.lineage).toBe('fire')
@@ -36,10 +45,31 @@ describe('planAutoSubmit', () => {
   })
 
   it('skips when share is disabled / no companion / missing config', () => {
-    expect(planAutoSubmit(state, { stats_share: { ...data.stats_share, enabled: false } }, NOW, NOW_EPOCH)).toBeNull()
+    expect(
+      planAutoSubmit(
+        state,
+        { stats_share: { ...data.stats_share, enabled: false } },
+        NOW,
+        NOW_EPOCH,
+      ),
+    ).toBeNull()
     expect(planAutoSubmit({ ...state, lineage: null }, data, NOW, NOW_EPOCH)).toBeNull()
     expect(planAutoSubmit({ ...state, lineage: '' }, data, NOW, NOW_EPOCH)).toBeNull()
-    expect(planAutoSubmit(state, { stats_share: { enabled: true, anon_id: '', endpoint: 'x' } }, NOW, NOW_EPOCH)).toBeNull()
-    expect(planAutoSubmit(state, { stats_share: { enabled: true, anon_id: 'a', endpoint: '' } }, NOW, NOW_EPOCH)).toBeNull()
+    expect(
+      planAutoSubmit(
+        state,
+        { stats_share: { enabled: true, anon_id: '', endpoint: 'x' } },
+        NOW,
+        NOW_EPOCH,
+      ),
+    ).toBeNull()
+    expect(
+      planAutoSubmit(
+        state,
+        { stats_share: { enabled: true, anon_id: 'a', endpoint: '' } },
+        NOW,
+        NOW_EPOCH,
+      ),
+    ).toBeNull()
   })
 })
