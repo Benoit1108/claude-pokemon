@@ -8,18 +8,32 @@
 // engine streams its human-facing text via a `write` callback (→ stderr, which
 // bash leaves attached to the terminal) and emits only the session op on stdout.
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = any
-
 import { httpJson } from './http.js'
 
 const GITHUB_DEVICE_CODE_URL = 'https://github.com/login/device/code'
 const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
 
+// External JSON payloads (GitHub device flow + the arena cli-session exchange).
+// Only the fields the flow reads are typed; the rest stays unknown.
+interface DeviceCodeResp {
+  device_code?: string
+  user_code?: string
+  verification_uri?: string
+  interval?: unknown
+}
+interface TokenResp {
+  access_token?: string
+  error?: string
+}
+interface CliSessionResp {
+  session_token?: string
+  github?: { login?: string }
+}
+
 // {} on any failure: the device-flow poll loop treats "no body" as
 // keep-polling (a transient network blip mustn't abort a 5-minute wait).
 // Real failures surface via POKEMON_DEBUG (httpJson traces them).
-async function formPost(url: string, params: Record<string, string>, timeoutMs: number): Promise<Json> {
+async function formPost<T>(url: string, params: Record<string, string>, timeoutMs: number): Promise<T> {
   const r = await httpJson(
     url,
     {
@@ -29,16 +43,16 @@ async function formPost(url: string, params: Record<string, string>, timeoutMs: 
     },
     timeoutMs,
   )
-  return r.ok ? (r.body as Json) : {}
+  return (r.ok ? (r.body as T) : ({} as T))
 }
 
-async function jsonPost(url: string, body: Json, timeoutMs: number, headers: Record<string, string> = {}): Promise<Json> {
+async function jsonPost<T>(url: string, body: unknown, timeoutMs: number, headers: Record<string, string> = {}): Promise<T> {
   const r = await httpJson(
     url,
     { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) },
     timeoutMs,
   )
-  return r.ok ? (r.body as Json) : {}
+  return (r.ok ? (r.body as T) : ({} as T))
 }
 
 // Mirror of bash's interval coercion: jq `.interval // 5`, then any non-digit
@@ -71,7 +85,7 @@ export async function runLogin(input: LoginInput, deps: LoginDeps): Promise<{ se
     return { sessionToken: null }
   }
 
-  const dc = await formPost(GITHUB_DEVICE_CODE_URL, { client_id: clientId, scope: 'read:user' }, 10_000)
+  const dc = await formPost<DeviceCodeResp>(GITHUB_DEVICE_CODE_URL, { client_id: clientId, scope: 'read:user' }, 10_000)
   const deviceCode: string = dc.device_code ?? ''
   const userCode: string = dc.user_code ?? ''
   const verificationUri: string = dc.verification_uri ?? ''
@@ -87,7 +101,7 @@ export async function runLogin(input: LoginInput, deps: LoginDeps): Promise<{ se
   const deadline = now() + 300
   while (now() < deadline) {
     await sleep(interval)
-    const poll = await formPost(
+    const poll = await formPost<TokenResp>(
       GITHUB_TOKEN_URL,
       { client_id: clientId, device_code: deviceCode, grant_type: 'urn:ietf:params:oauth:grant-type:device_code' },
       10_000,
@@ -108,7 +122,7 @@ export async function runLogin(input: LoginInput, deps: LoginDeps): Promise<{ se
     return { sessionToken: null }
   }
 
-  const sess = await jsonPost(`${endpoint}/v1/auth/github/cli-session`, { access_token: accessToken }, 10_000)
+  const sess = await jsonPost<CliSessionResp>(`${endpoint}/v1/auth/github/cli-session`, { access_token: accessToken }, 10_000)
   const sessionToken: string = sess.session_token ?? ''
   const loginName: string = sess.github?.login ?? ''
   if (!sessionToken) {

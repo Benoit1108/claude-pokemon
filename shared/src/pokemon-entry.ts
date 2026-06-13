@@ -29,9 +29,7 @@ import {
   epochToIso,
 } from './entry-io.js'
 import { httpJson } from './http.js'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = any
+import type { PokemonData, PokemonState } from './state-types.js'
 
 const SECRET_FILE = join(POKEMON_DIR, '.arena-secret')
 const SESSION_FILE = join(POKEMON_DIR, '.session')
@@ -96,7 +94,7 @@ function lengthOf(x: unknown): number {
   if (x && typeof x === 'object') return Object.keys(x).length
   return 0
 }
-function cmdDecisions(data: Json): Json {
+function cmdDecisions(data: PokemonData): { pool_idx: number; trade_level: number; trade_shiny: boolean } {
   const pool = lengthOf(data.wild_pool) || 1
   return {
     pool_idx: Math.floor(Math.random() * pool),
@@ -130,9 +128,9 @@ async function main(): Promise<void> {
     process.exitCode = 1
     return
   }
-  const data: Json = dataRead.data
+  const data = dataRead.data as PokemonData
   const dataMode = dataRead.mode
-  const state: Json = stateRead.ok ? stateRead.value : {}
+  const state: PokemonState = stateRead.ok ? (stateRead.value as PokemonState) : {}
   const lang = data.language ?? 'fr'
   let locale: Locale
   try {
@@ -230,7 +228,7 @@ async function main(): Promise<void> {
       let code = 0
       let cooldownS = 0
       if (enabled && endpoint) {
-        const payload = buildSubmitPayload(data, state, data.stats_share.anon_id ?? '', data.version ?? 'unknown', data.stats_share.display_name ?? '', nowIso)
+        const payload = buildSubmitPayload(data, state, data.stats_share?.anon_id ?? '', data.version ?? 'unknown', data.stats_share?.display_name ?? '', nowIso)
         const r = await httpJson(`${endpoint}/v1/submit`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },

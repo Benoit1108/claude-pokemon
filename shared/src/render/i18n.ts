@@ -29,7 +29,7 @@ export function localeLookup(locale: Locale, key: string): string | undefined {
   return typeof cur === 'string' ? cur : String(cur)
 }
 
-export function t(locale: Locale, key: string, ...args: Array<string | number>): string {
+export function t(locale: Locale, key: string, ...args: Array<string | number | undefined>): string {
   // `|| key` (not `?? key`) mirrors pokemon_t's `[ -z "$result" ]`: an empty
   // string also falls back to the key.
   const result = localeLookup(locale, key) || key

@@ -9,9 +9,7 @@
 // pokemon_rainbow_name), reading data.theme.
 import { evoField } from './render/views.js'
 import { progressPct, xpMultiplier } from './xp.js'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = any
+import type { PokemonState, PokemonData } from './state-types.js'
 
 const RESET = '\x1b[0m'
 const BOLD = '\x1b[1m'
@@ -143,7 +141,7 @@ export function trimSprite(content: string): string[] {
 
 // Port of pokemon_render_inline — companion name/level/XP gauge (the line that
 // is always printed).
-export function renderInline(state: Json, data: Json): string {
+export function renderInline(state: PokemonState, data: PokemonData): string {
   const theme = String(data.theme ?? 'default')
   const GOLD = themeAccent(theme)
   const lineage = state.lineage ?? 'fire'
@@ -222,7 +220,7 @@ export interface SpriteDeps {
 }
 
 // Port of pokemon_render_sprite_statusline — returns the (trimmed) sprite lines.
-export function renderSpriteLines(state: Json, data: Json, deps: SpriteDeps): string[] {
+export function renderSpriteLines(state: PokemonState, data: PokemonData, deps: SpriteDeps): string[] {
   const mode = String(data.display_sprite_in_statusline ?? 'off')
   if (!['left', 'right', 'above', 'true'].includes(mode)) return []
   const lineage = state.lineage ?? 'fire'
@@ -268,8 +266,8 @@ function trimLastLine(line: string): string {
 const SPRITE_ANCHOR = '\x1b[2;30m·\x1b[0m'
 
 export interface StatuslineCtx {
-  state: Json
-  data: Json
+  state: PokemonState
+  data: PokemonData
   /** Claude's context_window.used_percentage as a string, or '' if absent. */
   used: string
   project: string

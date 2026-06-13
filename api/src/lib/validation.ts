@@ -15,6 +15,8 @@ import {
   ALLOWED_BADGES,
   type BattleParticipant,
   type SubmitPayload,
+  type LifetimeStats,
+  type ActiveStats,
 } from '../types'
 
 /**
@@ -117,7 +119,7 @@ export function validateSubmit(body: unknown): string[] {
   }
 
   // lifetime block
-  const lt = s.lifetime as unknown as Record<string, unknown> | undefined
+  const lt = s.lifetime as LifetimeStats | undefined
   if (!lt || typeof lt !== 'object') {
     errs.push('stats.lifetime missing')
   } else {
@@ -147,7 +149,7 @@ export function validateSubmit(body: unknown): string[] {
   }
 
   // active block
-  const a = s.active as unknown as Record<string, unknown> | undefined
+  const a = s.active as ActiveStats | undefined
   if (!a || typeof a !== 'object') {
     errs.push('stats.active missing')
   } else {

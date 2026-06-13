@@ -8,30 +8,27 @@
 import { bashPrintf } from './render/printf.js'
 import { t, type Locale } from './render/i18n.js'
 import { RESET, BOLD, DIM, GOLD } from './render/ansi.js'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = any
-
+import type { PokemonData, PokemonState } from './state-types.js'
 
 const charLen = (s: string): number => [...s].length
 
 export interface ConfigInput {
   cmd: 'quote' | 'bio' | 'pins'
   args: string[]
-  data: Json
-  state: Json
+  data: PokemonData
+  state: PokemonState
   locale: Locale
 }
 
 export interface ConfigOutput {
-  data: Json
+  data: PokemonData
   output: string
   /** True only when data was mutated — bash rewrites data.json only then (show
    *  actions must not reformat the file). */
   changed: boolean
 }
 
-function ensureShare(data: Json): void {
+function ensureShare(data: PokemonData): void {
   data.stats_share ??= {}
 }
 
@@ -41,13 +38,13 @@ function isClear(action: string): boolean {
 
 export function runConfig(input: ConfigInput): ConfigOutput {
   const { cmd, args, locale } = input
-  const data: Json = JSON.parse(JSON.stringify(input.data))
+  const data: PokemonData = JSON.parse(JSON.stringify(input.data))
   const L = (k: string, ...a: Array<string | number>): string => t(locale, k, ...a)
   const action = args[0] ?? ''
   let changed = false
-  const mutate = (fn: () => void): void => {
+  const mutate = (fn: (share: NonNullable<PokemonData['stats_share']>) => void): void => {
     ensureShare(data)
-    fn()
+    fn(data.stats_share!)
     changed = true
   }
 
@@ -60,7 +57,7 @@ export function runConfig(input: ConfigInput): ConfigOutput {
         : bashPrintf(`  %s${L('quote.unset')}%s\n\n`, DIM, RESET)
       out += bashPrintf(`  %s${L('quote.usage')}%s\n\n`, DIM, RESET)
     } else if (isClear(action)) {
-      mutate(() => { data.stats_share.quote = null })
+      mutate((share) => { share.quote = null })
       out += bashPrintf(`  %s${L('quote.cleared')}%s\n\n`, DIM, RESET)
     } else {
       const text = args.join(' ')
@@ -68,7 +65,7 @@ export function runConfig(input: ConfigInput): ConfigOutput {
       if (len > 80) out += bashPrintf(`  %s${L('quote.too_long', len)}%s\n\n`, DIM, RESET)
       else if (/[\r\n]/.test(text)) out += bashPrintf(`  %s${L('quote.no_newline')}%s\n\n`, DIM, RESET)
       else {
-        mutate(() => { data.stats_share.quote = text })
+        mutate((share) => { share.quote = text })
         out += bashPrintf(`  %s${L('quote.set', text)}%s\n\n`, GOLD, RESET)
         out += bashPrintf(`  %s${L('quote.set_hint')}%s\n\n`, DIM, RESET)
       }
@@ -88,7 +85,7 @@ export function runConfig(input: ConfigInput): ConfigOutput {
       }
       out += bashPrintf(`  %s${L('bio.usage')}%s\n\n`, DIM, RESET)
     } else if (isClear(action)) {
-      mutate(() => { data.stats_share.bio = null })
+      mutate((share) => { share.bio = null })
       out += bashPrintf(`  %s${L('bio.cleared')}%s\n\n`, DIM, RESET)
     } else {
       const text = args.join('\n')
@@ -97,7 +94,7 @@ export function runConfig(input: ConfigInput): ConfigOutput {
       if (len > 160) out += bashPrintf(`  %s${L('bio.too_long', len)}%s\n\n`, DIM, RESET)
       else if (lines > 4) out += bashPrintf(`  %s${L('bio.too_many_lines', lines)}%s\n\n`, DIM, RESET)
       else {
-        mutate(() => { data.stats_share.bio = text })
+        mutate((share) => { share.bio = text })
         out += bashPrintf(`  %s${L('bio.set')}%s\n\n`, GOLD, RESET)
         out += bashPrintf(`  %s${L('bio.set_hint')}%s\n\n`, DIM, RESET)
       }
@@ -107,8 +104,8 @@ export function runConfig(input: ConfigInput): ConfigOutput {
 
   // pins
   let out = bashPrintf(`\n  %s%s${L('pins.title')}%s\n\n`, BOLD, GOLD, RESET)
-  const owned: string[] = Array.isArray(input.state.badges) ? input.state.badges.map((b: Json) => b.id) : []
-  const current: string[] = data.stats_share?.pinned_badges ?? []
+  const owned: string[] = Array.isArray(input.state.badges) ? input.state.badges.map((b) => b.id) : []
+  const current: string[] = (data.stats_share?.pinned_badges as string[] | undefined) ?? []
   if (action === '') {
     if (current.length > 0) {
       for (const pin of current) out += bashPrintf('  %s★ %s%s\n', GOLD, pin, RESET)
@@ -119,7 +116,7 @@ export function runConfig(input: ConfigInput): ConfigOutput {
     out += bashPrintf(`  %s${L('pins.usage')}%s\n`, DIM, RESET)
     out += bashPrintf(`  %s${L('pins.owned')}%s %s\n\n`, DIM, RESET, owned.join(', '))
   } else if (isClear(action)) {
-    mutate(() => { data.stats_share.pinned_badges = [] })
+    mutate((share) => { share.pinned_badges = [] })
     out += bashPrintf(`  %s${L('pins.cleared')}%s\n\n`, DIM, RESET)
   } else if (action === 'set') {
     const pins = args
@@ -134,7 +131,7 @@ export function runConfig(input: ConfigInput): ConfigOutput {
       const bad = pins.find((p) => !owned.includes(p))
       if (bad !== undefined) out += bashPrintf(`  %s${L('pins.not_owned', bad)}%s\n\n`, DIM, RESET)
       else {
-        mutate(() => { data.stats_share.pinned_badges = pins })
+        mutate((share) => { share.pinned_badges = pins })
         out += bashPrintf(`  %s${L('pins.set')}%s\n\n`, GOLD, RESET)
         out += bashPrintf(`  %s${L('pins.set_hint')}%s\n\n`, DIM, RESET)
       }

@@ -11,7 +11,11 @@
 //
 // Supported specs: %%, %[-][0][width][.prec]s, %[-][0][width]d/i.
 
-type Arg = string | number
+// Optional/absent domain fields (e.g. an old save's missing level) flow in as
+// `undefined`; formatSpec already renders them as '' / 0, matching jq's
+// null-coalescing. The public signature accepts them so callers don't have to
+// pre-coalesce (and risk diverging from the byte-exact bash output).
+type Arg = string | number | undefined
 
 // A valid conversion at the start of a slice (excluding %%, handled separately).
 const VALID_SPEC = /^%[-+ 0]*\d*(?:\.\d+)?[sdi]/

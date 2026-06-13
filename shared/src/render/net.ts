@@ -7,12 +7,32 @@ import { t, type Locale } from './i18n.js'
 import { fmtInt, tPad, lineageEmoji } from './views.js'
 import { sanitizeForTerminal } from '../http.js'
 import { RESET, BOLD, DIM, GOLD } from './ansi.js'
+import type { PokemonData } from '../state-types.js'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = any
+// External API payloads (the arena worker's /v1/leaderboard + /v1/aggregate).
+// Typed loosely with only the fields these renderers read; everything else is
+// unknown at the httpJson boundary.
+interface LeaderboardRow {
+  anon_id?: unknown
+  display_name?: unknown
+  lineage?: string
+  level?: number
+  is_shiny?: boolean
+  value?: number
+}
+interface LeaderboardResp {
+  total_players?: number
+  top?: LeaderboardRow[]
+}
+interface AggregateResp {
+  total_players?: number
+  total_tokens_combined?: number
+  total_shinies_observed?: number
+  shiny_rate_observed?: number
+  active_lineage_distribution?: Record<string, number>
+}
 
-
-export type NetResult = { endpoint: false } | { fetchFailed: true } | { resp: Json }
+export type NetResult = { endpoint: false } | { fetchFailed: true } | { resp: unknown }
 
 // _rank_prefix: 🥇🥈🥉 for the top 3, else right-justified "N.".
 function rankPrefix(rank: number): string {
@@ -22,7 +42,7 @@ function rankPrefix(rank: number): string {
   return bashPrintf('%2s.', String(rank))
 }
 
-export function renderLeaderboard(data: Json, locale: Locale, metric: string, result: NetResult): string {
+export function renderLeaderboard(data: PokemonData, locale: Locale, metric: string, result: NetResult): string {
   let out = bashPrintf(`\n  %s%s${t(locale, 'leaderboard.title', metric)}%s\n\n`, BOLD, GOLD, RESET)
   if ('endpoint' in result) {
     return out + bashPrintf(`  %s${t(locale, 'leaderboard.no_endpoint')}%s\n\n`, DIM, RESET)
@@ -30,10 +50,10 @@ export function renderLeaderboard(data: Json, locale: Locale, metric: string, re
   if ('fetchFailed' in result) {
     return out + bashPrintf(`  %s${t(locale, 'leaderboard.fetch_failed')}%s\n\n`, DIM, RESET)
   }
-  const resp = result.resp
+  const resp = result.resp as LeaderboardResp
   const myId = data.stats_share?.anon_id ?? ''
   out += bashPrintf(`  %s${t(locale, 'leaderboard.subtitle', resp.total_players)}%s\n\n`, DIM, RESET)
-  const top: Json[] = Array.isArray(resp.top) ? resp.top : []
+  const top: LeaderboardRow[] = Array.isArray(resp.top) ? resp.top : []
   top.forEach((e, i) => {
     const rank = i + 1
     // Server-controlled — strip terminal controls before printing raw.
@@ -66,7 +86,7 @@ export function renderLeaderboard(data: Json, locale: Locale, metric: string, re
   return out + '\n'
 }
 
-export function renderAggregate(_data: Json, locale: Locale, result: NetResult): string {
+export function renderAggregate(_data: PokemonData, locale: Locale, result: NetResult): string {
   let out = bashPrintf(`\n  %s%s${t(locale, 'aggregate.title')}%s\n\n`, BOLD, GOLD, RESET)
   if ('endpoint' in result) {
     return out + bashPrintf(`  %s${t(locale, 'leaderboard.no_endpoint')}%s\n\n`, DIM, RESET)
@@ -74,7 +94,7 @@ export function renderAggregate(_data: Json, locale: Locale, result: NetResult):
   if ('fetchFailed' in result) {
     return out + bashPrintf(`  %s${t(locale, 'leaderboard.fetch_failed')}%s\n\n`, DIM, RESET)
   }
-  const resp = result.resp
+  const resp = result.resp as AggregateResp
   const players = resp.total_players
   if (String(players) === '0' || players == null) {
     return out + bashPrintf(`  %s${t(locale, 'aggregate.empty')}%s\n\n`, DIM, RESET)
@@ -84,7 +104,7 @@ export function renderAggregate(_data: Json, locale: Locale, result: NetResult):
   out += bashPrintf(`  %s${tPad(locale, 'aggregate.shinies', 22)}%s :  %s\n`, DIM, RESET, fmtInt(resp.total_shinies_observed))
   out += bashPrintf(`  %s${tPad(locale, 'aggregate.shiny_rate', 22)}%s :  %s\n\n`, DIM, RESET, resp.shiny_rate_observed ?? 0)
   out += bashPrintf(`  %s%s${t(locale, 'aggregate.distribution')}%s\n`, BOLD, GOLD, RESET)
-  const dist: [string, Json][] = Object.entries(resp.active_lineage_distribution ?? {})
+  const dist: [string, number][] = Object.entries(resp.active_lineage_distribution ?? {})
   dist.sort((a, b) => Number(b[1]) - Number(a[1]))
   for (const [lin, count] of dist) {
     out += bashPrintf('    %s %s%-12s%s : %d\n', lineageEmoji(lin), DIM, lin, RESET, Number(count))

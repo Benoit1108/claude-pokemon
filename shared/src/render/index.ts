@@ -14,13 +14,12 @@ import {
   type RenderContext,
 } from './views.js'
 import type { Locale } from './i18n.js'
+import type { PokemonState, PokemonData } from '../state-types.js'
 
 export interface RenderInput {
   view: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  state: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: any
+  state: PokemonState
+  data: PokemonData
   locale: Locale
   lang?: string
   /** recap scope (session|today|…) and clock for the duration line. */
