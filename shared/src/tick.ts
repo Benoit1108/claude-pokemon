@@ -10,10 +10,24 @@
 //
 // Out of scope here (stay bash until later phases): the auto-submit curl
 // (network → R3d-4) and the RNG roll computation itself.
+//
+// Structure: `tick` is a short linear composition of pure phase-functions, in
+// the SAME order as the bash tick. Each phase mutates the working state `s` and
+// the shared `TickCtx` (locals that cross phase boundaries — lineage, the
+// multiplier values, the token-delta accumulators, prevLevel/isShiny, the live
+// session ref). Order and data flow are load-bearing: do not reorder mutations.
 import { levelFromXp, xpMultiplier, typeMatchMultiplier } from './xp.js'
 import { evoField } from './render/views.js'
 import { archiveToTeam, checkBadges } from './collection.js'
-import type { PokemonData, PokemonState, RecentEvent, SessionEntry, StageDef } from './state-types.js'
+import type {
+  LifetimeStats,
+  PokedexEntry,
+  PokemonData,
+  PokemonState,
+  RecentEvent,
+  SessionEntry,
+  StageDef,
+} from './state-types.js'
 
 export interface TickDecisions {
   /** Lineage to assign when the active has none (bash pokemon_pick_starter). */
@@ -48,19 +62,56 @@ function prepend10(list: RecentEvent[] | undefined, ev: RecentEvent): RecentEven
   return [ev, ...(Array.isArray(list) ? list : [])].slice(0, 10)
 }
 
-export function tick(input: TickInput): { state: PokemonState } {
-  const { data, now, now_epoch, session_id: sid, current_tokens, decisions } = input
-  const usedPct = input.used_pct == null ? null : Number(input.used_pct)
-  const thresholds: number[] = data.thresholds ?? []
-  const maxLevel = thresholds.length - 1
-  const s: PokemonState = clone(input.state)
+/** Working state shared across phases. `s` is the cloned PokemonState being
+ *  mutated in place; the other fields are the locals that the original linear
+ *  `tick` carried between phase banners. Mutation order is preserved exactly. */
+interface TickCtx {
+  s: PokemonState
+  data: PokemonData
+  now: string
+  nowEpoch: number
+  sid: string
+  currentTokens: number
+  usedPct: number | null
+  decisions: TickDecisions
+  thresholds: number[]
+  maxLevel: number
 
-  // ── Schema migration (forward-compat) ──
+  // Refs into `s`, captured during migration so later phases reuse them.
+  pokedex: Record<string, PokedexEntry>
+  ls: LifetimeStats
+  sess: SessionEntry
+
+  // Carried locals.
+  lineage: string
+  isShiny: boolean
+  prevLevel: number
+
+  // Token-delta accumulator outputs.
+  rawDelta: number
+  delta: number
+
+  // Multiplier phase outputs.
+  d: Date
+  xpMult: number
+  typeMatch: number
+  dailyMult: number
+  statusMult: number
+  heldMult: number
+  injuredMult: number
+  seasonMult: number
+  shinyHunter: boolean
+  weightedDelta: number
+}
+
+// ── Schema migration (forward-compat) ──
+function migrateSchema(c: TickCtx): void {
+  const s = c.s
   s.badges ??= []
   s.team ??= []
   s.pc_storage ??= []
-  const pokedex = (s.pokedex ??= {})
-  const ls = (s.lifetime_stats ??= {
+  c.pokedex = s.pokedex ??= {}
+  c.ls = s.lifetime_stats ??= {
     total_tokens: 0,
     total_evolutions: 0,
     total_shinies: 0,
@@ -68,9 +119,12 @@ export function tick(input: TickInput): { state: PokemonState } {
     lineages_completed: [],
     total_compagnons: 1,
     first_shiny_at: null,
-  })
+  }
+}
 
-  // ── Retroactive backfill (idempotent) ──
+// ── Retroactive backfill (idempotent) ──
+function backfillRetroactive(c: TickCtx): void {
+  const { s, pokedex, ls } = c
   ls.max_level = (ls.max_level ?? 0) > (s.current_level ?? 0) ? ls.max_level : s.current_level
   const linNow = s.lineage ?? ''
   if (linNow !== '' && (pokedex[linNow] ?? null) == null) {
@@ -93,8 +147,11 @@ export function tick(input: TickInput): { state: PokemonState } {
     ls.total_shinies = 1
     ls.first_shiny_at ??= s.created_at
   }
+}
 
-  // ── Lineage assignment (sticky) ──
+// ── Lineage assignment (sticky) ──
+function assignLineage(c: TickCtx): void {
+  const { s, pokedex, decisions, now } = c
   let lineage: string = s.lineage ?? ''
   if (!lineage) {
     lineage = decisions.starter as string
@@ -104,37 +161,54 @@ export function tick(input: TickInput): { state: PokemonState } {
     pd.count = (pd.count ?? 0) + 1
     pd.first_seen_at ??= now
   }
+  c.lineage = lineage
+}
 
-  // ── Clamp current_level DOWN to what total_xp supports (never up here) ──
+// ── Clamp current_level DOWN to what total_xp supports (never up here) ──
+function clampLevelToXp(c: TickCtx): void {
+  const { s, thresholds } = c
   const expectedLevel = levelFromXp(thresholds, s.total_xp ?? 0)
   if ((s.current_level ?? 0) > expectedLevel) {
     s.current_level = expectedLevel
     s.evolution_flash_remaining = 0
   }
+  c.isShiny = s.is_shiny ?? false
+  c.prevLevel = s.current_level ?? 0
+}
 
-  let isShiny: boolean = s.is_shiny ?? false
-  const prevLevel: number = s.current_level ?? 0
-
-  // ── Per-tick delta + per-turn credit accumulator ──
+// ── Per-tick delta + per-turn credit accumulator ──
+// Anti-burst gate: tokens are only credited to XP when >= 30 s elapsed since the
+// last credit (gapS), and each credit is capped at TICK_CAP=10000 tokens — the
+// rest stays in sess.pending_tokens for the next eligible tick. This stops a
+// single huge context jump (or a flurry of fast ticks) from minting a giant XP
+// spike; it matches the bash tick's accumulator behavior byte-for-byte.
+function accumulateTokenDelta(c: TickCtx): void {
+  const { s, sid, currentTokens, nowEpoch } = c
   const sessions = (s.sessions ??= {})
   const sess = (sessions[sid] ??= {})
   const prevTokens = sess.last_tick_tokens ?? sess.max_context_tokens ?? 0
-  const rawDelta = current_tokens > prevTokens ? current_tokens - prevTokens : 0
+  const rawDelta = currentTokens > prevTokens ? currentTokens - prevTokens : 0
   let pending = (sess.pending_tokens ?? 0) + rawDelta
   const lastCreditAt = sess.last_xp_credit_at ?? 0
-  const gapS = now_epoch - lastCreditAt
+  const gapS = nowEpoch - lastCreditAt
   let delta = 0
   const TICK_CAP = 10000
   if (gapS >= 30 && pending > 0) {
     delta = pending > TICK_CAP ? TICK_CAP : pending
     pending -= delta
-    sess.last_xp_credit_at = now_epoch
+    sess.last_xp_credit_at = nowEpoch
   }
   sess.pending_tokens = pending
+  c.sess = sess
+  c.rawDelta = rawDelta
+  c.delta = delta
+}
 
-  // ── Multipliers ── (bash pre-rounds used_pct to an integer before passing it,
-  // so xpMultiplier/typeMatchMultiplier's Math.round is a no-op and matches the
-  // bash fallback's printf '%.0f' rounding exactly.)
+// ── Multipliers ── (bash pre-rounds used_pct to an integer before passing it,
+// so xpMultiplier/typeMatchMultiplier's Math.round is a no-op and matches the
+// bash fallback's printf '%.0f' rounding exactly.)
+function computeMultipliers(c: TickCtx): void {
+  const { s, data, now, usedPct, lineage, delta } = c
   const xpMult = xpMultiplier(usedPct)
   const typeMatch = typeMatchMultiplier(lineage, usedPct == null ? 50 : usedPct)
 
@@ -189,6 +263,10 @@ export function tick(input: TickInput): { state: PokemonState } {
 
   let weightedDelta = 0
   if (!shinyHunter) {
+    // Product order matches the bash tick exactly (printf chain): each factor is
+    // applied left-to-right and the result is capped at 2.0 before truncation.
+    // Reordering would change nothing mathematically here, but the cap + trunc
+    // sequence and the toFixed(1) snapshots below depend on this exact pipeline.
     let m = xpMult * typeMatch * dailyMult * statusMult * heldMult * injuredMult * seasonMult
     if (m > 2.0) m = 2.0
     weightedDelta = Math.trunc(delta * m)
@@ -202,7 +280,21 @@ export function tick(input: TickInput): { state: PokemonState } {
     status: statusMult === 0.75 ? '0.75' : '1.0',
   }
 
-  // ── Random events (resolved upstream via `decisions`) ──
+  c.d = d
+  c.xpMult = xpMult
+  c.typeMatch = typeMatch
+  c.dailyMult = dailyMult
+  c.statusMult = statusMult
+  c.heldMult = heldMult
+  c.injuredMult = injuredMult
+  c.seasonMult = seasonMult
+  c.shinyHunter = shinyHunter
+  c.weightedDelta = weightedDelta
+}
+
+// ── Random events (resolved upstream via `decisions`) ──
+function applyRandomEvents(c: TickCtx): void {
+  const { s, data, now, decisions } = c
   if (decisions.berry.fired) {
     // fired implies the index was rolled against this pool — entry exists.
     const b = (data.berries ?? [])[decisions.berry.index]!
@@ -269,14 +361,17 @@ export function tick(input: TickInput): { state: PokemonState } {
       })
     }
   }
+}
 
-  // ── Apply credited XP + session bookkeeping + baseline ──
+// ── Apply credited XP + session bookkeeping + baseline ──
+function creditXp(c: TickCtx): void {
+  const { s, ls, sess, now, currentTokens, weightedDelta, rawDelta } = c
   s.total_xp = (s.total_xp ?? 0) + weightedDelta
   ls.total_tokens = (ls.total_tokens ?? 0) + rawDelta
   sess.first_seen ??= now
   sess.last_seen = now
-  sess.max_context_tokens = (sess.max_context_tokens ?? 0) > current_tokens ? sess.max_context_tokens : current_tokens
-  sess.last_tick_tokens = current_tokens
+  sess.max_context_tokens = (sess.max_context_tokens ?? 0) > currentTokens ? sess.max_context_tokens : currentTokens
+  sess.last_tick_tokens = currentTokens
   s.last_updated = now
   if (!sess.baseline) {
     sess.baseline = {
@@ -291,10 +386,16 @@ export function tick(input: TickInput): { state: PokemonState } {
       games_won: ls.games_won ?? 0,
     }
   }
+}
 
-  // ── Level-up / evolution ──
-  const totalXp = s.total_xp
-  const newLevel = levelFromXp(thresholds, totalXp)
+// ── Level-up / evolution ──
+function resolveLevelUpAndEvolution(c: TickCtx): void {
+  const { s, data, now, decisions, pokedex, ls, lineage, prevLevel, maxLevel, d } = c
+  let isShiny = c.isShiny
+  // creditXp() ran first, so s.total_xp is always assigned here; the `!` keeps
+  // the strict-typing edge the original carried after that in-scope assignment.
+  const totalXp = s.total_xp!
+  const newLevel = levelFromXp(c.thresholds, totalXp)
 
   if (newLevel > prevLevel) {
     if (prevLevel === 0 && newLevel >= 1) {
@@ -373,20 +474,62 @@ export function tick(input: TickInput): { state: PokemonState } {
     if (flash > 0) s.evolution_flash_remaining = flash - 1
   }
 
-  // ── Per-tick counters ──
+  c.isShiny = isShiny
+}
+
+// ── Per-tick counters ──
+function bumpPerTickCounters(c: TickCtx): void {
+  const { s, lineage } = c
   s.animation_frame_index = (s.animation_frame_index ?? 0) + 1
   if (lineage && lineage !== 'null') s.friendship = (s.friendship ?? 0) + 1
+}
 
-  // ── Badges ──
-  Object.assign(s, checkBadges(s, now, data))
+// ── Badges ──
+function awardBadges(c: TickCtx): void {
+  Object.assign(c.s, checkBadges(c.s, c.now, c.data))
+}
 
-  // ── Session cleanup (drop sessions older than 30 days, keep current) ──
-  const cutoff = new Date(now_epoch * 1000 - 30 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z')
+// ── Session cleanup (drop sessions older than 30 days, keep current) ──
+function pruneOldSessions(c: TickCtx): void {
+  const { s, sid, nowEpoch } = c
+  const cutoff = new Date(nowEpoch * 1000 - 30 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z')
   const kept: Record<string, SessionEntry> = {}
-  for (const [k, v] of Object.entries(sessions)) {
+  for (const [k, v] of Object.entries(s.sessions ?? {})) {
     if (k === sid || (v.last_seen ?? '') >= cutoff) kept[k] = v
   }
   s.sessions = kept
+}
+
+export function tick(input: TickInput): { state: PokemonState } {
+  const { data, now, now_epoch, session_id: sid, current_tokens, decisions } = input
+  const thresholds: number[] = data.thresholds ?? []
+  const s: PokemonState = clone(input.state)
+
+  const c: TickCtx = {
+    s,
+    data,
+    now,
+    nowEpoch: now_epoch,
+    sid,
+    currentTokens: current_tokens,
+    usedPct: input.used_pct == null ? null : Number(input.used_pct),
+    decisions,
+    thresholds,
+    maxLevel: thresholds.length - 1,
+  } as TickCtx
+
+  migrateSchema(c)
+  backfillRetroactive(c)
+  assignLineage(c)
+  clampLevelToXp(c)
+  accumulateTokenDelta(c)
+  computeMultipliers(c)
+  applyRandomEvents(c)
+  creditXp(c)
+  resolveLevelUpAndEvolution(c)
+  bumpPerTickCounters(c)
+  awardBadges(c)
+  pruneOldSessions(c)
 
   return { state: s }
 }
