@@ -4,7 +4,16 @@ import { bashPrintf } from '../printf.js'
 import { t } from '../i18n.js'
 import { RESET, BOLD, DIM, GOLD } from '../ansi.js'
 import type { BadgeEntry } from 'claude-pokemon-shared/state-types'
-import { jqStr, tPad, fmtInt, boxTop, boxBottom, lineageEmoji, BADGE_EMOJI, type RenderContext } from './format.js'
+import {
+  jqStr,
+  tPad,
+  fmtInt,
+  boxTop,
+  boxBottom,
+  lineageEmoji,
+  BADGE_EMOJI,
+  type RenderContext,
+} from './format.js'
 import { evoField } from './stage.js'
 
 export function renderTrainerCard(ctx: RenderContext): string {
@@ -35,7 +44,11 @@ export function renderTrainerCard(ctx: RenderContext): string {
   else label = t(locale, 'trainer_card.unnamed')
 
   out += bashPrintf('\n  %s🎮 %s%s%s%s\n', BOLD, GOLD, label, RESET, shinyMark)
-  out += bashPrintf(`  %s${t(locale, 'trainer_card.trainer_since', createdAt.slice(0, 10))}%s\n\n`, DIM, RESET)
+  out += bashPrintf(
+    `  %s${t(locale, 'trainer_card.trainer_since', createdAt.slice(0, 10))}%s\n\n`,
+    DIM,
+    RESET,
+  )
 
   out += bashPrintf(
     `  %s${tPad(locale, 'trainer_card.companion', 22)}%s :  %s %s%s%s · Lv.%s\n`,
@@ -56,15 +69,30 @@ export function renderTrainerCard(ctx: RenderContext): string {
   )
 
   out += bashPrintf(`  %s%s${t(locale, 'trainer_card.stats_section')}%s\n`, BOLD, GOLD, RESET)
-  out += bashPrintf(`  %s${tPad(locale, 'trainer_card.tokens', 22)}%s :  %s\n`, DIM, RESET, fmtInt(ls.total_tokens ?? 0))
-  out += bashPrintf(`  %s${tPad(locale, 'trainer_card.xp', 22)}%s :  %s\n`, DIM, RESET, fmtInt(state.total_xp))
+  out += bashPrintf(
+    `  %s${tPad(locale, 'trainer_card.tokens', 22)}%s :  %s\n`,
+    DIM,
+    RESET,
+    fmtInt(ls.total_tokens ?? 0),
+  )
+  out += bashPrintf(
+    `  %s${tPad(locale, 'trainer_card.xp', 22)}%s :  %s\n`,
+    DIM,
+    RESET,
+    fmtInt(state.total_xp),
+  )
   out += bashPrintf(
     `  %s${tPad(locale, 'trainer_card.friendship', 22)}%s :  %s\n`,
     DIM,
     RESET,
     fmtInt(state.friendship ?? 0),
   )
-  out += bashPrintf(`  %s${tPad(locale, 'trainer_card.shinies', 22)}%s :  %s\n`, DIM, RESET, Number(ls.total_shinies ?? 0))
+  out += bashPrintf(
+    `  %s${tPad(locale, 'trainer_card.shinies', 22)}%s :  %s\n`,
+    DIM,
+    RESET,
+    Number(ls.total_shinies ?? 0),
+  )
   out += bashPrintf(
     `  %s${tPad(locale, 'trainer_card.lineages_done', 22)}%s :  %s / %s\n`,
     DIM,
@@ -88,7 +116,12 @@ export function renderTrainerCard(ctx: RenderContext): string {
 
   const badges: BadgeEntry[] = Array.isArray(state.badges) ? state.badges : []
   if (badges.length > 0) {
-    out += bashPrintf(`  %s%s${t(locale, 'trainer_card.badges_section', badges.length)}%s\n`, BOLD, GOLD, RESET)
+    out += bashPrintf(
+      `  %s%s${t(locale, 'trainer_card.badges_section', badges.length)}%s\n`,
+      BOLD,
+      GOLD,
+      RESET,
+    )
     for (const b of badges) {
       out += bashPrintf('  %s · %s\n', BADGE_EMOJI[b.id] ?? '?', t(locale, `badges.${b.id}.0`))
     }
@@ -98,7 +131,8 @@ export function renderTrainerCard(ctx: RenderContext): string {
   out += bashPrintf(`  %s%s${t(locale, 'trainer_card.share_section')}%s\n`, BOLD, GOLD, RESET)
   if (shareEnabled) {
     out += bashPrintf(`  %s${t(locale, 'trainer_card.share_active', shareAnon)}%s\n`, DIM, RESET)
-    if (shareName) out += bashPrintf(`  %s${t(locale, 'trainer_card.share_pseudo', shareName)}%s\n`, DIM, RESET)
+    if (shareName)
+      out += bashPrintf(`  %s${t(locale, 'trainer_card.share_pseudo', shareName)}%s\n`, DIM, RESET)
   } else {
     out += bashPrintf(`  %s${t(locale, 'trainer_card.share_inactive')}%s\n`, DIM, RESET)
   }

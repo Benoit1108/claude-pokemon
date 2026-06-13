@@ -21,7 +21,11 @@ export function cmdReset(input: CommandInput): CommandResult {
   const lineage = state.lineage ?? ''
   const currentLevel = Number(state.current_level ?? 0)
   if (lineage === '' || currentLevel === 0) {
-    return { output: bashPrintf(`\n  %s${tr('reset.no_active')}%s\n\n`, DIM, RESET), state, stateChanged: false }
+    return {
+      output: bashPrintf(`\n  %s${tr('reset.no_active')}%s\n\n`, DIM, RESET),
+      state,
+      stateChanged: false,
+    }
   }
   const next = ceremonialReset(state, now, data)
   let out = bashPrintf(`\n  %s${tr('reset.archived')}%s\n`, BOLD, RESET)

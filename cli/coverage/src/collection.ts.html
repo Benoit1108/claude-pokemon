@@ -1,0 +1,697 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for src/collection.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">src</a> collection.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">91.36% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>127/139</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">69.62% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>94/135</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">84.61% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>22/26</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">93.75% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>105/112</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line high'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a>
+<a name='L198'></a><a href='#L198'>198</a>
+<a name='L199'></a><a href='#L199'>199</a>
+<a name='L200'></a><a href='#L200'>200</a>
+<a name='L201'></a><a href='#L201'>201</a>
+<a name='L202'></a><a href='#L202'>202</a>
+<a name='L203'></a><a href='#L203'>203</a>
+<a name='L204'></a><a href='#L204'>204</a>
+<a name='L205'></a><a href='#L205'>205</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">2259x</span>
+<span class="cline-any cline-yes">2259x</span>
+<span class="cline-any cline-yes">20x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">10x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-yes">72x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// Collection state transforms (Phase R3d-2) — ported from lib/lib.sh's jq
+// functions (active_to_archive, reset_active, load_team_to_active, team_to_pc,
+// pc_to_team_or_active, release_slot). Pure: state in → new state out (never
+// mutates the input). Behavior frozen by the R3d-2 characterization fixtures;
+// typed against the domain contract (state-types.ts) in the audit cleanup.
+//
+// jq is null-safe (`null.name` is null, not an error) and functional — these
+// helpers reproduce that: missing fields read as undefined, deletes/slices
+// return fresh arrays.
+import type { CompanionEntry, PokemonData, PokemonState } from 'claude-pokemon-shared/state-types'
+&nbsp;
+function clone&lt;T&gt;(v: T): T {
+  return JSON.parse(JSON.stringify(v))
+}
+&nbsp;
+function removeAt&lt;T&gt;(arr: T[], idx: number): T[] {
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)]
+}
+&nbsp;
+// jq `(.evolution_history | last.name) // "Œuf"`
+function lastStageName(state: PokemonState): string {
+  const hist = Array.isArray(state.evolution_history) ? state.evolution_history : <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+  const name = hist.length ? hist[hist.length - 1]?.name : <span class="branch-1 cbranch-no" title="branch not covered" >undefined</span>
+  return name ?? <span class="branch-1 cbranch-no" title="branch not covered" >'Œuf'</span>
+}
+&nbsp;
+// pokemon_active_to_archive: move the active companion into team[] (overflow →
+// pc_storage if team already has 6); bump lifetime stats. Egg (lineage null) is
+// left untouched.
+export function activeToArchive(state: PokemonState, now: string): PokemonState {
+  if (state.lineage == null) return clone(state)
+  const lin = state.lineage
+  const s = clone(state)
+  const team = Array.isArray(s.team) ? s.team : <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+  s.team = team
+  team.push({
+    lineage: s.lineage,
+    is_shiny: s.is_shiny,
+    level: s.current_level,
+    total_xp: s.total_xp,
+    max_stage: lastStageName(s),
+    evolution_history: s.evolution_history,
+    eevee_form: s.eevee_form,
+    items: s.items,
+    created_at: s.created_at,
+    completed_at: now,
+  })
+  if (team.length &gt; 6) {
+    const pc = Array.isArray(s.pc_storage) ? s.pc_storage : <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+    s.pc_storage = pc
+    pc.push(team[0]!) // team.length &gt; 6 here, so team[0] exists
+    s.team = team.slice(1)
+  }
+  const ls = (s.lifetime_stats = s.lifetime_stats ?? <span class="branch-1 cbranch-no" title="branch not covered" >{})</span>
+  if ((s.current_level ?? <span class="branch-1 cbranch-no" title="branch not covered" >0) &gt;= 1</span>00) {
+    ls.total_companions = (ls.total_companions ?? ls.total_compagnons ?? <span class="branch-2 cbranch-no" title="branch not covered" >0) + 1</span>
+    delete ls.total_compagnons
+  }
+  const completed = Array.isArray(ls.lineages_completed) ? ls.lineages_completed : <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+  if (completed.indexOf(lin) === -1 &amp;&amp; (s.current_level ?? <span class="branch-1 cbranch-no" title="branch not covered" >0) &gt;= 1</span>00) {
+    ls.lineages_completed = [...completed, lin]
+  }
+  return s
+}
+&nbsp;
+// pokemon_reset_active: fresh egg. forcedLineage null → random pick on next tick.
+export function resetActive(state: PokemonState, now: string, forcedLineage?: string | null): PokemonState {
+  const s = clone(state)
+  s.lineage = forcedLineage != null &amp;&amp; forcedLineage !== '' ? forcedLineage : null
+  s.is_shiny = false
+  s.current_level = 0
+  s.total_xp = 0
+  s.evolution_history = []
+  s.evolution_flash_remaining = 10
+  s.created_at = now
+  s.eevee_form = null
+  s.items = {}
+  return s
+}
+&nbsp;
+// pokemon_archive_to_team: archive + reset (Lv.100 auto-archive / hatch path).
+export function <span class="fstat-no" title="function not covered" >archiveToTeam(s</span>tate: PokemonState, now: string): PokemonState {
+<span class="cstat-no" title="statement not covered" >  return resetActive(activeToArchive(state, now), now)</span>
+}
+&nbsp;
+function loadEntryToActive(s: PokemonState, entry: CompanionEntry, now: string): void {
+  s.lineage = entry.lineage
+  s.is_shiny = entry.is_shiny
+  s.current_level = entry.level
+  s.total_xp = entry.total_xp
+  s.evolution_history = entry.evolution_history ?? <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+  s.eevee_form = entry.eevee_form
+  s.items = entry.items ?? <span class="branch-1 cbranch-no" title="branch not covered" >{}</span>
+  s.created_at = entry.created_at
+  s.last_updated = now
+  s.evolution_flash_remaining = 3
+}
+&nbsp;
+// pokemon_load_team_to_active: team[idx] → active; remove from team.
+export function loadTeamToActive(state: PokemonState, now: string, idx: number): PokemonState {
+  const s = clone(state)
+  const team = s.team ?? <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+  loadEntryToActive(s, team[idx]!, now) // idx is bounds-checked by the caller
+  s.team = removeAt(team, idx)
+  return s
+}
+&nbsp;
+// pokemon_team_to_pc: team[idx] → pc_storage (order preserved).
+export function teamToPc(state: PokemonState, idx: number): PokemonState {
+  const s = clone(state)
+  const team = s.team ?? <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+  const pc = Array.isArray(s.pc_storage) ? s.pc_storage : <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+  s.pc_storage = pc
+  pc.push(team[idx]!) // idx is bounds-checked by the caller
+  s.team = removeAt(team, idx)
+  return s
+}
+&nbsp;
+// pokemon_pc_to_team_or_active: pc[idx] → active (if active is an empty egg),
+// else → team (if room), else null (caller shows "team full").
+export function pcToTeamOrActive(state: PokemonState, now: string, idx: number): PokemonState | null {
+  const activeEmpty = state.lineage == null || state.current_level === 0
+  const teamFull = (Array.isArray(state.team) ? state.team.length : <span class="branch-1 cbranch-no" title="branch not covered" >0) &gt;= 6</span>
+  const s = clone(state)
+  const pc = s.pc_storage ?? <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+  if (activeEmpty) {
+    loadEntryToActive(s, pc[idx]!, now) // idx is bounds-checked by the caller
+    s.pc_storage = removeAt(pc, idx)
+    return s
+  }
+  if (!teamFull) {
+    const team = Array.isArray(s.team) ? s.team : <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+    s.team = team
+    team.push(pc[idx]!) // idx is bounds-checked by the caller
+    s.pc_storage = removeAt(pc, idx)
+    return s
+  }
+  return null
+}
+&nbsp;
+// pokemon_release_slot: delete team[idx] or pc_storage[idx].
+export function releaseSlot(state: PokemonState, area: string, idx: number): PokemonState {
+  const s = clone(state)
+  if (area === 'team') s.team = removeAt(s.team ?? <span class="branch-1 cbranch-no" title="branch not covered" >[],</span> idx)
+  else <span class="missing-if-branch" title="else path not taken" >E</span>if (area === 'pc') s.pc_storage = removeAt(s.pc_storage ?? <span class="branch-1 cbranch-no" title="branch not covered" >[],</span> idx)
+  return s
+}
+&nbsp;
+// pokemon_check_badges: award any newly-earned achievement badges (idempotent).
+// Conditions mirror lib/lib.sh exactly; badges are appended in the same order.
+// `data` provides wild_pool for the regional-dex badges.
+export function checkBadges(state: PokemonState, now: string, data: PokemonData): PokemonState {
+  const s = clone(state)
+  const badges = Array.isArray(s.badges) ? s.badges : <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+  s.badges = badges
+  const add = (id: string): void =&gt; {
+    if (!badges.some((b) =&gt; b &amp;&amp; b.id === id)) badges.push({ id, earned_at: now })
+  }
+  const ls = s.lifetime_stats ?? <span class="branch-1 cbranch-no" title="branch not covered" >{}</span>
+  const hist = Array.isArray(s.evolution_history) ? s.evolution_history : <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+  const wildSeen = Object.keys(s.pokedex_wild ?? <span class="branch-1 cbranch-no" title="branch not covered" >{})</span>
+  const wildCount = wildSeen.length
+  const pool = Array.isArray(data?.wild_pool) ? data.wild_pool : <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+  const kanto = pool.filter((w) =&gt; (w.national_dex ?? <span class="branch-1 cbranch-no" title="branch not covered" >0) &gt;= 1</span> &amp;&amp; (w.national_dex ?? <span class="branch-1 cbranch-no" title="branch not covered" >0) &lt;= 1</span>51).map((w) =&gt; w.id)
+  const johto = pool.filter((w) =&gt; (w.national_dex ?? <span class="branch-1 cbranch-no" title="branch not covered" >0) &gt;= 1</span>52 &amp;&amp; (w.national_dex ?? <span class="branch-1 cbranch-no" title="branch not covered" >0) &lt;= 2</span>51).map((w) =&gt; w.id)
+  const hasAllOf = (ids: string[]): boolean =&gt; ids.length &gt; 0 &amp;&amp; ids.every((id) =&gt; wildSeen.includes(id))
+  const completed = Array.isArray(ls.lineages_completed) ? ls.lineages_completed : <span class="branch-1 cbranch-no" title="branch not covered" >[]</span>
+  const pokedexSeen = Object.values(s.pokedex ?? <span class="branch-1 cbranch-no" title="branch not covered" >{})</span>.filter((v) =&gt; v &amp;&amp; v.seen).length
+&nbsp;
+  if (hist.some((e) =&gt; e.level === 1)) add('hatch')
+  if (hist.some((e) =&gt; (e.level ?? <span class="branch-1 cbranch-no" title="branch not covered" >0) &gt;= 1</span>6)) add('first_evolution')
+  if ((ls.total_shinies ?? 0) &gt; 0) add('first_shiny')
+  if ((ls.max_level ?? <span class="branch-1 cbranch-no" title="branch not covered" >0) &gt;= 1</span>00) add('champion')
+  if ((ls.total_tokens ?? <span class="branch-1 cbranch-no" title="branch not covered" >0) &gt;= 1</span>00000000) add('centurion')
+  if ((ls.total_shinies ?? 0) &gt;= 5) add('constellation')
+  if (pokedexSeen &gt;= 5) add('master_pokedex')
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (wildCount &gt;= 50) <span class="cstat-no" title="statement not covered" >add('dex_50')</span>
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (wildCount &gt;= 100) <span class="cstat-no" title="statement not covered" >add('dex_100')</span>
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (hasAllOf(kanto)) <span class="cstat-no" title="statement not covered" >add('regional_kanto')</span>
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (hasAllOf(johto)) <span class="cstat-no" title="statement not covered" >add('regional_johto')</span>
+  for (const lin of ['fire', 'water', 'grass', 'electric', 'eevee', 'chikorita', 'cyndaquil', 'totodile']) {
+    if (completed.includes(lin)) add(`master_${lin}`)
+  }
+  return s
+}
+&nbsp;
+// ── Combined ops mirroring the bash subcommands (switch / hatch / reset) ─────
+// switch &lt;slot&gt;: archive active, then load team[slot] into active.
+export function <span class="fstat-no" title="function not covered" >switchCompanion(s</span>tate: PokemonState, now: string, slot: number): PokemonState {
+<span class="cstat-no" title="statement not covered" >  return loadTeamToActive(activeToArchive(state, now), now, slot)</span>
+}
+&nbsp;
+// hatch &lt;lineage?&gt;: archive active if it exists, reset to a fresh egg, recheck badges.
+export function <span class="fstat-no" title="function not covered" >hatch(s</span>tate: PokemonState, now: string, data: PokemonData, forcedLineage?: string | null): PokemonState {
+  let s = <span class="cstat-no" title="statement not covered" >state</span>
+<span class="cstat-no" title="statement not covered" >  if (Number(state.current_level) &gt; 0) <span class="cstat-no" title="statement not covered" >s = activeToArchive(s, now)</span></span>
+<span class="cstat-no" title="statement not covered" >  s = resetActive(s, now, forcedLineage)</span>
+<span class="cstat-no" title="statement not covered" >  return checkBadges(s, now, data)</span>
+}
+&nbsp;
+// ceremonial reset: archive + reset, then recheck badges.
+export function <span class="fstat-no" title="function not covered" >ceremonialReset(s</span>tate: PokemonState, now: string, data: PokemonData): PokemonState {
+<span class="cstat-no" title="statement not covered" >  return checkBadges(archiveToTeam(state, now), now, data)</span>
+}
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-06-13T18:52:43.468Z
+            </div>
+        <script src="../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../sorter.js"></script>
+        <script src="../block-navigation.js"></script>
+    </body>
+</html>
+    

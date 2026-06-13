@@ -16,7 +16,7 @@ export type HttpResult =
 const DEBUG = process.env.POKEMON_DEBUG === '1'
 
 export function debugLog(...parts: unknown[]): void {
-  if (DEBUG) process.stderr.write(`[pokemon] ${parts.map((p) => String(p)).join(' ')}\n`)
+  if (DEBUG) process.stderr.write(`[pokemon] ${parts.map(p => String(p)).join(' ')}\n`)
 }
 
 /**
@@ -26,7 +26,11 @@ export function debugLog(...parts: unknown[]): void {
  * decides what a given status means. `kind:'network'` = no response at all;
  * `kind:'parse'` = a response that wasn't JSON.
  */
-export async function httpJson(url: string, init?: RequestInit, timeoutMs = 10_000): Promise<HttpResult> {
+export async function httpJson(
+  url: string,
+  init?: RequestInit,
+  timeoutMs = 10_000,
+): Promise<HttpResult> {
   const method = init?.method ?? 'GET'
   let resp: Response
   try {
@@ -64,5 +68,5 @@ export function sanitizeForTerminal(s: string): string {
 
 /** sanitizeForTerminal over a JSON.stringify of an unknown server body. */
 export function describeBody(body: unknown): string {
-  return sanitizeForTerminal(typeof body === 'string' ? body : JSON.stringify(body) ?? '')
+  return sanitizeForTerminal(typeof body === 'string' ? body : (JSON.stringify(body) ?? ''))
 }

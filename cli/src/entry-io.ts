@@ -42,7 +42,9 @@ export function writeJsonAtomic(path: string, obj: unknown): void {
  *  golden tests); garbage values fall back to real time instead of crashing. */
 export function nowEpochSeconds(): number {
   const override = Number(process.env.POKEMON_NOW_EPOCH)
-  return Number.isFinite(override) && override > 0 ? Math.floor(override) : Math.floor(Date.now() / 1000)
+  return Number.isFinite(override) && override > 0
+    ? Math.floor(override)
+    : Math.floor(Date.now() / 1000)
 }
 
 export function epochToIso(epochSeconds: number): string {
@@ -79,7 +81,8 @@ export const CONFIG_KEYS = [
   'arena',
 ] as const
 
-const isObj = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v)
+const isObj = (v: unknown): v is Record<string, unknown> =>
+  v !== null && typeof v === 'object' && !Array.isArray(v)
 
 /** jq `*` semantics: recursive object merge, right side wins; arrays replaced. */
 export function deepMerge(a: unknown, b: unknown): unknown {
@@ -99,11 +102,16 @@ export function loadData(): DataLoad {
   const content = readJsonFile(CONTENT_PATH)
   if (content.ok) {
     const config = readJsonFile(CONFIG_PATH)
-    if (!config.ok && !config.missing) return { ok: false, file: 'config.json', missing: false, error: config.error }
-    const merged = deepMerge(content.value, config.ok ? config.value : {}) as Record<string, unknown>
+    if (!config.ok && !config.missing)
+      return { ok: false, file: 'config.json', missing: false, error: config.error }
+    const merged = deepMerge(content.value, config.ok ? config.value : {}) as Record<
+      string,
+      unknown
+    >
     return { ok: true, data: merged, mode: 'split' }
   }
-  if (!content.missing) return { ok: false, file: 'content.json', missing: false, error: content.error }
+  if (!content.missing)
+    return { ok: false, file: 'content.json', missing: false, error: content.error }
   const legacy = readJsonFile(DATA_PATH)
   if (legacy.ok) return { ok: true, data: legacy.value as Record<string, unknown>, mode: 'legacy' }
   return legacy.missing
@@ -125,7 +133,8 @@ export function saveUserConfig(merged: Record<string, unknown>, mode: 'split' | 
   // never enter config.json (they're not in CONFIG_KEYS and not in the prior
   // config.json), so no content bleed.
   const existing = readJsonFile(CONFIG_PATH)
-  const cfg: Record<string, unknown> = existing.ok && isObj(existing.value) ? { ...existing.value } : {}
+  const cfg: Record<string, unknown> =
+    existing.ok && isObj(existing.value) ? { ...existing.value } : {}
   for (const k of CONFIG_KEYS) if (k in merged) cfg[k] = merged[k]
   writeJsonAtomic(CONFIG_PATH, cfg)
 }

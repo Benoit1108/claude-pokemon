@@ -5,8 +5,21 @@
 import { bashPrintf } from '../printf.js'
 import { t } from '../i18n.js'
 import { RESET, BOLD, DIM, GOLD } from '../ansi.js'
-import type { PokemonState, PokemonData, BadgeEntry, StageDef } from 'claude-pokemon-shared/state-types'
-import { jqStr, tPad, fmtInt, boxTop, boxBottom, BADGE_EMOJI, type RenderContext } from './format.js'
+import type {
+  PokemonState,
+  PokemonData,
+  BadgeEntry,
+  StageDef,
+} from 'claude-pokemon-shared/state-types'
+import {
+  jqStr,
+  tPad,
+  fmtInt,
+  boxTop,
+  boxBottom,
+  BADGE_EMOJI,
+  type RenderContext,
+} from './format.js'
 import { resolveStageDefault, eeveeFormStage, evoField, stageFieldWithFallback } from './stage.js'
 import { renderRecentEvents, renderEvolutionHistory, renderFullChain } from './main-sections.js'
 
@@ -105,9 +118,33 @@ function renderXpBar(ctx: RenderContext, m: MainCtx): string {
     const remaining = nextThreshold - totalXp
     let pct = Math.floor(((totalXp - curThreshold) * 100) / bandTotal)
     pct = Math.max(0, Math.min(100, pct))
-    out += bashPrintf('  %s   %s%s%s%s   %s%sLv.%d%s\n\n', emoji, '', BOLD, name, RESET, '', BOLD, level, RESET)
-    out += bashPrintf(`  %s%s%s   %s%d%% ${t(locale, 'main.toward_max')}%s\n\n`, '', progressBar(pct), RESET, DIM, pct, RESET)
-    out += bashPrintf(`  %s${tPad(locale, 'main.xp_total', 22)}%s :  %s tokens\n`, DIM, RESET, fmtInt(totalXp))
+    out += bashPrintf(
+      '  %s   %s%s%s%s   %s%sLv.%d%s\n\n',
+      emoji,
+      '',
+      BOLD,
+      name,
+      RESET,
+      '',
+      BOLD,
+      level,
+      RESET,
+    )
+    out += bashPrintf(
+      `  %s%s%s   %s%d%% ${t(locale, 'main.toward_max')}%s\n\n`,
+      '',
+      progressBar(pct),
+      RESET,
+      DIM,
+      pct,
+      RESET,
+    )
+    out += bashPrintf(
+      `  %s${tPad(locale, 'main.xp_total', 22)}%s :  %s tokens\n`,
+      DIM,
+      RESET,
+      fmtInt(totalXp),
+    )
     out += bashPrintf(
       `  %s${tPad(locale, 'main.remaining', 22)}%s :  %s tokens (Lv.%d)\n\n`,
       DIM,
@@ -123,10 +160,23 @@ function renderXpBar(ctx: RenderContext, m: MainCtx): string {
     const remaining = nextThreshold - totalXp
     let pct = Math.floor((bandXp * 100) / bandTotal)
     pct = Math.max(0, Math.min(100, pct))
-    const nextStage = stages.filter((s) => s.min_level > level).sort((a, b) => a.min_level - b.min_level)[0]
+    const nextStage = stages
+      .filter(s => s.min_level > level)
+      .sort((a, b) => a.min_level - b.min_level)[0]
     const nextName = jqStr(nextStage?.name)
     const nextEmoji = jqStr(nextStage?.emoji)
-    out += bashPrintf('  %s   %s%s%s%s   %s%sLv.%d%s\n\n', emoji, '', BOLD, name, RESET, '', BOLD, level, RESET)
+    out += bashPrintf(
+      '  %s   %s%s%s%s   %s%sLv.%d%s\n\n',
+      emoji,
+      '',
+      BOLD,
+      name,
+      RESET,
+      '',
+      BOLD,
+      level,
+      RESET,
+    )
     out += bashPrintf(
       '  %s%s%s   %s%d%% vers %s %s%s\n\n',
       '',
@@ -138,7 +188,12 @@ function renderXpBar(ctx: RenderContext, m: MainCtx): string {
       nextName,
       RESET,
     )
-    out += bashPrintf(`  %s${tPad(locale, 'main.xp_total', 22)}%s :  %s tokens\n`, DIM, RESET, fmtInt(totalXp))
+    out += bashPrintf(
+      `  %s${tPad(locale, 'main.xp_total', 22)}%s :  %s tokens\n`,
+      DIM,
+      RESET,
+      fmtInt(totalXp),
+    )
     out += bashPrintf(
       `  %s${tPad(locale, 'main.stage_progress', 22)}%s :  %s / %s\n`,
       DIM,
@@ -163,11 +218,12 @@ function renderStatFields(ctx: RenderContext, m: MainCtx): string {
   let out = ''
 
   // Moves
-  const moves = stageFieldWithFallback(data, state, lineage, level, (s) => {
+  const moves = stageFieldWithFallback(data, state, lineage, level, s => {
     const mv: unknown[] = Array.isArray(s.moves) ? s.moves : []
     return mv.length === 0 ? '' : mv.join(', ')
   })
-  if (moves) out += bashPrintf(`  %s${tPad(locale, 'main.moves', 22)}%s :  %s\n\n`, DIM, RESET, moves)
+  if (moves)
+    out += bashPrintf(`  %s${tPad(locale, 'main.moves', 22)}%s :  %s\n\n`, DIM, RESET, moves)
 
   // Types (lang from data.json, as in bash)
   const typesStage: unknown[] = (() => {
@@ -191,12 +247,19 @@ function renderStatFields(ctx: RenderContext, m: MainCtx): string {
 
   // Pokédex entry
   const lang = data.language ?? 'fr'
-  const pokedexEntry = stageFieldWithFallback(data, state, lineage, level, (s) => {
+  const pokedexEntry = stageFieldWithFallback(data, state, lineage, level, s => {
     const v = s[`pokedex_${lang}`]
     return v == null ? '' : String(v)
   })
   if (pokedexEntry) {
-    out += bashPrintf(`  %s${tPad(locale, 'main.pokedex_entry', 22)}%s :  %s%s%s\n\n`, DIM, RESET, DIM, pokedexEntry, RESET)
+    out += bashPrintf(
+      `  %s${tPad(locale, 'main.pokedex_entry', 22)}%s :  %s%s%s\n\n`,
+      DIM,
+      RESET,
+      DIM,
+      pokedexEntry,
+      RESET,
+    )
   }
 
   // Held item
@@ -205,7 +268,13 @@ function renderStatFields(ctx: RenderContext, m: MainCtx): string {
     const meta = data.items?.[heldItem]
     const heldName = meta?.name ?? heldItem
     const heldEmoji = meta?.emoji ?? '?'
-    out += bashPrintf(`  %s${tPad(locale, 'main.held_item', 22)}%s :  %s %s\n\n`, DIM, RESET, heldEmoji, heldName)
+    out += bashPrintf(
+      `  %s${tPad(locale, 'main.held_item', 22)}%s :  %s %s\n\n`,
+      DIM,
+      RESET,
+      heldEmoji,
+      heldName,
+    )
   }
 
   // Injured banner. (The bash original had a quoting bug that printed the
@@ -228,7 +297,13 @@ function renderStatFields(ctx: RenderContext, m: MainCtx): string {
     let heart = '💗'
     if (friendship >= 100) heart = '💖'
     if (friendship >= 500) heart = '💞'
-    out += bashPrintf(`  %s${tPad(locale, 'main.friendship', 22)}%s :  %s %s\n\n`, DIM, RESET, heart, friendship)
+    out += bashPrintf(
+      `  %s${tPad(locale, 'main.friendship', 22)}%s :  %s %s\n\n`,
+      DIM,
+      RESET,
+      heart,
+      friendship,
+    )
   }
 
   // Badges summary
@@ -281,9 +356,9 @@ export function renderMain(ctx: RenderContext): string {
   const curStage = resolveStageDefault(data, lineage, level)
   const curStageLvl = curStage ? Number(curStage.min_level) : 0
   const stages: StageDef[] = data.lineages?.[lineage]?.stages ?? []
-  const nextStages = stages.filter((s) => s.min_level > level)
+  const nextStages = stages.filter(s => s.min_level > level)
   const nextLvl =
-    nextStages.length === 0 ? null : Math.min(...nextStages.map((s) => Number(s.min_level)))
+    nextStages.length === 0 ? null : Math.min(...nextStages.map(s => Number(s.min_level)))
 
   const m: MainCtx = {
     state,

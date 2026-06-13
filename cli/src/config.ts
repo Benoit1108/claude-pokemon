@@ -57,15 +57,20 @@ export function runConfig(input: ConfigInput): ConfigOutput {
         : bashPrintf(`  %s${L('quote.unset')}%s\n\n`, DIM, RESET)
       out += bashPrintf(`  %s${L('quote.usage')}%s\n\n`, DIM, RESET)
     } else if (isClear(action)) {
-      mutate((share) => { share.quote = null })
+      mutate(share => {
+        share.quote = null
+      })
       out += bashPrintf(`  %s${L('quote.cleared')}%s\n\n`, DIM, RESET)
     } else {
       const text = args.join(' ')
       const len = charLen(text)
       if (len > 80) out += bashPrintf(`  %s${L('quote.too_long', len)}%s\n\n`, DIM, RESET)
-      else if (/[\r\n]/.test(text)) out += bashPrintf(`  %s${L('quote.no_newline')}%s\n\n`, DIM, RESET)
+      else if (/[\r\n]/.test(text))
+        out += bashPrintf(`  %s${L('quote.no_newline')}%s\n\n`, DIM, RESET)
       else {
-        mutate((share) => { share.quote = text })
+        mutate(share => {
+          share.quote = text
+        })
         out += bashPrintf(`  %s${L('quote.set', text)}%s\n\n`, GOLD, RESET)
         out += bashPrintf(`  %s${L('quote.set_hint')}%s\n\n`, DIM, RESET)
       }
@@ -85,16 +90,21 @@ export function runConfig(input: ConfigInput): ConfigOutput {
       }
       out += bashPrintf(`  %s${L('bio.usage')}%s\n\n`, DIM, RESET)
     } else if (isClear(action)) {
-      mutate((share) => { share.bio = null })
+      mutate(share => {
+        share.bio = null
+      })
       out += bashPrintf(`  %s${L('bio.cleared')}%s\n\n`, DIM, RESET)
     } else {
       const text = args.join('\n')
       const len = charLen(text)
       const lines = text.split('\n').length
       if (len > 160) out += bashPrintf(`  %s${L('bio.too_long', len)}%s\n\n`, DIM, RESET)
-      else if (lines > 4) out += bashPrintf(`  %s${L('bio.too_many_lines', lines)}%s\n\n`, DIM, RESET)
+      else if (lines > 4)
+        out += bashPrintf(`  %s${L('bio.too_many_lines', lines)}%s\n\n`, DIM, RESET)
       else {
-        mutate((share) => { share.bio = text })
+        mutate(share => {
+          share.bio = text
+        })
         out += bashPrintf(`  %s${L('bio.set')}%s\n\n`, GOLD, RESET)
         out += bashPrintf(`  %s${L('bio.set_hint')}%s\n\n`, DIM, RESET)
       }
@@ -104,7 +114,7 @@ export function runConfig(input: ConfigInput): ConfigOutput {
 
   // pins
   let out = bashPrintf(`\n  %s%s${L('pins.title')}%s\n\n`, BOLD, GOLD, RESET)
-  const owned: string[] = Array.isArray(input.state.badges) ? input.state.badges.map((b) => b.id) : []
+  const owned: string[] = Array.isArray(input.state.badges) ? input.state.badges.map(b => b.id) : []
   const current: string[] = (data.stats_share?.pinned_badges as string[] | undefined) ?? []
   if (action === '') {
     if (current.length > 0) {
@@ -116,22 +126,22 @@ export function runConfig(input: ConfigInput): ConfigOutput {
     out += bashPrintf(`  %s${L('pins.usage')}%s\n`, DIM, RESET)
     out += bashPrintf(`  %s${L('pins.owned')}%s %s\n\n`, DIM, RESET, owned.join(', '))
   } else if (isClear(action)) {
-    mutate((share) => { share.pinned_badges = [] })
+    mutate(share => {
+      share.pinned_badges = []
+    })
     out += bashPrintf(`  %s${L('pins.cleared')}%s\n\n`, DIM, RESET)
   } else if (action === 'set') {
-    const pins = args
-      .slice(1)
-      .join(' ')
-      .replace(/,/g, ' ')
-      .split(/\s+/)
-      .filter(Boolean)
+    const pins = args.slice(1).join(' ').replace(/,/g, ' ').split(/\s+/).filter(Boolean)
     if (pins.length === 0) out += bashPrintf(`  %s${L('pins.empty')}%s\n\n`, DIM, RESET)
-    else if (pins.length > 3) out += bashPrintf(`  %s${L('pins.too_many', pins.length)}%s\n\n`, DIM, RESET)
+    else if (pins.length > 3)
+      out += bashPrintf(`  %s${L('pins.too_many', pins.length)}%s\n\n`, DIM, RESET)
     else {
-      const bad = pins.find((p) => !owned.includes(p))
+      const bad = pins.find(p => !owned.includes(p))
       if (bad !== undefined) out += bashPrintf(`  %s${L('pins.not_owned', bad)}%s\n\n`, DIM, RESET)
       else {
-        mutate((share) => { share.pinned_badges = pins })
+        mutate(share => {
+          share.pinned_badges = pins
+        })
         out += bashPrintf(`  %s${L('pins.set')}%s\n\n`, GOLD, RESET)
         out += bashPrintf(`  %s${L('pins.set_hint')}%s\n\n`, DIM, RESET)
       }

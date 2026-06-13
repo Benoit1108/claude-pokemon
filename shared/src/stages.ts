@@ -102,7 +102,7 @@ export function stageFor(lineage: string, level: number, eeveeForm?: string | nu
   // Eevee: once the evolution level is reached, the chosen form overrides the
   // default tie-winner (mirrors lib/lib.sh pokemon_evo_field reading eevee_form).
   if (lineage === 'eevee' && eeveeForm && chosen.min_level >= 30) {
-    const form = stages.find((s) => s.showdown_id === eeveeForm)
+    const form = stages.find(s => s.showdown_id === eeveeForm)
     if (form) return form
   }
   return chosen

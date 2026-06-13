@@ -161,7 +161,13 @@ function assignLineage(c: TickCtx): void {
   if (!lineage) {
     lineage = decisions.starter as string
     s.lineage = lineage
-    const pd = (pokedex[lineage] ??= { seen: false, shiny_seen: false, count: 0, shiny_count: 0, first_seen_at: null })
+    const pd = (pokedex[lineage] ??= {
+      seen: false,
+      shiny_seen: false,
+      count: 0,
+      shiny_count: 0,
+      first_seen_at: null,
+    })
     pd.seen = true
     pd.count = (pd.count ?? 0) + 1
     pd.first_seen_at ??= now
@@ -260,7 +266,11 @@ function computeMultipliers(c: TickCtx): void {
   const curDay = d.getUTCDate()
   let seasonMult = 1.0
   for (const season of Object.values(data.seasons ?? {})) {
-    if (curMonth === season.month && curDay >= (season.day_start ?? Infinity) && curDay <= (season.day_end ?? -Infinity)) {
+    if (
+      curMonth === season.month &&
+      curDay >= (season.day_start ?? Infinity) &&
+      curDay <= (season.day_end ?? -Infinity)
+    ) {
       seasonMult = Number(season.boost_mult_xp ?? 1.0)
       break
     }
@@ -375,7 +385,8 @@ function creditXp(c: TickCtx): void {
   ls.total_tokens = (ls.total_tokens ?? 0) + rawDelta
   sess.first_seen ??= now
   sess.last_seen = now
-  sess.max_context_tokens = (sess.max_context_tokens ?? 0) > currentTokens ? sess.max_context_tokens : currentTokens
+  sess.max_context_tokens =
+    (sess.max_context_tokens ?? 0) > currentTokens ? sess.max_context_tokens : currentTokens
   sess.last_tick_tokens = currentTokens
   s.last_updated = now
   if (!sess.baseline) {
@@ -407,7 +418,13 @@ function resolveLevelUpAndEvolution(c: TickCtx): void {
       isShiny = decisions.shiny
       s.is_shiny = isShiny
       if (isShiny) {
-        const pd = (pokedex[lineage] ??= { seen: false, shiny_seen: false, count: 0, shiny_count: 0, first_seen_at: null })
+        const pd = (pokedex[lineage] ??= {
+          seen: false,
+          shiny_seen: false,
+          count: 0,
+          shiny_count: 0,
+          first_seen_at: null,
+        })
         pd.shiny_seen = true
         pd.shiny_count = (pd.shiny_count ?? 0) + 1
         ls.total_shinies = (ls.total_shinies ?? 0) + 1
@@ -432,7 +449,8 @@ function resolveLevelUpAndEvolution(c: TickCtx): void {
         if (friendship >= threshold) {
           chosenForm = (hour >= 6 && hour < 18 ? rules.day_default : rules.night_default) ?? ''
         } else {
-          const fallback = ['fire_stone', 'water_stone', 'thunder_stone'][decisions.eevee_fallback_index] ?? ''
+          const fallback =
+            ['fire_stone', 'water_stone', 'thunder_stone'][decisions.eevee_fallback_index] ?? ''
           chosenForm = rules[fallback] ?? ''
         }
       }
@@ -448,8 +466,8 @@ function resolveLevelUpAndEvolution(c: TickCtx): void {
     // Log stage TRANSITIONS in (prevLevel, newLevel]. Eevee L30: log once.
     const stages: StageDef[] = data.lineages?.[lineage]?.stages ?? []
     const transitions = stages
-      .filter((st) => st.min_level > prevLevel && st.min_level <= newLevel)
-      .map((st) => st.min_level)
+      .filter(st => st.min_level > prevLevel && st.min_level <= newLevel)
+      .map(st => st.min_level)
     let stageChanged = false
     let transitionCount = 0
     let eeveeLogged = false
@@ -497,7 +515,9 @@ function awardBadges(c: TickCtx): void {
 // ── Session cleanup (drop sessions older than 30 days, keep current) ──
 function pruneOldSessions(c: TickCtx): void {
   const { s, sid, nowEpoch } = c
-  const cutoff = new Date(nowEpoch * 1000 - 30 * 86400 * 1000).toISOString().replace(/\.\d{3}Z$/, 'Z')
+  const cutoff = new Date(nowEpoch * 1000 - 30 * 86400 * 1000)
+    .toISOString()
+    .replace(/\.\d{3}Z$/, 'Z')
   const kept: Record<string, SessionEntry> = {}
   for (const [k, v] of Object.entries(s.sessions ?? {})) {
     if (k === sid || (v.last_seen ?? '') >= cutoff) kept[k] = v

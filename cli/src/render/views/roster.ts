@@ -33,7 +33,7 @@ export function renderBadges(ctx: RenderContext): string {
   let out = bashPrintf(`\n  %s%s${t(locale, 'badges.title')}%s\n\n`, BOLD, GOLD, RESET)
   const badges: BadgeEntry[] = Array.isArray(state.badges) ? state.badges : []
   for (const id of BADGE_ORDER) {
-    const earnedAt = badges.find((b) => b && b.id === id)?.earned_at ?? ''
+    const earnedAt = badges.find(b => b && b.id === id)?.earned_at ?? ''
     const emoji = BADGE_EMOJI[id] ?? '?'
     const label = t(locale, `badges.${id}.0`)
     const desc = t(locale, `badges.${id}.1`)
@@ -63,7 +63,8 @@ export function renderBadges(ctx: RenderContext): string {
 export function renderInventory(ctx: RenderContext): string {
   const { state, data, locale } = ctx
   let out = bashPrintf(`\n  %s%s${t(locale, 'inventory.title')}%s\n\n`, BOLD, GOLD, RESET)
-  const items: Record<string, number> = state.items && typeof state.items === 'object' ? state.items : {}
+  const items: Record<string, number> =
+    state.items && typeof state.items === 'object' ? state.items : {}
   const entries = Object.entries(items)
   if (entries.length === 0) {
     out += bashPrintf(`  %s${t(locale, 'inventory.empty')}%s\n\n`, DIM, RESET)
@@ -92,7 +93,7 @@ export function renderInventory(ctx: RenderContext): string {
   const eeveeForm = state.eevee_form ?? ''
   if (eeveeForm) {
     const stages: StageDef[] = data.lineages?.eevee?.stages ?? []
-    const formName = stages.find((s) => s && s.showdown_id === eeveeForm)?.name
+    const formName = stages.find(s => s && s.showdown_id === eeveeForm)?.name
     const msg = t(locale, 'inventory.eevee_form', formName)
     out += bashPrintf('  %s%s%s\n\n', DIM, msg, RESET)
   }
@@ -103,7 +104,9 @@ export function renderInventory(ctx: RenderContext): string {
 function renderRoster(ctx: RenderContext, field: 'team' | 'pc_storage', title: string): string {
   const { state, data } = ctx
   let out = bashPrintf('\n  %s%s%s%s\n\n', BOLD, GOLD, title, RESET)
-  const list: CompanionEntry[] = Array.isArray(state[field]) ? (state[field] as CompanionEntry[]) : []
+  const list: CompanionEntry[] = Array.isArray(state[field])
+    ? (state[field] as CompanionEntry[])
+    : []
   if (list.length === 0) {
     out += bashPrintf(`  %s${t(ctx.locale, 'team.empty')}%s\n\n`, DIM, RESET)
     return out
