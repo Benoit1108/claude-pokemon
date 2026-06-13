@@ -4,7 +4,13 @@ import { bashPrintf } from '../render/printf.js'
 import { RESET, BOLD, DIM, GOLD } from '../render/ansi.js'
 import type { CompanionEntry, RecentEvent } from 'claude-pokemon-shared/state-types'
 
-import { type CommandInput, type CommandResult, makeTranslator, cloneState, wildName } from './shared.js'
+import {
+  type CommandInput,
+  type CommandResult,
+  makeTranslator,
+  cloneState,
+  wildName,
+} from './shared.js'
 
 export function cmdTrade(input: CommandInput): CommandResult {
   const { state, data, locale, now } = input
@@ -20,7 +26,13 @@ export function cmdTrade(input: CommandInput): CommandResult {
     const lastEpoch = Math.floor(Date.parse(lastTrade) / 1000) || 0
     const hoursPassed = Math.floor((nowEpoch - lastEpoch) / 3600)
     if (hoursPassed < cooldownH) {
-      return { output: out + bashPrintf(`  %s${tr('trade.cooldown', cooldownH - hoursPassed)}%s\n\n`, DIM, RESET), state, stateChanged: false }
+      return {
+        output:
+          out +
+          bashPrintf(`  %s${tr('trade.cooldown', cooldownH - hoursPassed)}%s\n\n`, DIM, RESET),
+        state,
+        stateChanged: false,
+      }
     }
   }
 
@@ -59,7 +71,17 @@ export function cmdTrade(input: CommandInput): CommandResult {
   const destLabel = destination === 'team' ? tr('team.title') : tr('pc.title')
   let lvlStr = `Lv.${level}`
   if (shiny) lvlStr = `${GOLD}★${RESET} ${lvlStr}`
-  out += bashPrintf('  %s#%03d %s %s%s   %s%s%s\n', BOLD, dex, name, lvlStr, shinyStr, DIM, `(par ${trainer})`, RESET)
+  out += bashPrintf(
+    '  %s#%03d %s %s%s   %s%s%s\n',
+    BOLD,
+    dex,
+    name,
+    lvlStr,
+    shinyStr,
+    DIM,
+    `(par ${trainer})`,
+    RESET,
+  )
   out += bashPrintf(`  %s${tr('trade.received', name, shinyStr, destLabel)}%s\n\n`, DIM, RESET)
   return { output: out, state: next, stateChanged: true }
 }
@@ -70,11 +92,26 @@ export function cmdGive(input: CommandInput): CommandResult {
   const tr = makeTranslator(locale)
   let out = bashPrintf(`\n  %s%s${tr('held.title')}%s\n\n`, BOLD, GOLD, RESET)
   const id = input.args[0] ?? ''
-  if (id === '') return { output: out + bashPrintf(`  %s${tr('held.usage_give')}%s\n\n`, DIM, RESET), state, stateChanged: false }
+  if (id === '')
+    return {
+      output: out + bashPrintf(`  %s${tr('held.usage_give')}%s\n\n`, DIM, RESET),
+      state,
+      stateChanged: false,
+    }
   const count = state.items?.[id] ?? 0
-  if (count === 0) return { output: out + bashPrintf(`  %s${tr('held.no_inventory')}%s\n\n`, DIM, RESET), state, stateChanged: false }
+  if (count === 0)
+    return {
+      output: out + bashPrintf(`  %s${tr('held.no_inventory')}%s\n\n`, DIM, RESET),
+      state,
+      stateChanged: false,
+    }
   const holdable = data.items?.[id]?.holdable ?? false
-  if (holdable !== true) return { output: out + bashPrintf(`  %s${tr('held.not_holdable')}%s\n\n`, DIM, RESET), state, stateChanged: false }
+  if (holdable !== true)
+    return {
+      output: out + bashPrintf(`  %s${tr('held.not_holdable')}%s\n\n`, DIM, RESET),
+      state,
+      stateChanged: false,
+    }
   const name = data.items?.[id]?.name ?? id
   const next = cloneState(state)
   // count > 0 was checked above — the inventory entry exists on the clone.
@@ -92,7 +129,12 @@ export function cmdTake(input: CommandInput): CommandResult {
   const tr = makeTranslator(locale)
   let out = bashPrintf(`\n  %s%s${tr('held.title')}%s\n\n`, BOLD, GOLD, RESET)
   const current = state.held_item ?? ''
-  if (current === '') return { output: out + bashPrintf(`  %s${tr('held.none')}%s\n\n`, DIM, RESET), state, stateChanged: false }
+  if (current === '')
+    return {
+      output: out + bashPrintf(`  %s${tr('held.none')}%s\n\n`, DIM, RESET),
+      state,
+      stateChanged: false,
+    }
   const next = cloneState(state)
   next.items ??= {}
   next.items[current] = (next.items[current] ?? 0) + 1

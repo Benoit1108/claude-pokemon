@@ -64,7 +64,11 @@ export function activeToArchive(state: PokemonState, now: string): PokemonState 
 }
 
 // pokemon_reset_active: fresh egg. forcedLineage null → random pick on next tick.
-export function resetActive(state: PokemonState, now: string, forcedLineage?: string | null): PokemonState {
+export function resetActive(
+  state: PokemonState,
+  now: string,
+  forcedLineage?: string | null,
+): PokemonState {
   const s = clone(state)
   s.lineage = forcedLineage != null && forcedLineage !== '' ? forcedLineage : null
   s.is_shiny = false
@@ -118,7 +122,11 @@ export function teamToPc(state: PokemonState, idx: number): PokemonState {
 
 // pokemon_pc_to_team_or_active: pc[idx] → active (if active is an empty egg),
 // else → team (if room), else null (caller shows "team full").
-export function pcToTeamOrActive(state: PokemonState, now: string, idx: number): PokemonState | null {
+export function pcToTeamOrActive(
+  state: PokemonState,
+  now: string,
+  idx: number,
+): PokemonState | null {
   const activeEmpty = state.lineage == null || state.current_level === 0
   const teamFull = (Array.isArray(state.team) ? state.team.length : 0) >= 6
   const s = clone(state)
@@ -154,21 +162,26 @@ export function checkBadges(state: PokemonState, now: string, data: PokemonData)
   const badges = Array.isArray(s.badges) ? s.badges : []
   s.badges = badges
   const add = (id: string): void => {
-    if (!badges.some((b) => b && b.id === id)) badges.push({ id, earned_at: now })
+    if (!badges.some(b => b && b.id === id)) badges.push({ id, earned_at: now })
   }
   const ls = s.lifetime_stats ?? {}
   const hist = Array.isArray(s.evolution_history) ? s.evolution_history : []
   const wildSeen = Object.keys(s.pokedex_wild ?? {})
   const wildCount = wildSeen.length
   const pool = Array.isArray(data?.wild_pool) ? data.wild_pool : []
-  const kanto = pool.filter((w) => (w.national_dex ?? 0) >= 1 && (w.national_dex ?? 0) <= 151).map((w) => w.id)
-  const johto = pool.filter((w) => (w.national_dex ?? 0) >= 152 && (w.national_dex ?? 0) <= 251).map((w) => w.id)
-  const hasAllOf = (ids: string[]): boolean => ids.length > 0 && ids.every((id) => wildSeen.includes(id))
+  const kanto = pool
+    .filter(w => (w.national_dex ?? 0) >= 1 && (w.national_dex ?? 0) <= 151)
+    .map(w => w.id)
+  const johto = pool
+    .filter(w => (w.national_dex ?? 0) >= 152 && (w.national_dex ?? 0) <= 251)
+    .map(w => w.id)
+  const hasAllOf = (ids: string[]): boolean =>
+    ids.length > 0 && ids.every(id => wildSeen.includes(id))
   const completed = Array.isArray(ls.lineages_completed) ? ls.lineages_completed : []
-  const pokedexSeen = Object.values(s.pokedex ?? {}).filter((v) => v && v.seen).length
+  const pokedexSeen = Object.values(s.pokedex ?? {}).filter(v => v && v.seen).length
 
-  if (hist.some((e) => e.level === 1)) add('hatch')
-  if (hist.some((e) => (e.level ?? 0) >= 16)) add('first_evolution')
+  if (hist.some(e => e.level === 1)) add('hatch')
+  if (hist.some(e => (e.level ?? 0) >= 16)) add('first_evolution')
   if ((ls.total_shinies ?? 0) > 0) add('first_shiny')
   if ((ls.max_level ?? 0) >= 100) add('champion')
   if ((ls.total_tokens ?? 0) >= 100000000) add('centurion')
@@ -178,7 +191,16 @@ export function checkBadges(state: PokemonState, now: string, data: PokemonData)
   if (wildCount >= 100) add('dex_100')
   if (hasAllOf(kanto)) add('regional_kanto')
   if (hasAllOf(johto)) add('regional_johto')
-  for (const lin of ['fire', 'water', 'grass', 'electric', 'eevee', 'chikorita', 'cyndaquil', 'totodile']) {
+  for (const lin of [
+    'fire',
+    'water',
+    'grass',
+    'electric',
+    'eevee',
+    'chikorita',
+    'cyndaquil',
+    'totodile',
+  ]) {
     if (completed.includes(lin)) add(`master_${lin}`)
   }
   return s
@@ -191,7 +213,12 @@ export function switchCompanion(state: PokemonState, now: string, slot: number):
 }
 
 // hatch <lineage?>: archive active if it exists, reset to a fresh egg, recheck badges.
-export function hatch(state: PokemonState, now: string, data: PokemonData, forcedLineage?: string | null): PokemonState {
+export function hatch(
+  state: PokemonState,
+  now: string,
+  data: PokemonData,
+  forcedLineage?: string | null,
+): PokemonState {
   let s = state
   if (Number(state.current_level) > 0) s = activeToArchive(s, now)
   s = resetActive(s, now, forcedLineage)

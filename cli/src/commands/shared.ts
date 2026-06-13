@@ -9,7 +9,12 @@
 import { bashPrintf } from '../render/printf.js'
 import { t, type Locale } from '../render/i18n.js'
 
-import type { CompanionEntry, PokemonData, PokemonState, WildPoolEntry } from 'claude-pokemon-shared/state-types'
+import type {
+  CompanionEntry,
+  PokemonData,
+  PokemonState,
+  WildPoolEntry,
+} from 'claude-pokemon-shared/state-types'
 import { RESET, BOLD, DIM, GOLD } from '../render/ansi.js'
 
 export interface CommandInput {
@@ -57,15 +62,36 @@ export function lastEvoName(state: PokemonState): string {
 }
 
 // Port of _print_roster_entry. `%-22s` is byte-width padding (bashPrintf).
-export function rosterEntry(entry: CompanionEntry, slot: string, marker: string, data: PokemonData, locale: Locale): string {
+export function rosterEntry(
+  entry: CompanionEntry,
+  slot: string,
+  marker: string,
+  data: PokemonData,
+  locale: Locale,
+): string {
   const lin = entry.lineage ?? ''
   const lvl = entry.level ?? 0 // %d of a missing level rendered 0 in bash too
-  const name = entry.max_stage ?? (entry.evolution_history?.length ? entry.evolution_history.at(-1)?.name : undefined) ?? 'Œuf'
+  const name =
+    entry.max_stage ??
+    (entry.evolution_history?.length ? entry.evolution_history.at(-1)?.name : undefined) ??
+    'Œuf'
   const star = entry.is_shiny === true ? `${GOLD}★${RESET} ` : ''
   const label = data.lineages?.[lin]?.label ?? lin
-  const markerStr = marker === 'active' ? `  ${GOLD}${t(locale, 'common.active_marker')}${RESET}` : ''
+  const markerStr =
+    marker === 'active' ? `  ${GOLD}${t(locale, 'common.active_marker')}${RESET}` : ''
   return bashPrintf(
     '   %s[%s]%s  %s%-22s  %sLv.%d%s  %s%s%s%s\n',
-    BOLD, slot, RESET, star, name, BOLD, lvl, RESET, DIM, label, RESET, markerStr,
+    BOLD,
+    slot,
+    RESET,
+    star,
+    name,
+    BOLD,
+    lvl,
+    RESET,
+    DIM,
+    label,
+    RESET,
+    markerStr,
   )
 }

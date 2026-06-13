@@ -220,7 +220,11 @@ export interface SpriteDeps {
 }
 
 // Port of pokemon_render_sprite_statusline — returns the (trimmed) sprite lines.
-export function renderSpriteLines(state: PokemonState, data: PokemonData, deps: SpriteDeps): string[] {
+export function renderSpriteLines(
+  state: PokemonState,
+  data: PokemonData,
+  deps: SpriteDeps,
+): string[] {
   const mode = String(data.display_sprite_in_statusline ?? 'off')
   if (!['left', 'right', 'above', 'true'].includes(mode)) return []
   const lineage = state.lineage ?? 'fire'

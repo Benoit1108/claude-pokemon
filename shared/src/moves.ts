@@ -163,9 +163,7 @@ function movesFromLearnset(speciesId: string, level: number, stab: CombatType): 
     if (bestStab) chosen = [...chosen.slice(0, MOVESET_SIZE - 1), bestStab]
   }
 
-  const moves = chosen
-    .map(e => GENERATED_MOVES[e.move])
-    .filter((m): m is Move => Boolean(m))
+  const moves = chosen.map(e => GENERATED_MOVES[e.move]).filter((m): m is Move => Boolean(m))
   return moves.length ? moves : basicMoves()
 }
 

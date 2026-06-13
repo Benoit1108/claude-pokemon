@@ -7,7 +7,12 @@
 import { bashPrintf } from '../printf.js'
 import { t } from '../i18n.js'
 import { RESET, BOLD, DIM, GOLD } from '../ansi.js'
-import type { BadgeEntry, EvolutionEntry, RecentEvent, WildPoolEntry } from 'claude-pokemon-shared/state-types'
+import type {
+  BadgeEntry,
+  EvolutionEntry,
+  RecentEvent,
+  WildPoolEntry,
+} from 'claude-pokemon-shared/state-types'
 import { jqStr, tPad, fmtInt, BADGE_EMOJI, type RenderContext } from './format.js'
 
 export function renderRecap(ctx: RenderContext, scope = 'session'): string {
@@ -47,9 +52,12 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
   }
 
   const nowEpoch = ctx.nowEpoch ?? 0
-  const sinceEpoch = Number.isFinite(Date.parse(sinceIso)) ? Math.floor(Date.parse(sinceIso) / 1000) : nowEpoch
+  const sinceEpoch = Number.isFinite(Date.parse(sinceIso))
+    ? Math.floor(Date.parse(sinceIso) / 1000)
+    : nowEpoch
   const durMin = Math.floor((nowEpoch - sinceEpoch) / 60)
-  const durLabel = durMin < 60 ? `${durMin}min` : `${Math.floor(durMin / 60)}h${bashPrintf('%02d', durMin % 60)}`
+  const durLabel =
+    durMin < 60 ? `${durMin}min` : `${Math.floor(durMin / 60)}h${bashPrintf('%02d', durMin % 60)}`
 
   out += bashPrintf(`  %s${t(locale, 'recap.context', label, durLabel)}%s\n\n`, DIM, RESET)
 
@@ -62,8 +70,18 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
       const lvlNow = Number(state.current_level)
       const lvlThen = Number(baseline.current_level)
       out += bashPrintf(`  %s%s${t(locale, 'recap.deltas')}%s\n`, BOLD, GOLD, RESET)
-      out += bashPrintf(`    %s${tPad(locale, 'recap.tokens_consumed', 22)}%s :  %s\n`, DIM, RESET, fmtInt(tokDelta))
-      out += bashPrintf(`    %s${tPad(locale, 'recap.xp_gained', 22)}%s :  +%s\n`, DIM, RESET, fmtInt(xpDelta))
+      out += bashPrintf(
+        `    %s${tPad(locale, 'recap.tokens_consumed', 22)}%s :  %s\n`,
+        DIM,
+        RESET,
+        fmtInt(tokDelta),
+      )
+      out += bashPrintf(
+        `    %s${tPad(locale, 'recap.xp_gained', 22)}%s :  +%s\n`,
+        DIM,
+        RESET,
+        fmtInt(xpDelta),
+      )
       out += bashPrintf(
         `    %s${tPad(locale, 'recap.friendship_gained', 22)}%s :  +%s\n`,
         DIM,
@@ -83,9 +101,19 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
       } else if (lvlNow === 0) {
         const threshold1 = data.thresholds?.[1] ?? 1
         const pct = Math.trunc((Number(state.total_xp) / threshold1) * 100)
-        out += bashPrintf(`    %s${tPad(locale, 'recap.hatch_progress', 22)}%s :  %s%% ${t(locale, 'recap.toward_lv1')}\n`, DIM, RESET, pct)
+        out += bashPrintf(
+          `    %s${tPad(locale, 'recap.hatch_progress', 22)}%s :  %s%% ${t(locale, 'recap.toward_lv1')}\n`,
+          DIM,
+          RESET,
+          pct,
+        )
       } else {
-        out += bashPrintf(`    %s${tPad(locale, 'recap.level_stable', 22)}%s :  Lv.%s\n`, DIM, RESET, lvlNow)
+        out += bashPrintf(
+          `    %s${tPad(locale, 'recap.level_stable', 22)}%s :  Lv.%s\n`,
+          DIM,
+          RESET,
+          lvlNow,
+        )
       }
       out += '\n'
     }
@@ -95,11 +123,11 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
   // bash: `jq '.wild_pool[] | select(.id==$id) | .[…]'` → empty string on no
   // match (not the literal "null"); a matched-but-null field → "null".
   const wildName = (id: string): string => {
-    const w = (data.wild_pool ?? []).find((p) => p.id === id)
+    const w = (data.wild_pool ?? []).find(p => p.id === id)
     return w === undefined ? '' : jqStr(w[`name_${lang}` as keyof WildPoolEntry])
   }
   const wildEmoji = (id: string): string => {
-    const w = (data.wild_pool ?? []).find((p) => p.id === id)
+    const w = (data.wild_pool ?? []).find(p => p.id === id)
     return w === undefined ? '' : jqStr((w as { emoji?: unknown }).emoji)
   }
 
@@ -109,11 +137,16 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
   const sinceFilter = (v: unknown): boolean => typeof v === 'string' && v >= sinceIso
 
   const allEvents: RecentEvent[] = Array.isArray(state.recent_events) ? state.recent_events : []
-  const events = allEvents.filter((e) => sinceFilter(e.at))
+  const events = allEvents.filter(e => sinceFilter(e.at))
   if (events.length === 0) {
     out += bashPrintf(`  %s${t(locale, 'recap.no_events')}%s\n\n`, DIM, RESET)
   } else {
-    out += bashPrintf(`  %s%s${t(locale, 'recap.events_title', events.length)}%s\n`, BOLD, GOLD, RESET)
+    out += bashPrintf(
+      `  %s%s${t(locale, 'recap.events_title', events.length)}%s\n`,
+      BOLD,
+      GOLD,
+      RESET,
+    )
     for (const ev of events) {
       const timeShort = jqStr(ev.at).slice(11, 16)
       const eid = jqStr(ev.id ?? '')
@@ -123,12 +156,26 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
       const wlvl = ev.wild_level ?? 0
       switch (ev.type) {
         case 'berry':
-          out += bashPrintf('    %s%s%s  🍇 %s%s %s +%s XP\n', DIM, timeShort, RESET, eemoji, RESET, ename, exp)
+          out += bashPrintf(
+            '    %s%s%s  🍇 %s%s %s +%s XP\n',
+            DIM,
+            timeShort,
+            RESET,
+            eemoji,
+            RESET,
+            ename,
+            exp,
+          )
           break
         case 'encounter':
           out += bashPrintf(
             `    %s%s%s  🎯 %s%s %s ${t(ctx.locale, 'recap.ev_encountered')}\n`,
-            DIM, timeShort, RESET, wildEmoji(eid), RESET, wildName(eid),
+            DIM,
+            timeShort,
+            RESET,
+            wildEmoji(eid),
+            RESET,
+            wildName(eid),
           )
           break
         case 'battle_won':
@@ -159,7 +206,12 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
         case 'item':
           out += bashPrintf(
             `    %s%s%s  🎁 %s%s %s ${t(ctx.locale, 'recap.ev_obtained')}\n`,
-            DIM, timeShort, RESET, eemoji, RESET, ename,
+            DIM,
+            timeShort,
+            RESET,
+            eemoji,
+            RESET,
+            ename,
           )
           break
       }
@@ -167,8 +219,10 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
     out += '\n'
   }
 
-  const allEvos: EvolutionEntry[] = Array.isArray(state.evolution_history) ? state.evolution_history : []
-  const evos = allEvos.filter((e) => sinceFilter(e.evolved_at))
+  const allEvos: EvolutionEntry[] = Array.isArray(state.evolution_history)
+    ? state.evolution_history
+    : []
+  const evos = allEvos.filter(e => sinceFilter(e.evolved_at))
   if (evos.length > 0) {
     out += bashPrintf(`  %s%s${t(locale, 'recap.evolutions_title')}%s\n`, BOLD, GOLD, RESET)
     for (const ev of evos) {
@@ -187,7 +241,7 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
   }
 
   const allBadges: BadgeEntry[] = Array.isArray(state.badges) ? state.badges : []
-  const newBadges = allBadges.filter((b) => sinceFilter(b.earned_at))
+  const newBadges = allBadges.filter(b => sinceFilter(b.earned_at))
   if (newBadges.length > 0) {
     out += bashPrintf(`  %s%s${t(locale, 'recap.badges_title')}%s\n`, BOLD, GOLD, RESET)
     for (const b of newBadges) {

@@ -25,31 +25,56 @@ export function renderRecentEvents(ctx: RenderContext, m: MainCtx): string {
       const eid = jqStr(ev.id ?? '')
       const exp = ev.xp ?? 0
       const wildName = (id: string): string => {
-        const w = (data.wild_pool ?? []).find((p) => p.id === id)
+        const w = (data.wild_pool ?? []).find(p => p.id === id)
         return jqStr(w?.[`name_${lang}` as keyof WildPoolEntry])
       }
       const wildEmoji = (id: string): string => {
-        const w = (data.wild_pool ?? []).find((p) => p.id === id)
+        const w = (data.wild_pool ?? []).find(p => p.id === id)
         return jqStr((w as { emoji?: unknown } | undefined)?.emoji)
       }
       switch (ev.type) {
         case 'berry':
-          out += bashPrintf('   🍇 %s%s %s +%s XP   %s%s%s\n', eemoji, RESET, ename, exp, DIM, at, RESET)
+          out += bashPrintf(
+            '   🍇 %s%s %s +%s XP   %s%s%s\n',
+            eemoji,
+            RESET,
+            ename,
+            exp,
+            DIM,
+            at,
+            RESET,
+          )
           break
         case 'encounter':
           out += bashPrintf('   ✨ %s %s   %s%s%s\n', wildEmoji(eid), wildName(eid), DIM, at, RESET)
           break
         case 'battle_won':
-          out += bashPrintf(`   ⚔️  ${t(locale, 'battle.won', wildName(eid), exp)}   %s%s%s\n`, DIM, at, RESET)
+          out += bashPrintf(
+            `   ⚔️  ${t(locale, 'battle.won', wildName(eid), exp)}   %s%s%s\n`,
+            DIM,
+            at,
+            RESET,
+          )
           break
         case 'battle_lost':
-          out += bashPrintf(`   💔 ${t(locale, 'battle.lost', wildName(eid))}   %s%s%s\n`, DIM, at, RESET)
+          out += bashPrintf(
+            `   💔 ${t(locale, 'battle.lost', wildName(eid))}   %s%s%s\n`,
+            DIM,
+            at,
+            RESET,
+          )
           break
         case 'item':
           out += bashPrintf('   🎁 %s%s %s obtenu   %s%s%s\n', eemoji, RESET, ename, DIM, at, RESET)
           break
         case 'trade':
-          out += bashPrintf(`   🔄 ${t(locale, 'trade.title')}: %s   %s%s%s\n`, ename, DIM, at, RESET)
+          out += bashPrintf(
+            `   🔄 ${t(locale, 'trade.title')}: %s   %s%s%s\n`,
+            ename,
+            DIM,
+            at,
+            RESET,
+          )
           break
         default:
           out += bashPrintf('   • %s   %s%s%s\n', jqStr(ev.type), DIM, at, RESET)
@@ -65,7 +90,9 @@ export function renderEvolutionHistory(ctx: RenderContext, m: MainCtx): string {
   const { state, data, lineage } = m
   let out = ''
   // Evolution history
-  const history: EvolutionEntry[] = Array.isArray(state.evolution_history) ? state.evolution_history : []
+  const history: EvolutionEntry[] = Array.isArray(state.evolution_history)
+    ? state.evolution_history
+    : []
   if (history.length > 0) {
     out += boxTop(t(locale, 'main.history'), 64)
     for (const h of history) {

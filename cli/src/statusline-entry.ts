@@ -64,14 +64,23 @@ function computeDecisions(state: PokemonState, data: PokemonData): TickDecisions
     starter: lineage === '' ? pickStarter(data) : null,
     shiny: rollShiny(data, state),
     eevee_fallback_index: Math.floor(Math.random() * 3),
-    berry: { fired: Math.random() < Number(data.event_chances?.berry ?? 0.005), index: bl ? Math.floor(Math.random() * bl) : 0 },
-    encounter: { fired: Math.random() < Number(data.event_chances?.encounter ?? 0.001), index: wl ? Math.floor(Math.random() * wl) : 0 },
+    berry: {
+      fired: Math.random() < Number(data.event_chances?.berry ?? 0.005),
+      index: bl ? Math.floor(Math.random() * bl) : 0,
+    },
+    encounter: {
+      fired: Math.random() < Number(data.event_chances?.encounter ?? 0.001),
+      index: wl ? Math.floor(Math.random() * wl) : 0,
+    },
     battle: {
       fired: Math.random() < Number(data.battle_chance_on_encounter ?? 0.3),
       wild_level: Math.floor(Math.random() * 46) + 5,
       bonus_xp_raw: Math.floor(Math.random() * (bxmax - bxmin + 1)) + bxmin,
     },
-    item: { fired: Math.random() < Number(data.item_drop_chance_on_encounter ?? 0.3), index: il ? Math.floor(Math.random() * il) : 0 },
+    item: {
+      fired: Math.random() < Number(data.item_drop_chance_on_encounter ?? 0.3),
+      index: il ? Math.floor(Math.random() * il) : 0,
+    },
   }
 }
 
@@ -147,7 +156,9 @@ function main(input: ClaudeInput): void {
   }
   const stateRead = readJsonFile(STATE_PATH)
   if (!stateRead.ok && !stateRead.missing) {
-    process.stdout.write('⚠ pokemon: state.json corrompu — répare-le ou restaure un backup (`npx claude-pokemon import <f>`)')
+    process.stdout.write(
+      '⚠ pokemon: state.json corrompu — répare-le ou restaure un backup (`npx claude-pokemon import <f>`)',
+    )
     return
   }
   const data = dataRead.data as PokemonData
@@ -182,16 +193,16 @@ function main(input: ClaudeInput): void {
   }
 
   const spriteDeps: SpriteDeps = {
-    readSprite: (rel) => {
+    readSprite: rel => {
       try {
         return readFileSync(join(POKEMON_DIR, rel), 'utf8')
       } catch {
         return null
       }
     },
-    animFrameCount: (rel) => {
+    animFrameCount: rel => {
       try {
-        return readdirSync(join(POKEMON_DIR, rel)).filter((f) => /^frame_.*\.txt$/.test(f)).length
+        return readdirSync(join(POKEMON_DIR, rel)).filter(f => /^frame_.*\.txt$/.test(f)).length
       } catch {
         return 0
       }
@@ -207,7 +218,7 @@ function main(input: ClaudeInput): void {
   )
 }
 
-readStdin().then((raw) => {
+readStdin().then(raw => {
   let input: ClaudeInput = {}
   try {
     input = JSON.parse(raw)

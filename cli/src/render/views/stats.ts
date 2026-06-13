@@ -16,15 +16,30 @@ export function renderStats(ctx: RenderContext): string {
   const totalLineages = Object.keys(data.lineages ?? {}).length
   const firstShiny = ls.first_shiny_at ?? '—'
 
-  out += bashPrintf(`  %s${tPad(locale, 'stats.total_tokens', 22)}%s :  %s\n`, DIM, RESET, fmtInt(ls.total_tokens))
+  out += bashPrintf(
+    `  %s${tPad(locale, 'stats.total_tokens', 22)}%s :  %s\n`,
+    DIM,
+    RESET,
+    fmtInt(ls.total_tokens),
+  )
   out += bashPrintf(
     `  %s${tPad(locale, 'stats.total_evolutions', 22)}%s :  %s\n`,
     DIM,
     RESET,
     fmtInt(ls.total_evolutions),
   )
-  out += bashPrintf(`  %s${tPad(locale, 'stats.total_shinies', 22)}%s :  %s\n`, DIM, RESET, fmtInt(shinies))
-  out += bashPrintf(`  %s${tPad(locale, 'stats.max_level', 22)}%s :  Lv.%s\n`, DIM, RESET, jqStr(ls.max_level))
+  out += bashPrintf(
+    `  %s${tPad(locale, 'stats.total_shinies', 22)}%s :  %s\n`,
+    DIM,
+    RESET,
+    fmtInt(shinies),
+  )
+  out += bashPrintf(
+    `  %s${tPad(locale, 'stats.max_level', 22)}%s :  Lv.%s\n`,
+    DIM,
+    RESET,
+    jqStr(ls.max_level),
+  )
   out += bashPrintf(
     `  %s${tPad(locale, 'stats.total_companions', 22)}%s :  %s\n`,
     DIM,
@@ -57,7 +72,14 @@ export function renderStats(ctx: RenderContext): string {
     out += bashPrintf(`  %s${tPad(locale, 'stats.daily_bonus', 22)}%s : ×%s\n`, DIM, RESET, db)
     out += bashPrintf(`  %s${tPad(locale, 'stats.status', 22)}%s : ×%s\n`, DIM, RESET, st)
     const combined = (Number(ctxM) * Number(tm) * Number(db) * Number(st)).toFixed(2)
-    out += bashPrintf(`  %s${tPad(locale, 'stats.combined', 22)}%s : %s×%s%s\n\n`, DIM, RESET, BOLD, combined, RESET)
+    out += bashPrintf(
+      `  %s${tPad(locale, 'stats.combined', 22)}%s : %s×%s%s\n\n`,
+      DIM,
+      RESET,
+      BOLD,
+      combined,
+      RESET,
+    )
   }
 
   const status = state.status ?? 'ok'

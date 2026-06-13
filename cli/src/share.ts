@@ -99,22 +99,23 @@ export function buildSubmitPayload(
         current_level: state.current_level ?? 0,
         is_shiny: state.is_shiny ?? false,
       },
-      badges: (state.badges ?? []).map((b) => b.id),
+      badges: (state.badges ?? []).map(b => b.id),
       pokedex_seen_count: Object.keys(state.pokedex_wild ?? {}).length,
       pokedex_seen_ids: Object.keys(state.pokedex_wild ?? {}),
     },
   }
 }
 
-
-
-
-
 const shareTitle = (locale: Locale): string =>
   bashPrintf(`\n  %s%s${t(locale, 'share.title')}%s\n\n`, BOLD, GOLD, RESET)
 
 // forget: the command fetches DELETE /v1/forget?anon_id; ok = success.
-export function renderForget(data: PokemonData, locale: Locale, anonId: string, ok: boolean): ShareOutput {
+export function renderForget(
+  data: PokemonData,
+  locale: Locale,
+  anonId: string,
+  ok: boolean,
+): ShareOutput {
   const d: PokemonData = JSON.parse(JSON.stringify(data))
   let out = shareTitle(locale)
   let changed = false
@@ -151,7 +152,11 @@ export function renderSubmit(
     changed = true
     out += bashPrintf(`  %s${t(locale, 'share.submit_ok')}%s\n\n`, GOLD, RESET)
   } else if (code === 429) {
-    out += bashPrintf(`  %s${t(locale, 'share.cooldown', Math.floor(cooldownS / 3600))}%s\n\n`, DIM, RESET)
+    out += bashPrintf(
+      `  %s${t(locale, 'share.cooldown', Math.floor(cooldownS / 3600))}%s\n\n`,
+      DIM,
+      RESET,
+    )
   } else {
     out += bashPrintf(`  %s${t(locale, 'share.submit_failed', code)}%s\n\n`, DIM, RESET)
   }

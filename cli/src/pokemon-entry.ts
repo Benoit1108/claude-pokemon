@@ -62,20 +62,51 @@ const nowIso = epochToIso(nowEpoch)
 // ── Routing tables (KNOWN is DERIVED from them — no third hand-kept list) ────
 // Alias → view name (no state change).
 const renderViews: Record<string, string> = {
-  team: 'team', pc: 'pc', storage: 'pc', pokedex: 'pokedex', dex: 'pokedex',
-  stats: 'stats', lifetime: 'stats', badges: 'badges', inventory: 'inventory',
-  inv: 'inventory', sac: 'inventory', 'trainer-card': 'trainer-card', card: 'trainer-card',
+  team: 'team',
+  pc: 'pc',
+  storage: 'pc',
+  pokedex: 'pokedex',
+  dex: 'pokedex',
+  stats: 'stats',
+  lifetime: 'stats',
+  badges: 'badges',
+  inventory: 'inventory',
+  inv: 'inventory',
+  sac: 'inventory',
+  'trainer-card': 'trainer-card',
+  card: 'trainer-card',
 }
 // Alias → engine `cmd` runner name (mutating commands).
 const cmdMap: Record<string, string> = {
-  '--shiny': 'shiny', reset: 'reset', switch: 'switch', hatch: 'hatch',
-  deposit: 'deposit', withdraw: 'withdraw', release: 'release', give: 'give', take: 'take',
-  trade: 'trade', game: 'game',
+  '--shiny': 'shiny',
+  reset: 'reset',
+  switch: 'switch',
+  hatch: 'hatch',
+  deposit: 'deposit',
+  withdraw: 'withdraw',
+  release: 'release',
+  give: 'give',
+  take: 'take',
+  trade: 'trade',
+  game: 'game',
 }
 // Subcommands with dedicated if-branches in main().
 const DIRECT_SUBS = [
-  'recap', 'summary', 'quote', 'bio', 'pins', 'pinned',
-  'leaderboard', 'lb', 'aggregate', 'global', 'stats-share', 'share', 'arena', 'login', 'logout',
+  'recap',
+  'summary',
+  'quote',
+  'bio',
+  'pins',
+  'pinned',
+  'leaderboard',
+  'lb',
+  'aggregate',
+  'global',
+  'stats-share',
+  'share',
+  'arena',
+  'login',
+  'logout',
 ] as const
 // Anything NOT known falls to the `main` view (the historical `*)` default).
 const KNOWN = new Set<string>([...Object.keys(renderViews), ...Object.keys(cmdMap), ...DIRECT_SUBS])
@@ -94,7 +125,11 @@ function lengthOf(x: unknown): number {
   if (x && typeof x === 'object') return Object.keys(x).length
   return 0
 }
-function cmdDecisions(data: PokemonData): { pool_idx: number; trade_level: number; trade_shiny: boolean } {
+function cmdDecisions(data: PokemonData): {
+  pool_idx: number
+  trade_level: number
+  trade_shiny: boolean
+} {
   const pool = lengthOf(data.wild_pool) || 1
   return {
     pool_idx: Math.floor(Math.random() * pool),
@@ -160,7 +195,11 @@ async function main(): Promise<void> {
     // Ack the one-time XP-rebalance notice (mirrors view_main: it writes the
     // flag while rendering). The engine render is pure, so the entrypoint
     // persists it — else the notice would re-fire every /pokemon.
-    if (view === 'main' && Number(state.total_xp ?? 0) >= 1000 && state.xp_rebalance_v2_acknowledged !== true) {
+    if (
+      view === 'main' &&
+      Number(state.total_xp ?? 0) >= 1000 &&
+      state.xp_rebalance_v2_acknowledged !== true
+    ) {
       state.xp_rebalance_v2_acknowledged = true
       writeJsonAtomic(STATE_PATH, state)
     }
@@ -168,7 +207,15 @@ async function main(): Promise<void> {
   }
 
   if (sub === 'recap' || sub === 'summary') {
-    const { output } = renderView({ view: 'recap', state, data, locale, lang, nowEpoch, scope: rest[0] || 'session' })
+    const { output } = renderView({
+      view: 'recap',
+      state,
+      data,
+      locale,
+      lang,
+      nowEpoch,
+      scope: rest[0] || 'session',
+    })
     out(output)
     return
   }
@@ -176,7 +223,16 @@ async function main(): Promise<void> {
   // ── mutating commands via the engine `cmd` runner ──────────────────────────
   if (sub in cmdMap) {
     const name = cmdMap[sub]! // `sub in cmdMap` guarantees the key exists
-    const res = runCommand({ name, args: rest, state, data, locale, now: nowIso, nowEpoch, decisions: cmdDecisions(data) })
+    const res = runCommand({
+      name,
+      args: rest,
+      state,
+      data,
+      locale,
+      now: nowIso,
+      nowEpoch,
+      decisions: cmdDecisions(data),
+    })
     if (res) {
       if (res.stateChanged) writeJsonAtomic(STATE_PATH, res.state)
       out(res.output)
@@ -198,7 +254,14 @@ async function main(): Promise<void> {
     const endpoint: string = data?.stats_share?.endpoint ?? ''
     const metric = rest[0] || 'total_tokens'
     const limit = rest[1] || '10'
-    out(renderLeaderboard(data, locale, metric, await getJson(endpoint, `/v1/leaderboard?metric=${metric}&limit=${limit}`)))
+    out(
+      renderLeaderboard(
+        data,
+        locale,
+        metric,
+        await getJson(endpoint, `/v1/leaderboard?metric=${metric}&limit=${limit}`),
+      ),
+    )
     return
   }
   if (sub === 'aggregate' || sub === 'global') {
@@ -228,7 +291,14 @@ async function main(): Promise<void> {
       let code = 0
       let cooldownS = 0
       if (enabled && endpoint) {
-        const payload = buildSubmitPayload(data, state, data.stats_share?.anon_id ?? '', data.version ?? 'unknown', data.stats_share?.display_name ?? '', nowIso)
+        const payload = buildSubmitPayload(
+          data,
+          state,
+          data.stats_share?.anon_id ?? '',
+          data.version ?? 'unknown',
+          data.stats_share?.display_name ?? '',
+          nowIso,
+        )
         const r = await httpJson(`${endpoint}/v1/submit`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -236,7 +306,8 @@ async function main(): Promise<void> {
         })
         if (r.ok) {
           code = r.status
-          if (code === 429) cooldownS = (r.body as { cooldown_remaining_s?: number })?.cooldown_remaining_s ?? 0
+          if (code === 429)
+            cooldownS = (r.body as { cooldown_remaining_s?: number })?.cooldown_remaining_s ?? 0
         } else {
           code = r.kind === 'parse' ? (r.status ?? 0) : 0
         }
@@ -246,7 +317,12 @@ async function main(): Promise<void> {
       out(res.output)
       return
     }
-    const res = runShare({ args: rest, data, locale, anonId: randomBytes(4).toString('hex') } as never)
+    const res = runShare({
+      args: rest,
+      data,
+      locale,
+      anonId: randomBytes(4).toString('hex'),
+    } as never)
     if (res) {
       if (res.changed) saveUserConfig(res.data, dataMode)
       out(res.output)
@@ -256,7 +332,14 @@ async function main(): Promise<void> {
 
   // ── arena (status/enable/.../pair/link/live) ───────────────────────────────
   if (sub === 'arena') {
-    const res = await runArena({ args: rest, data, state, locale, arenaSecret: readText(SECRET_FILE), now: nowIso })
+    const res = await runArena({
+      args: rest,
+      data,
+      state,
+      locale,
+      arenaSecret: readText(SECRET_FILE),
+      now: nowIso,
+    })
     if (res) {
       if (res.dataChanged) saveUserConfig(res.data, dataMode)
       if (res.stateChanged) writeJsonAtomic(STATE_PATH, res.state)
@@ -273,7 +356,11 @@ async function main(): Promise<void> {
     const clientId = process.env.POKEMON_GITHUB_CLIENT_ID || 'Ov23liiZGFKFIT78EDcz'
     const { sessionToken } = await runLogin(
       { endpoint, clientId },
-      { write: (s) => process.stderr.write(s), sleep: (sec) => new Promise((r) => setTimeout(r, sec * 1000)), now: () => Math.floor(Date.now() / 1000) },
+      {
+        write: s => process.stderr.write(s),
+        sleep: sec => new Promise(r => setTimeout(r, sec * 1000)),
+        now: () => Math.floor(Date.now() / 1000),
+      },
     )
     if (sessionToken) writeSecretFile(SESSION_FILE, sessionToken)
     else process.exitCode = 1
