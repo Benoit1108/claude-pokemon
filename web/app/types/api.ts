@@ -1,6 +1,10 @@
 // Contracts for the claude-pokemon Worker API.
-// Mirrors api/src/types.ts on the worker side. Keep in sync manually
-// (eventually : extract to a shared npm package).
+// The core stats shapes (Lineage / LifetimeStats / ActiveStats) are imported
+// from `claude-pokemon-shared/contracts` — the single source of truth shared
+// with the Worker, so they can't drift. The response-envelope DTOs below
+// mirror api/src/types.ts (kept in sync manually).
+export type { Lineage, LifetimeStats, ActiveStats } from 'claude-pokemon-shared/contracts'
+import type { Lineage, LifetimeStats, ActiveStats } from 'claude-pokemon-shared/contracts'
 
 export type LeaderboardMetric =
   | 'total_tokens'
@@ -11,16 +15,6 @@ export type LeaderboardMetric =
   | 'badges_count'
   | 'games_won'
   | 'pokedex_seen_count'
-
-export type Lineage =
-  | 'fire'
-  | 'water'
-  | 'grass'
-  | 'electric'
-  | 'eevee'
-  | 'chikorita'
-  | 'cyndaquil'
-  | 'totodile'
 
 export interface AggregateResponse {
   total_players: number
@@ -44,25 +38,6 @@ export interface LeaderboardResponse {
   metric: string
   total_players: number
   top: LeaderboardEntry[]
-}
-
-export interface LifetimeStats {
-  total_tokens: number
-  total_evolutions: number
-  total_shinies: number
-  max_level: number
-  total_companions: number
-  /** @deprecated old key, read-only back-compat */
-  total_compagnons?: number
-  lineages_completed: Lineage[]
-  games_won: number
-  games_played: number
-}
-
-export interface ActiveStats {
-  lineage: Lineage | null
-  current_level: number
-  is_shiny: boolean
 }
 
 export interface PlayerStats {

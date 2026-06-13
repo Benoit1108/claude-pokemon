@@ -9,7 +9,13 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov'],
       include: ['src/**/*.ts'],
       // Type-only modules (no runtime) + the re-export barrel + generated data.
-      exclude: ['src/index.ts', 'src/types.ts', 'src/state-types.ts', 'src/*.generated.ts'],
+      exclude: [
+        'src/index.ts',
+        'src/types.ts',
+        'src/state-types.ts',
+        'src/contracts.ts',
+        'src/*.generated.ts',
+      ],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },
   },

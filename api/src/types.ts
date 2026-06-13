@@ -35,6 +35,10 @@ export {
   type Lineage,
 } from 'claude-pokemon-shared'
 
+// Wire-contract stats shape — single source of truth, shared with the web.
+export type { LifetimeStats, ActiveStats } from 'claude-pokemon-shared/contracts'
+import type { LifetimeStats, ActiveStats } from 'claude-pokemon-shared/contracts'
+
 export const SCHEMA_VERSION = 1
 export const SUBMIT_COOLDOWN_S = 24 * 60 * 60
 export const ANON_ID_RE = /^[a-f0-9]{8,16}$/
@@ -89,35 +93,6 @@ export type LeaderboardMetric =
   | 'games_won'
   | 'pokedex_seen_count'
 
-export interface LifetimeStats {
-  total_tokens: number
-  total_evolutions: number
-  total_shinies: number
-  max_level: number
-  total_companions: number
-  /** @deprecated old key, read-only back-compat */
-  total_compagnons?: number
-  lineages_completed: Lineage[]
-  games_won: number
-  games_played: number
-  /** Sprint 4.6 — cumulative XP earned from wild-zone fights on the web.
-   * Independent from total_tokens (which is the CLI's token-based XP).
-   * Optional for back-compat ; missing reads as 0. */
-  total_zone_xp?: number
-  /** Sprint 4.6 — count of wild encounters won (for fun stats + future
-   * achievement badges). */
-  zone_wins?: number
-}
-
-export interface ActiveStats {
-  lineage: Lineage | null
-  current_level: number
-  is_shiny: boolean
-  /** Sprint 4.6 — XP earned toward the next level. Resets to 0 on level-up.
-   * Together with `current_level`, gives the progress bar value. Optional
-   * for back-compat. */
-  current_xp?: number
-}
 
 export interface PlayerStats {
   lifetime: LifetimeStats
