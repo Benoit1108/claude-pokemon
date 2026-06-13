@@ -27,7 +27,7 @@ function printMoves(lin: string, lvl: number): string {
 
 // Port of _live_render_status — HP/state + (if it's my turn) move hints.
 export function renderLiveStatus(resp: Json, me: string): string {
-  const state = resp.state ?? ''
+  const state = sanitizeForTerminal(String(resp.state ?? ''))
   const turnNo = resp.turn_no ?? 0
   const c = resp.challenger ?? {}
   const d = resp.defender ?? {}
@@ -60,7 +60,13 @@ export function renderLiveStatus(resp: Json, me: string): string {
   }
 
   if (state === 'finished' || state === 'abandoned') {
-    out += bashPrintf('  %s🏁 Combat terminé · winner=%s · reason=%s%s\n\n', GOLD, resp.winner ?? '', resp.reason ?? '', RESET)
+    out += bashPrintf(
+      '  %s🏁 Combat terminé · winner=%s · reason=%s%s\n\n',
+      GOLD,
+      sanitizeForTerminal(String(resp.winner ?? '')),
+      sanitizeForTerminal(String(resp.reason ?? '')),
+      RESET,
+    )
     return out
   }
   if (state === 'active' && me === cId && !cPending) out += printMoves(cLin, cLvl)

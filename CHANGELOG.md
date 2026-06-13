@@ -5,6 +5,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+### Security
+
+- **Durcissement base-clean 100 % (Lot A)**. Le handler d'erreur 500 du Worker n'echo plus `err.message` à un appelant non-authentifié (la trace part dans le tail du Worker, le client reçoit `{error:'internal'}` seul) — réduction de la surface d'info. Les champs serveur du rendu live (`state`/`winner`/`reason`) passent par `sanitizeForTerminal` (défense en profondeur uniforme, au-dessus de la validation charset du worker). Ajout d'un `.npmrc.example` (placeholder) — le `.npmrc` réel reste gitignoré ; le token de publication n'a jamais été commité. Suppression de deux scripts bash orphelins (`tests/golden/capture*.sh`) qui référençaient le moteur bash supprimé.
+
 ### Fixed
 
 - **Suites de la vérification post-audit** (re-revue indépendante de la branche). `saveUserConfig` repart désormais de la `config.json` sur disque avant de réécrire les clés de l'allowlist → une clé ajoutée à la main hors `CONFIG_KEYS` n'est plus perdue à la prochaine écriture de config (petit edge de perte de données). Deux dernières chaînes FR en dur du rendu (`vers Lv.MAX (forme stable)`, `vers Lv.1`) passées en i18n (`main.toward_max`, `recap.toward_lv1`). Garde anti-drift : test vitest `config-keys-sync` qui vérifie que les 3 déclarations de `CONFIG_KEYS` (entry-io.ts source de vérité + les 2 installeurs `.mjs`) restent identiques. Commentaire `shared/.gitignore` corrigé (dist n'est plus commité). Zéro dérive de rendu (valeurs FR identiques). vitest 116 → 118.
