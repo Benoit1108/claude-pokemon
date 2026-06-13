@@ -11,9 +11,11 @@ otherwise loosely coupled :
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
-│  bin/   — CLI dispatcher (Node) + bash install/update scripts      │
-│  lib/   — bash runtime : tick logic, badges, themes, sub-commands  │
-│  api/   — Cloudflare Worker (TypeScript) : shared anonymous stats  │
+│  shared/ — TS rules engine (source of truth) + esbuild entrypoints │
+│  bin/    — CLI dispatcher + Node installers (*.mjs)                │
+│  lib/    — committed Node runtime bundles + data + pre-rendered    │
+│            ANSI sprites                                             │
+│  api/    — Cloudflare Worker (TypeScript) : shared anonymous stats │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -30,13 +32,14 @@ Cross-cutting docs live at the repo root :
 
 ## Target architecture (refonte — in progress, branch `refonte/foundations`)
 
-The 2026-06 refonte unifies the ecosystem around **one TypeScript rules engine**.
-Until it lands, the layout below (bash CLI + submodule-linked arena) is the live
-reality; the target here is what we migrate toward. See ADR-005…ADR-010.
+The 2026-06 refonte unified the ecosystem around **one TypeScript rules engine**.
+This has landed: the CLI runtime is now 100 % Node-native (bash removed), the
+arena is merged into this repo as the `web/` workspace, and all three clients
+import `shared/`. See ADR-005…ADR-010.
 
 ```
 monorepo (npm workspaces — root = CLI, + api/ shared/ web/)
-├── (root)   — CLI (npm-published `claude-pokemon`); bash today, migrates to TS
+├── (root)   — CLI (npm-published `claude-pokemon`); Node-native runtime
 ├── shared/  — pure, IO-free rules engine = SINGLE SOURCE OF TRUTH
 │               (resolveBattle, applyTick, evolve, xp curves, capture, type chart)
 ├── api/     — Cloudflare Worker (`claude-pokemon-api`), imports shared
@@ -57,15 +60,25 @@ monorepo (npm workspaces — root = CLI, + api/ shared/ web/)
 
 ```
 claude-pokemon/
-├── bin/
-│   ├── claude-pokemon              Node CLI entry (npx target).
-│   │                               Detects Windows → friendly WSL guidance.
-│   ├── install.sh, update.sh, ...  Bash provisioning scripts.
-│   └── ...
-├── lib/                            Bash runtime + data sources.
-│   ├── lib.sh                      Tick, badges, evolution, archive.
-│   ├── statusline.sh               Statusline render (1 output / tick).
-│   ├── pokemon-status.sh           /pokemon sub-commands (views).
+├── shared/                         TS rules engine = SINGLE SOURCE OF TRUTH.
+│   ├── src/                        Pure, IO-free rules :
+│   │   ├── tick.ts, battle.ts,     Game logic (ticks, combat, moves, XP,
+│   │   │   moves.ts, xp.ts,        species, stages).
+│   │   │   species.ts, stages.ts
+│   │   ├── render/                 ANSI sprites, views, printf, i18n.
+│   │   ├── pokemon-entry.ts        esbuild entrypoint → lib/pokemon.mjs.
+│   │   ├── statusline-entry.ts     esbuild entrypoint → lib/statusline.mjs.
+│   │   └── *.generated.ts          Built species/learnset data — do not edit.
+│   ├── scripts/build-engine.mjs    esbuild dist/*-entry.js → lib/*.mjs.
+│   └── dist/                       tsc output (gitignored, rebuilt on prepare).
+├── bin/                            Node CLI (no bash).
+│   ├── claude-pokemon              Dispatcher (npx target). Bash-free runtime
+│   │                               → Windows-friendly.
+│   └── {install,update,uninstall,  Node installers / commands.
+│        status,export,import}.mjs
+├── lib/                            Committed Node runtime + data + sprites.
+│   ├── pokemon.mjs                 BUILT esbuild bundle — do not hand-edit.
+│   ├── statusline.mjs              BUILT esbuild bundle — do not hand-edit.
 │   ├── data.default.json           BUILT artifact — do not edit.
 │   ├── data/                       Source-of-truth for content :
 │   │   ├── config.json             Tunables.
@@ -73,9 +86,9 @@ claude-pokemon/
 │   │   ├── lineages/gen{N}.json    Lineages per generation.
 │   │   ├── wild_pool/gen{N}.json   Wild pokédex per generation.
 │   │   └── ...                     items, berries, seasons, special.
-│   ├── build-data.sh               Concat lib/data/** → data.default.json (deterministic, sorted keys).
-│   ├── locales/{fr,en}.json        UI strings i18n.
-│   └── extract_animations.py       Optional Python pipeline.
+│   ├── build-data.sh               (maintainer) Concat lib/data/** → data.default.json (deterministic, sorted keys).
+│   ├── sprites/, sprites-mini/     Pre-rendered ANSI sprites (committed).
+│   └── locales/{fr,en}.json        UI strings i18n.
 ├── api/                            Cloudflare Worker (separate npm root).
 │   ├── src/
 │   │   ├── index.ts                Router : URL → handler dispatch.
@@ -91,17 +104,18 @@ claude-pokemon/
 ├── assets/                         GIFs + screenshots referenced in README.
 ├── .demo/                          Asciinema scripts to regenerate GIFs.
 ├── .github/workflows/ci.yml        Layered CI : security (audit ×2) → quality
-│                                    (bash shellcheck/json/drift/parity + api lint/
-│                                    prettier/typecheck) → test (bats + vitest + dry-run)
-│                                    → package (npm pack).
-├── shared/                         Workspace package : pure types + battle resolution.
-│                                    Consumed by api/ AND by claude-pokemon-arena (via
-│                                    a git submodule of this repo).
-├── scripts/ci-pre-push.sh          Local CI mirror — runs every gate before `git push`.
+│                                    (json/drift/parity + api lint/prettier/typecheck)
+│                                    → test (bats CLI smoke + vitest) → package (npm pack).
+├── scripts/
+│   ├── build-sprites.sh            (maintainer) Regenerate pre-rendered ANSI sprites.
+│   └── ci-pre-push.sh              Local CI mirror — runs every gate before `git push`.
 ├── .claude/
 │   ├── settings.json               PreToolUse Bash hook → pre-push.sh.
 │   └── hooks/pre-push.sh           Claude Code pre-push gate.
-├── .nvmrc                          Node 22.
+├── .nvmrc                          Node 22 (dev). engines.node = >=18 (runtime min) ;
+│                                    22 matches the highest CI job (web — Nuxt ESLint
+│                                    needs Object.groupBy, Node 21+) so one local
+│                                    version satisfies every job.
 ├── .editorconfig                   Shared editor settings.
 ├── .prettierrc.json                Root Prettier config (mirror of api/'s).
 ├── package.json                    npm package (CLI distribution).
@@ -110,27 +124,29 @@ claude-pokemon/
 
 ## Layered design
 
-### CLI side (bash)
+### CLI side (Node-native)
 
 ```
-bin/claude-pokemon  (Node CLI entry)
+bin/claude-pokemon  (Node dispatcher)
         │ delegates to
         ▼
-bin/{install|update|...}.sh
-        │ source
+bin/{install|update|...}.mjs   (Node installers — file copy, settings.json patch)
+        │ install copies the runtime bundles
         ▼
-lib/lib.sh           (engine : tick, evolution, badges)
-lib/pokemon-status.sh (views : sub-commands rendering)
-        │ reads
+lib/statusline.mjs   (statusline render, 1 output / tick)
+lib/pokemon.mjs      (/pokemon sub-commands : views + actions)
+        │ both are esbuild bundles of shared/src/*-entry.ts
+        │ read
         ▼
 ~/.claude/pokemon/state.json      User state (preserved across updates).
 ~/.claude/pokemon/data.json       Default config (updated via merge).
 ```
 
-Keep `lib/lib.sh` and `lib/pokemon-status.sh` as the only files where
-*business logic* lives. The bin/ scripts are thin orchestrators (file copy,
-sprite download, settings.json patch). New sub-commands go in
-`pokemon-status.sh` with locale strings in `lib/locales/`.
+*Business logic* lives only in `shared/src/` (the TS engine). `lib/pokemon.mjs`
+and `lib/statusline.mjs` are committed esbuild bundles — never hand-edit them;
+regenerate with `npm run build:data`. The `bin/*.mjs` scripts are thin
+orchestrators (file copy, settings.json patch). New sub-commands go in the
+`shared/` engine with locale strings in `lib/locales/`.
 
 ### Worker side (TypeScript)
 
@@ -194,14 +210,14 @@ src/env.d.ts                  Worker bindings (env.STATS).
 ### CLI → Worker (auto-submit)
 
 ```
-pokemon_tick (every Claude Code statusline tick)
+statusline tick (every Claude Code statusline render)
     │
-    ├─ if stats_share.enabled && last_submit > 24h
+    ├─ if stats_share.enabled && last_submit > 24h  (shared/src/autosubmit.ts)
     ▼
 build payload (whitelist : lifetime stats + active pokemon + badge IDs)
     │
     ▼
-curl -X POST $endpoint/v1/submit (background, --max-time 5, fd 200 closed)
+fire-and-forget POST $endpoint/v1/submit (a failed push retries next tick)
     │
     ▼
 Worker validates → KV.put(stats:<anon_id>) + cooldown TTL 24h
@@ -232,36 +248,37 @@ Worker reads KV → JSON response (CORS open, cached client-side)
 
 ### Adding a CLI sub-command
 
-1. Add `view_<name>()` function in `lib/pokemon-status.sh`.
-2. Wire in the dispatch `case` at the bottom of the file.
+1. Add the view/command in `shared/src/` (engine + `render/views.ts`).
+2. Wire it into the dispatch in `shared/src/pokemon-entry.ts`.
 3. Add locale strings to `lib/locales/{fr,en}.json` (parity is checked in CI).
-4. Run `npm run build:data` if you touched any `lib/data/**` source.
-5. Test via `bash bin/install.sh` + `bash ~/.claude/pokemon-status.sh <name>`.
+4. Run `npm run build:data` to regenerate the `lib/*.mjs` bundles (+ data if touched).
+5. Test via `node lib/pokemon.mjs <name>` and `npm run -w shared test`.
 
 ### Adding a content batch (e.g., Gen 3 starters)
 
 1. Edit only files under `lib/data/`. Never edit `data.default.json` directly.
-2. `bash lib/build-data.sh` to regenerate the deployed artifact.
-3. Commit both the source edits and the rebuilt `data.default.json`.
+2. `npm run build:data` to regenerate the deployed artifact + generated TS + bundles.
+3. Commit the source edits and all rebuilt artifacts (`data.default.json`,
+   `shared/src/*.generated.ts`, `lib/pokemon.mjs`, `lib/statusline.mjs`).
 
 ### Schema version + propagation
 
 `data.default.json.version` is auto-injected from `package.json.version` at
-build time (single source of truth). For game-design constants that must
-override user customizations, add them to the force-list in `bin/update.sh` :
-
-```bash
-jq -s '.[0] * .[1] * { thresholds: .[0].thresholds, version: .[0].version, wild_pool: .[0].wild_pool }'
-```
+build time (single source of truth). On `update`, game **content** is copied
+fresh from the package (`bin/update.mjs` → `content.json`, no merge): balance
+changes to lineages/items/thresholds always reach existing users. Only the user
+**config** is preserved (the `CONFIG_KEYS` allowlist in `bin/update.mjs`, mirroring
+`shared/src/entry-io.ts`) — never the content keys.
 
 ## Testing strategy
 
 | Component | Tool | Coverage target |
 |-----------|------|-----------------|
+| shared/ rules engine (pure) | Vitest | High (logic-critical) |
 | Worker lib functions (pure) | Vitest | High (logic-critical) |
 | Worker handlers | Vitest + mocked KV | Medium (happy-path + main errors) |
-| CLI bash scripts | shellcheck + manual | shellcheck `-S error` zero |
-| JSON sources | `jq empty` + locale parity | Both pass in CI |
+| CLI runtime | bats smoke (`tests/cli/`) | Install + render parity green |
+| JSON sources | parse + locale parity | Both pass in CI |
 | Build idempotency | rebuild + git diff | Empty diff |
 
 E2E and visual regression deferred until traffic warrants them.

@@ -236,7 +236,7 @@ Eevee Lv.30 evolution :
 npx claude-pokemon update
 ```
 
-Re-fetches sprites + migrates `data.json` schema if needed. **Preserves `state.json`** (your buddy lives on).
+Recopie le runtime + sprites pré-rendus et migre le schéma `data.json` si besoin. **Preserves `state.json`** (your buddy lives on).
 
 ## Diagnostic
 
@@ -261,7 +261,7 @@ root (`bin/` + `lib/`) ; the rest are sibling packages :
 
 | Package | Rôle |
 |---------|------|
-| *(root)* | CLI `claude-pokemon` (npm) — bash + jq |
+| *(root)* | CLI `claude-pokemon` (npm) — runtime Node-native |
 | `shared/` | `claude-pokemon-shared` — moteur de règles TS (XP, combat, évolution) partagé |
 | `api/` | Worker Cloudflare (`claude-pokemon-api`) |
 | `web/` | Arène web Nuxt → [claude-pokemon-arena.pages.dev](https://claude-pokemon-arena.pages.dev/) |
@@ -269,12 +269,12 @@ root (`bin/` + `lib/`) ; the rest are sibling packages :
 The **published npm package contains only the CLI** (`bin/ lib/ skills/`) — installing
 `claude-pokemon` never pulls `web/`, `api/` or `shared/`.
 
-- **Bash + jq** for state logic (no runtime dependency on Node)
-- **Node** only as `npx` entry point (delegates to bash scripts)
-- **Pokémon Showdown** sprites (gen5, MIT-friendly) downloaded at install
+- **Node** runtime, 100 % Node-native (no bash, no `jq` — runs anywhere Node ≥ 18 runs)
+- **TS rules engine** in `shared/` (XP, combat, évolution, ticks) — bundlé par esbuild en `lib/pokemon.mjs` + `lib/statusline.mjs`
+- **Pokémon Showdown** sprites (gen5, MIT-friendly) **pré-rendus en ANSI et committés** sous `lib/sprites/` — pas de téléchargement à l'install
 - **Single state file** : `~/.claude/pokemon/state.json`
 - **Locale files** : `~/.claude/pokemon/locales/{fr,en}.json`
-- **No telemetry, no network calls after install** (sprites cached locally)
+- **No telemetry, no network calls after install** (sprites embarqués dans le package)
 
 ## Contributing
 
