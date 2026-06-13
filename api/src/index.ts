@@ -196,8 +196,10 @@ export default {
       }
       return jsonResp({ error: 'not_found', path: url.pathname }, 404)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'unknown'
-      return jsonResp({ error: 'internal', message }, 500)
+      // Log the detail to the Worker tail, but never echo an internal exception
+      // string back to an unauthenticated caller (info-surface hardening).
+      console.error('unhandled error', err)
+      return jsonResp({ error: 'internal' }, 500)
     }
   },
 }

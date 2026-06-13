@@ -1,0 +1,5 @@
+# Copy to .npmrc (gitignored) to publish the package with a granular token.
+# Create one at: https://www.npmjs.com/settings/Benoit1108/tokens
+#   → Generate New Token → Granular Access Token (bypasses 2FA for publish)
+# NEVER commit the real token — .npmrc is gitignored on purpose.
+//registry.npmjs.org/:_authToken=<PASTE_TOKEN_HERE>
