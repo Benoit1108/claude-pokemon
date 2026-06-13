@@ -42,7 +42,8 @@
     "xp_rebalance_line3": "Your total XP is preserved, but your level may have dropped.",
     "xp_rebalance_line4": "Level-ups are now monotonic. Details in the CHANGELOG.",
     "xp_rebalance_footer": "(This message will only show once.)",
-    "since": "since %s"
+    "since": "since %s",
+    "toward_max": "towards Lv.MAX (stable form)"
   },
   "stats": {
     "title": "LIFETIME STATS",
@@ -259,7 +260,8 @@
     "ev_encountered": "encountered",
     "ev_obtained": "obtained",
     "battle_won_label": "battle won",
-    "battle_lost_label": "battle lost"
+    "battle_lost_label": "battle lost",
+    "toward_lv1": "towards Lv.1"
   },
   "share": {
     "title": "📡 SHARED STATS (anonymous, opt-in)",

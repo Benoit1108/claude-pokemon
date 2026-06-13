@@ -5,6 +5,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — Semver.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Suites de la vérification post-audit** (re-revue indépendante de la branche). `saveUserConfig` repart désormais de la `config.json` sur disque avant de réécrire les clés de l'allowlist → une clé ajoutée à la main hors `CONFIG_KEYS` n'est plus perdue à la prochaine écriture de config (petit edge de perte de données). Deux dernières chaînes FR en dur du rendu (`vers Lv.MAX (forme stable)`, `vers Lv.1`) passées en i18n (`main.toward_max`, `recap.toward_lv1`). Garde anti-drift : test vitest `config-keys-sync` qui vérifie que les 3 déclarations de `CONFIG_KEYS` (entry-io.ts source de vérité + les 2 installeurs `.mjs`) restent identiques. Commentaire `shared/.gitignore` corrigé (dist n'est plus commité). Zéro dérive de rendu (valeurs FR identiques). vitest 116 → 118.
+
 ### Changed
 
 - **Séparation contenu du jeu / config utilisateur** (nettoyage post-audit). L'ancien `data.json` unique (72K) fusionnait le contenu (lineages, wild_pool, thresholds, items…) avec la config user — et le `deepMerge` d'update faisait **gagner la copie utilisateur sur chaque clé de contenu** sauf une allowlist manuelle de 3 clés (les changements d'équilibrage de `lineages`/`items`/`berries` n'atteignaient jamais les installs existantes). Nouveau modèle : **`content.json`** (copié verbatim du package à chaque install/update — toujours frais, jamais mergé) ⊕ **`config.json`** (overlay user ~10 clés stables : langue, thème, affichage, stats_share, arena…), fusionnés à la lecture (`loadData`). Les écritures runtime (quote/bio/pins, arena, share) n'écrivent que `config.json`. **Migration automatique** au prochain install/update (extraction des clés user, backup `data.json.pre-split.bak`) ; **mode legacy** : un `data.json` pré-split continue de fonctionner tel quel en attendant. +3 tests bats (split/migration/legacy).

@@ -62,7 +62,10 @@ export function epochToIso(epochSeconds: number): string {
 export const CONTENT_PATH = join(POKEMON_DIR, 'content.json')
 export const CONFIG_PATH = join(POKEMON_DIR, 'config.json')
 
-/** The user-owned keys (stable, bounded — unlike the ever-growing content). */
+/** The user-owned keys (stable, bounded — unlike the ever-growing content).
+ *  SOURCE OF TRUTH. Mirrored as inline arrays in bin/install.mjs +
+ *  bin/update.mjs (standalone Node scripts that can't import TS); the
+ *  config-keys-sync vitest asserts the three stay identical. */
 export const CONFIG_KEYS = [
   'language',
   'theme',
@@ -108,15 +111,21 @@ export function loadData(): DataLoad {
     : { ok: false, file: 'data.json', missing: false, error: legacy.error }
 }
 
-/** Persist a runtime mutation of the merged document. Split mode extracts the
- *  user-owned keys into config.json (content is never written at runtime);
+/** Persist a runtime mutation of the merged document. Split mode writes only
+ *  the user-owned keys to config.json (content is never written at runtime);
  *  legacy mode keeps writing the whole data.json as before. */
 export function saveUserConfig(merged: Record<string, unknown>, mode: 'split' | 'legacy'): void {
   if (mode === 'legacy') {
     writeJsonAtomic(DATA_PATH, merged)
     return
   }
-  const cfg: Record<string, unknown> = {}
+  // Start from the on-disk config so any hand-added key the user put in
+  // config.json (outside CONFIG_KEYS) survives a config write — then overwrite
+  // the allowlisted keys from the freshly-mutated merged document. Content keys
+  // never enter config.json (they're not in CONFIG_KEYS and not in the prior
+  // config.json), so no content bleed.
+  const existing = readJsonFile(CONFIG_PATH)
+  const cfg: Record<string, unknown> = existing.ok && isObj(existing.value) ? { ...existing.value } : {}
   for (const k of CONFIG_KEYS) if (k in merged) cfg[k] = merged[k]
   writeJsonAtomic(CONFIG_PATH, cfg)
 }

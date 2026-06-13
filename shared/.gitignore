@@ -1,7 +1,6 @@
 node_modules/
 *.tgz
 .DS_Store
-# dist/ is COMMITTED so consumers (worker workspaces, arena submodule) get
-# pre-built JS+d.ts without running a build pipeline. Whoever edits src/
-# MUST run `npm run build` and commit the regenerated dist/. The
-# build-drift CI check in claude-pokemon root catches stale dist.
+# dist/ is NOT committed (audit cleanup): it's rebuilt on `npm ci` via the
+# package's `prepare: tsc`. Ignored at the repo root (.gitignore: shared/dist/).
+dist/
