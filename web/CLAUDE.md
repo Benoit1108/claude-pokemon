@@ -34,7 +34,7 @@ claude-pokemon-arena/
 │   │   ├── arena.vue                 Async PvP pool
 │   │   ├── battle/[id].vue           Replay async battle
 │   │   ├── ladder/[bot_id].vue       PvE trail bot duel (manual + auto mode)
-│   │   ├── live/[id].vue             Live PvP (Durable Object-backed)
+│   │   ├── live/[id].vue             Live PvP (KV-backed)
 │   │   ├── login.vue                 Recovery-key sign-in (Sprint 5)
 │   │   ├── pair.vue                  CLI ↔ web pairing redeem
 │   │   ├── pokedex/[id].vue          Wild Pokémon detail

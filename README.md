@@ -261,8 +261,9 @@ root (`bin/` + `lib/`) ; the rest are sibling packages :
 
 | Package | Rôle |
 |---------|------|
-| *(root)* | CLI `claude-pokemon` (npm) — runtime Node-native |
-| `shared/` | `claude-pokemon-shared` — moteur de règles TS (XP, combat, évolution) partagé |
+| *(root)* | Package npm `claude-pokemon` — `bin/` (installeurs Node) + `lib/` (bundles esbuild livrés + data + sprites) |
+| `cli/` | Source TS du CLI Node (entrypoints, render, commands) — bundlé vers `lib/*.mjs` |
+| `shared/` | `claude-pokemon-shared` — moteur de règles TS pur (XP, combat, évolution) partagé |
 | `api/` | Worker Cloudflare (`claude-pokemon-api`) |
 | `web/` | Arène web Nuxt → [claude-pokemon-arena.pages.dev](https://claude-pokemon-arena.pages.dev/) |
 
