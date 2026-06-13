@@ -50,7 +50,7 @@ function maxStage(entry: CompanionEntry | undefined): string {
 
 function lastEvoName(state: PokemonState): string {
   const h = state.evolution_history ?? []
-  return (h.length ? h[h.length - 1].name : undefined) ?? 'Œuf'
+  return (h.length ? h[h.length - 1]?.name : undefined) ?? 'Œuf'
 }
 
 // Port of _print_roster_entry. `%-22s` is byte-width padding (bashPrintf).
@@ -92,7 +92,7 @@ function cmdSwitch(input: CommandInput): CommandResult {
     if (team.length === 0) {
       out += bashPrintf(`   %s${L('switch.no_team')}%s\n\n`, DIM, RESET)
     } else {
-      for (let i = 0; i < team.length; i++) out += rosterEntry(team[i], String(i), '', data, locale)
+      team.forEach((entry, i) => (out += rosterEntry(entry, String(i), '', data, locale)))
       out += bashPrintf(`\n  %s${L('switch.usage')}%s\n\n`, DIM, RESET)
     }
     return { output: out, state, stateChanged: false }
@@ -233,10 +233,10 @@ function cmdGive(input: CommandInput): CommandResult {
   if (holdable !== true) return { output: out + bashPrintf(`  %s${L('held.not_holdable')}%s\n\n`, DIM, RESET), state, stateChanged: false }
   const name = data.items?.[id]?.name ?? id
   const next = cloneState(state)
-  // count > 0 was checked above — the inventory exists on the clone.
+  // count > 0 was checked above — the inventory entry exists on the clone.
   const inv = (next.items ??= {})
-  inv[id] -= 1
-  if (inv[id] <= 0) delete inv[id]
+  inv[id]! -= 1
+  if (inv[id]! <= 0) delete inv[id]
   next.held_item = id
   out += bashPrintf(`  %s${L('held.given', name)}%s\n\n`, BOLD, RESET)
   return { output: out, state: next, stateChanged: true }
@@ -299,7 +299,7 @@ function typeColor(type: string): string {
 
 function gameHints(data: PokemonData, lang: string, idx: number, locale: Locale): string {
   // The quiz id was drawn from this pool — the entry exists.
-  const w = (data.wild_pool ?? [])[idx]
+  const w = (data.wild_pool ?? [])[idx]!
   const name = wildName(w, lang)
   const type = w.type ?? ''
   const dex = w.national_dex ?? 0
@@ -417,7 +417,7 @@ function cmdTrade(input: CommandInput): CommandResult {
   const level = Number(input.decisions?.trade_level ?? 5)
   const shiny = input.decisions?.trade_shiny === true
   // pool_idx was rolled against this pool — the entry exists.
-  const w = (data.wild_pool ?? [])[idx]
+  const w = (data.wild_pool ?? [])[idx]!
   const sid = w.id
   const name = wildName(w, lang)
   const dex = w.national_dex ?? 0

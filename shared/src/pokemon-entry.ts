@@ -175,7 +175,7 @@ async function main(): Promise<void> {
 
   // ── mutating commands via the engine `cmd` runner ──────────────────────────
   if (sub in cmdMap) {
-    const name = cmdMap[sub]
+    const name = cmdMap[sub]! // `sub in cmdMap` guarantees the key exists
     const res = runCommand({ name, args: rest, state, data, locale, now: nowIso, nowEpoch, decisions: cmdDecisions(data) })
     if (res) {
       if (res.stateChanged) writeJsonAtomic(STATE_PATH, res.state)

@@ -33,7 +33,7 @@ function truncateChars(s: string, n: number): string {
 function formatSpec(spec: string, raw: Arg | undefined): string {
   const m = /^%([-+ 0]*)(\d*)(?:\.(\d+))?([sdi])$/.exec(spec)
   if (!m) return spec
-  const flags = m[1]
+  const flags = m[1] ?? '' // group 1 is `[-+ 0]*` — always matches (possibly empty)
   const width = m[2] ? parseInt(m[2], 10) : 0
   const prec = m[3] !== undefined ? parseInt(m[3], 10) : undefined
   const conv = m[4]

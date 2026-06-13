@@ -83,7 +83,7 @@ export function rainbowName(name: string): string {
   const rainbows = ['\x1b[91m', '\x1b[93m', '\x1b[92m', '\x1b[96m', '\x1b[94m', '\x1b[95m']
   let out = ''
   const chars = [...name]
-  for (let i = 0; i < chars.length; i++) out += rainbows[i % rainbows.length] + chars[i]
+  chars.forEach((ch, i) => (out += rainbows[i % rainbows.length] + ch))
   return out
 }
 
@@ -111,7 +111,7 @@ export function trimSprite(content: string): string[] {
   let minLead = 0
   let minSet = false
   for (let i = 0; i < lines.length; i++) {
-    const bare = stripAnsi(lines[i])
+    const bare = stripAnsi(lines[i]!) // i < lines.length
     const test = bare.replace(/[ \t]+$/, '')
     if (/[^ \t]/.test(test)) {
       if (first === -1) first = i
@@ -128,7 +128,7 @@ export function trimSprite(content: string): string[] {
   if (!minSet) minLead = 0
   const out: string[] = []
   for (let i = first; i <= last; i++) {
-    let line = lines[i].replace(/\x1b\[[?]25[lh]/g, '') // eslint-disable-line no-control-regex
+    let line = lines[i]!.replace(/\x1b\[[?]25[lh]/g, '') // eslint-disable-line no-control-regex -- i in [first,last] ⊂ array bounds
     let strip = minLead
     while (strip > 0 && line[0] === ' ') {
       line = line.slice(1)
@@ -174,7 +174,7 @@ export function renderInline(state: PokemonState, data: PokemonData): string {
 
   const currentThreshold = thresholds[level] ?? 0
   const maxL = thresholds.length - 1
-  const nextThreshold = level >= maxL ? thresholds[maxL] : thresholds[level + 1]
+  const nextThreshold = (level >= maxL ? thresholds[maxL] : thresholds[level + 1])! // both indices ≤ maxL, in-bounds
   let xpInLevel = totalXp - currentThreshold
   let nextLevelSize = nextThreshold - currentThreshold
   if (xpInLevel < 0) xpInLevel = 0
@@ -297,7 +297,7 @@ export function renderStatusline(ctx: StatuslineCtx, deps: SpriteDeps): string {
     for (let i = 0; i < n - 1; i++) out += `${SPRITE_ANCHOR}${spriteLines[i]}\n`
   }
   if (layout === 'left' && n > 0) {
-    out += `${SPRITE_ANCHOR}${trimLastLine(spriteLines[n - 1])}  `
+    out += `${SPRITE_ANCHOR}${trimLastLine(spriteLines[n - 1]!)}  ` // n > 0, so index n-1 exists
   }
 
   out += renderInline(state, data)
