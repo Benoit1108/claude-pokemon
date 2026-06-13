@@ -19,8 +19,26 @@ surface.
   default trades reset-via-email for not collecting an email.
 - **Worker** never logs IPs (`cf-connecting-ip` is never read, Workers Logs
   is disabled in `wrangler.toml`).
-- **Sprites** are fetched from `play.pokemonshowdown.com` at install time
-  and cached locally — no runtime network calls.
+- **Sprites** ship **pre-rendered as ANSI and committed** in the package
+  (`lib/sprites/`) — no download at install, no runtime network calls.
+
+## Rate limiting & abuse
+
+Every **mutating** endpoint requires the `arena_secret` (Bearer, constant-time
+compared) — including `/v1/forget`. The only unauthenticated writes are
+`/v1/submit` (overwrites a trainer's *public* stats, bounded by a strict
+whitelist validator + a **24 h per-`anon_id` cooldown**) and `/v1/arena/react`
+(bounded reaction set). Per-actor cooldowns also gate live-invite (30 s) and
+arena-challenge.
+
+**Volumetric / per-IP abuse** (e.g. mass `submit` with fresh `anon_id`s,
+pair-code guessing) is **deliberately handled at the Cloudflare edge** via a
+Rate Limiting rule on the write paths, **not** in the Worker — the app keeps
+its no-IP invariant (it never reads or stores `cf-connecting-ip`; the edge
+counts requests ephemerally without the app ever seeing the address). Adding
+per-IP counters in the Worker would trade that privacy property for a
+mitigation the edge already provides. Recommended edge rule: ≤60 requests/min
+per IP on `POST|DELETE|PATCH /v1/*`.
 
 ## Reporting a vulnerability
 
