@@ -1,0 +1,6 @@
+node_modules/
+*.tgz
+.DS_Store
+# dist/ is NOT committed: it's rebuilt on `npm ci` via the package's
+# `prepare: tsc`. Ignored at the repo root too (.gitignore: cli/dist/).
+dist/

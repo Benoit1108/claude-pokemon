@@ -30,3 +30,4 @@ sprites-mini-anim/
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 shared/dist/
+cli/dist/
