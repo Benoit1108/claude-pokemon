@@ -425,7 +425,7 @@ export function renderMain(ctx: RenderContext): string {
     let pct = Math.floor(((totalXp - curThreshold) * 100) / bandTotal)
     pct = Math.max(0, Math.min(100, pct))
     out += bashPrintf('  %s   %s%s%s%s   %s%sLv.%d%s\n\n', emoji, '', BOLD, name, RESET, '', BOLD, level, RESET)
-    out += bashPrintf('  %s%s%s   %s%d%% vers Lv.MAX (forme stable)%s\n\n', '', progressBar(pct), RESET, DIM, pct, RESET)
+    out += bashPrintf(`  %s%s%s   %s%d%% ${t(locale, 'main.toward_max')}%s\n\n`, '', progressBar(pct), RESET, DIM, pct, RESET)
     out += bashPrintf(`  %s${tPad(locale, 'main.xp_total', 22)}%s :  %s tokens\n`, DIM, RESET, fmtInt(totalXp))
     out += bashPrintf(
       `  %s${tPad(locale, 'main.remaining', 22)}%s :  %s tokens (Lv.%d)\n\n`,
@@ -770,7 +770,7 @@ export function renderRecap(ctx: RenderContext, scope = 'session'): string {
       } else if (lvlNow === 0) {
         const threshold1 = data.thresholds?.[1] ?? 1
         const pct = Math.trunc((Number(state.total_xp) / threshold1) * 100)
-        out += bashPrintf(`    %s${tPad(locale, 'recap.hatch_progress', 22)}%s :  %s%% vers Lv.1\n`, DIM, RESET, pct)
+        out += bashPrintf(`    %s${tPad(locale, 'recap.hatch_progress', 22)}%s :  %s%% ${t(locale, 'recap.toward_lv1')}\n`, DIM, RESET, pct)
       } else {
         out += bashPrintf(`    %s${tPad(locale, 'recap.level_stable', 22)}%s :  Lv.%s\n`, DIM, RESET, lvlNow)
       }

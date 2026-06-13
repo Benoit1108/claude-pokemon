@@ -42,7 +42,8 @@
     "xp_rebalance_line3": "Ton total XP est préservé, mais ton niveau a pu redescendre.",
     "xp_rebalance_line4": "Les level-ups sont maintenant monotones. Détails dans le CHANGELOG.",
     "xp_rebalance_footer": "(Ce message ne s'affichera qu'une fois.)",
-    "since": "depuis %s"
+    "since": "depuis %s",
+    "toward_max": "vers Lv.MAX (forme stable)"
   },
   "stats": {
     "title": "STATISTIQUES DE VIE",
@@ -259,7 +260,8 @@
     "ev_encountered": "rencontré",
     "ev_obtained": "obtenu",
     "battle_won_label": "victoire",
-    "battle_lost_label": "défaite"
+    "battle_lost_label": "défaite",
+    "toward_lv1": "vers Lv.1"
   },
   "share": {
     "title": "📡 STATS PARTAGÉES (anonymes, opt-in)",
