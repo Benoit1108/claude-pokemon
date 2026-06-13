@@ -21,7 +21,7 @@ function record(overrides: Partial<KVRecord> & { anon_id: string }): KVRecord {
         total_evolutions: 0,
         total_shinies: 0,
         max_level: 0,
-        total_compagnons: 0,
+        total_companions: 0,
         lineages_completed: [],
         games_won: 0,
         games_played: 0,
@@ -68,19 +68,19 @@ describe('handleAggregate', () => {
     expect(body.total_tokens_combined).toBe(3500)
   })
 
-  it('computes shiny_rate_observed = total_shinies / total_compagnons', async () => {
+  it('computes shiny_rate_observed = total_shinies / total_companions', async () => {
     await putStats(
       env,
       record({
         anon_id: 'a1234567',
-        stats: { lifetime: { total_shinies: 1, total_compagnons: 3 } } as never,
+        stats: { lifetime: { total_shinies: 1, total_companions: 3 } } as never,
       }),
     )
     await putStats(
       env,
       record({
         anon_id: 'b2345678',
-        stats: { lifetime: { total_shinies: 0, total_compagnons: 1 } } as never,
+        stats: { lifetime: { total_shinies: 0, total_companions: 1 } } as never,
       }),
     )
 
@@ -90,17 +90,34 @@ describe('handleAggregate', () => {
     expect(body.shiny_rate_observed).toBe(0.25)
   })
 
-  it('returns shiny_rate_observed: null when no compagnons hatched', async () => {
+  it('returns shiny_rate_observed: null when no companions hatched', async () => {
     await putStats(
       env,
       record({
         anon_id: 'a1234567',
-        stats: { lifetime: { total_shinies: 0, total_compagnons: 0 } } as never,
+        stats: { lifetime: { total_shinies: 0, total_companions: 0 } } as never,
       }),
     )
     const res = await handleAggregate(env)
     const body = (await res.json()) as { shiny_rate_observed: number | null }
     expect(body.shiny_rate_observed).toBeNull()
+  })
+
+  it('back-compat: aggregates an OLD stored record carrying only total_compagnons', async () => {
+    // Simulate a record persisted before the rename : it has the legacy key
+    // and NO total_companions. The central getStats/listAllStats backfill must
+    // make aggregate count it correctly.
+    const legacyRecord = record({ anon_id: 'a1234567' })
+    const lt = legacyRecord.stats.lifetime as Record<string, unknown>
+    delete lt.total_companions
+    lt.total_compagnons = 4
+    lt.total_shinies = 2
+    await putStats(env, legacyRecord)
+
+    const res = await handleAggregate(env)
+    const body = (await res.json()) as { shiny_rate_observed: number }
+    // 2 / 4 = 0.5 — proves the legacy key flows through the read backfill.
+    expect(body.shiny_rate_observed).toBe(0.5)
   })
 
   it('counts distinct active lineages', async () => {

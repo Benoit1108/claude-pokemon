@@ -279,7 +279,7 @@ describe('handleZoneExplore — encounter mechanics', () => {
           total_evolutions: 0,
           total_shinies: 0,
           max_level: 5,
-          total_compagnons: 1,
+          total_companions: 1,
           lineages_completed: [],
           games_won: 0,
           games_played: 0,

@@ -152,7 +152,7 @@ const mockTrainer = {
       total_evolutions: 5,
       total_shinies: 0,
       max_level: 28,
-      total_compagnons: 2,
+      total_companions: 2,
       lineages_completed: ['grass'],
       games_won: 4,
       games_played: 7,

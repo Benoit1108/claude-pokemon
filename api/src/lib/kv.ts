@@ -35,18 +35,25 @@ function clampTtl(ttlSeconds: number): number {
   return Math.max(KV_MIN_TTL_S, ttlSeconds)
 }
 
+/** Lazy-migrate a stored stats record on read. Stamps the Sprint 4 `origin`
+ * default and backfills the canonical `total_companions` from the legacy
+ * `total_compagnons` so old stored records serve correctly. */
+function normalizeStatsRecord(parsed: KVRecord): KVRecord {
+  if (!parsed.origin) {
+    parsed.origin = 'cli'
+  }
+  const lt = parsed.stats?.lifetime
+  if (lt && lt.total_companions === undefined && lt.total_compagnons !== undefined) {
+    lt.total_companions = lt.total_compagnons
+  }
+  return parsed
+}
+
 export async function getStats(env: Env, anonId: string): Promise<KVRecord | null> {
   const raw = await env.STATS.get(`stats:${anonId}`)
   if (!raw) return null
   try {
-    const parsed = JSON.parse(raw) as KVRecord
-    // Sprint 4 lazy migration : legacy records have no origin field. Default
-    // to 'cli' since the CLI was the only signup path before Sprint 4. Next
-    // write back stamps the field permanently.
-    if (!parsed.origin) {
-      parsed.origin = 'cli'
-    }
-    return parsed
+    return normalizeStatsRecord(JSON.parse(raw) as KVRecord)
   } catch {
     return null
   }
@@ -320,7 +327,7 @@ export async function listAllStats(env: Env): Promise<KVRecord[]> {
     const raw = await env.STATS.get(key.name)
     if (raw) {
       try {
-        records.push(JSON.parse(raw) as KVRecord)
+        records.push(normalizeStatsRecord(JSON.parse(raw) as KVRecord))
       } catch {
         /* skip corrupt */
       }

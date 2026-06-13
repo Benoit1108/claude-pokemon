@@ -58,7 +58,7 @@ describe('ApiClient', () => {
           total_evolutions: 0,
           total_shinies: 0,
           max_level: 0,
-          total_compagnons: 0,
+          total_companions: 0,
           lineages_completed: [],
           games_won: 0,
           games_played: 0,

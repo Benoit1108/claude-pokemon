@@ -26,10 +26,10 @@ export function renderStats(ctx: RenderContext): string {
   out += bashPrintf(`  %s${tPad(locale, 'stats.total_shinies', 22)}%s :  %s\n`, DIM, RESET, fmtInt(shinies))
   out += bashPrintf(`  %s${tPad(locale, 'stats.max_level', 22)}%s :  Lv.%s\n`, DIM, RESET, jqStr(ls.max_level))
   out += bashPrintf(
-    `  %s${tPad(locale, 'stats.total_compagnons', 22)}%s :  %s\n`,
+    `  %s${tPad(locale, 'stats.total_companions', 22)}%s :  %s\n`,
     DIM,
     RESET,
-    fmtInt(ls.total_compagnons),
+    fmtInt(ls.total_companions ?? ls.total_compagnons),
   )
   out += bashPrintf(
     `  %s${tPad(locale, 'stats.lineages_completed', 22)}%s :  %s / %s\n`,

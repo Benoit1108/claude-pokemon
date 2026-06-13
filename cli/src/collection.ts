@@ -53,7 +53,8 @@ export function activeToArchive(state: PokemonState, now: string): PokemonState 
   }
   const ls = (s.lifetime_stats = s.lifetime_stats ?? {})
   if ((s.current_level ?? 0) >= 100) {
-    ls.total_compagnons = (ls.total_compagnons ?? 0) + 1
+    ls.total_companions = (ls.total_companions ?? ls.total_compagnons ?? 0) + 1
+    delete ls.total_compagnons
   }
   const completed = Array.isArray(ls.lineages_completed) ? ls.lineages_completed : []
   if (completed.indexOf(lin) === -1 && (s.current_level ?? 0) >= 100) {

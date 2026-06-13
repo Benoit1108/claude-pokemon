@@ -58,7 +58,7 @@ const baseRecord: KVRecord = {
       total_evolutions: 3,
       total_shinies: 1,
       max_level: 45,
-      total_compagnons: 3,
+      total_companions: 3,
       lineages_completed: [],
       games_won: 1,
       games_played: 2,

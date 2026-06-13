@@ -66,6 +66,8 @@ export interface LifetimeStats {
   total_shinies?: number
   max_level?: number
   lineages_completed?: string[]
+  total_companions?: number
+  /** @deprecated old key, read-only back-compat */
   total_compagnons?: number
   first_shiny_at?: string | null
   games_won?: number
