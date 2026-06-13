@@ -155,12 +155,37 @@ jobs:
       - run: npm ci
       - run: npm run -w shared typecheck
       - run: npm run -w shared test
-      - name: Verify shared dist + committed bundles are in sync with sources
+      - name: Verify shared generated data is in sync with sources
         run: |
           npm run -w shared build:gen
-          npm run -w shared build:engine
-          if ! git diff --exit-code shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts lib/statusline.mjs lib/pokemon.mjs; then
-            echo "::error::shared dist/generated/bundles stale. Run \`npm run build:data && npm run -w shared build:engine\` and commit."
+          if ! git diff --exit-code shared/src/species-combat-type.generated.ts shared/src/learnsets.generated.ts; then
+            echo "::error::shared generated data stale. Run \`npm run build:data\` and commit."
+            exit 1
+          fi
+
+  # ─── Stage : quality — cli package ────────────────────────────────────────
+  # cli/ imports `claude-pokemon-shared`, so shared/dist must exist before the
+  # cli typecheck/build. `npm ci` runs each workspace's `prepare` (tsc) but the
+  # order across workspaces isn't guaranteed — build shared explicitly first.
+  cli-ts-tests:
+    name: 🚦 cli — typecheck + Vitest
+    needs: [security-root]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run -w shared build
+      - run: npm run -w cli typecheck
+      - run: npm run -w cli test
+      - name: Verify committed engine bundles are in sync with sources
+        run: |
+          npm run -w cli build:engine
+          if ! git diff --exit-code lib/statusline.mjs lib/pokemon.mjs; then
+            echo "::error::engine bundles stale. Run \`npm run build:data\` and commit."
             exit 1
           fi
 
@@ -309,7 +334,7 @@ jobs:
   # ─── Stage : packaging ────────────────────────────────────────────────────
   npm-pack:
     name: 📦 npm pack — verify packaging
-    needs: [cli-tests, install-dry-run, api-tests, shared-tests]
+    needs: [cli-tests, install-dry-run, api-tests, shared-tests, cli-ts-tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

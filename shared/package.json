@@ -34,6 +34,10 @@
     "./types": {
       "types": "./dist/types.d.ts",
       "import": "./dist/types.js"
+    },
+    "./state-types": {
+      "types": "./dist/state-types.d.ts",
+      "import": "./dist/state-types.js"
     }
   },
   "files": ["dist", "README.md", "LICENSE"],
@@ -43,7 +47,6 @@
     "build:species": "node scripts/build-species-combat-type.mjs",
     "build:learnsets": "node scripts/build-learnsets.mjs",
     "build:gen": "npm run build:species && npm run build:learnsets",
-    "build:engine": "npm run build && node scripts/build-engine.mjs",
     "fetch:pokeapi": "node scripts/fetch-pokeapi-snapshot.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
