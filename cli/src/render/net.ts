@@ -4,7 +4,7 @@
 // lives in the `net` engine command (cli.ts); these stay testable.
 import { bashPrintf } from './printf.js'
 import { t, type Locale } from './i18n.js'
-import { fmtInt, tPad, lineageEmoji } from './views.js'
+import { fmtInt, tPad, lineageEmoji } from './views/index.js'
 import { sanitizeForTerminal } from '../http.js'
 import { RESET, BOLD, DIM, GOLD } from './ansi.js'
 import type { PokemonData } from 'claude-pokemon-shared/state-types'

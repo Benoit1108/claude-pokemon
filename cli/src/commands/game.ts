@@ -2,7 +2,7 @@
 // from the bash view_game.
 import { bashPrintf } from '../render/printf.js'
 import { t, type Locale } from '../render/i18n.js'
-import { tPad } from '../render/views.js'
+import { tPad } from '../render/views/index.js'
 import { RESET, BOLD, DIM, GOLD } from '../render/ansi.js'
 import type { PokemonData } from 'claude-pokemon-shared/state-types'
 

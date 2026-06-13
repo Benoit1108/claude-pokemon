@@ -19,7 +19,7 @@ import {
   randomSeed,
   sha256Hex,
 } from '../../lib/arena'
-import { resolveBattle } from '../../lib/battle'
+import { resolveBattle } from 'claude-pokemon-shared/battle'
 import { ANON_ID_RE } from '../../types'
 
 export async function handleArenaChallenge(request: Request, env: Env): Promise<Response> {

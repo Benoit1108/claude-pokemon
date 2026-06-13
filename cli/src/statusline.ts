@@ -7,7 +7,7 @@
 // here is checked WITH ansi codes (theme pinned). Theme-aware color helpers are
 // ported faithfully (pokemon_theme_accent / pokemon_ansi_color /
 // pokemon_rainbow_name), reading data.theme.
-import { evoField } from './render/views.js'
+import { evoField } from './render/views/index.js'
 import { progressPct, xpMultiplier } from 'claude-pokemon-shared/xp'
 import type { PokemonState, PokemonData } from 'claude-pokemon-shared/state-types'
 

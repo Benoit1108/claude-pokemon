@@ -17,7 +17,7 @@
 // multiplier values, the token-delta accumulators, prevLevel/isShiny, the live
 // session ref). Order and data flow are load-bearing: do not reorder mutations.
 import { levelFromXp, xpMultiplier, typeMatchMultiplier } from 'claude-pokemon-shared/xp'
-import { evoField } from './render/views.js'
+import { evoField } from './render/views/index.js'
 import { archiveToTeam, checkBadges } from './collection.js'
 import type {
   LifetimeStats,

@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
-import { renderMain, type RenderContext } from '../src/render/views.js'
+import { renderMain, type RenderContext } from '../src/render/views/index.js'
 import type { PokemonState, PokemonData, RecentEvent } from 'claude-pokemon-shared/state-types'
 
 const here = dirname(fileURLToPath(import.meta.url))

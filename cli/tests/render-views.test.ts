@@ -16,7 +16,7 @@ import {
   renderTrainerCard,
   renderPokedex,
   type RenderContext,
-} from '../src/render/views.js'
+} from '../src/render/views/index.js'
 import type { PokemonState, PokemonData, CompanionEntry } from 'claude-pokemon-shared/state-types'
 
 const here = dirname(fileURLToPath(import.meta.url))

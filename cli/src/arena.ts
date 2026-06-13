@@ -6,7 +6,7 @@
 import { execFileSync } from 'node:child_process'
 import { bashPrintf } from './render/printf.js'
 import { t, type Locale } from './render/i18n.js'
-import { lineageEmoji } from './render/views.js'
+import { lineageEmoji } from './render/views/index.js'
 import { runLive } from './live.js'
 import { httpJson, describeFailure, describeBody, sanitizeForTerminal } from './http.js'
 import { RESET, BOLD, DIM, GOLD } from './render/ansi.js'

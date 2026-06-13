@@ -11,7 +11,7 @@
 // Future refactor (npm package extraction) makes this redundant.
 
 import { describe, it, expect } from 'vitest'
-import { resolveBattle, hashSeed, mulberry32 } from '../../src/lib/battle'
+import { resolveBattle, hashSeed, mulberry32 } from 'claude-pokemon-shared/battle'
 import type { BattleParticipant } from '../../src/types'
 
 function p(
