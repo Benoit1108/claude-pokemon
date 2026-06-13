@@ -117,9 +117,14 @@ function migrateSchema(c: TickCtx): void {
     total_shinies: 0,
     max_level: 0,
     lineages_completed: [],
-    total_compagnons: 1,
+    total_companions: 1,
     first_shiny_at: null,
   }
+  const ls = c.ls
+  if (ls.total_companions === undefined && ls.total_compagnons !== undefined) {
+    ls.total_companions = ls.total_compagnons
+  }
+  delete ls.total_compagnons
 }
 
 // ── Retroactive backfill (idempotent) ──

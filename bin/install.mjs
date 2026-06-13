@@ -86,7 +86,7 @@ if (!existsSync(join(TARGET, 'state.json'))) {
     badges: [], team: [], pc_storage: [], pokedex: {},
     lifetime_stats: {
       total_tokens: 0, total_evolutions: 0, total_shinies: 0, max_level: 0,
-      lineages_completed: [], total_compagnons: 1, first_shiny_at: null,
+      lineages_completed: [], total_companions: 1, first_shiny_at: null,
     },
     items: {}, eevee_form: null, high_context_streak: 0, status: 'ok',
   }

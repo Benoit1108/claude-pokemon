@@ -15,7 +15,7 @@ const validBody = {
       total_evolutions: 0,
       total_shinies: 0,
       max_level: 0,
-      total_compagnons: 1,
+      total_companions: 1,
       lineages_completed: [],
       games_won: 0,
       games_played: 0,
@@ -228,6 +228,34 @@ describe('handleSubmit', () => {
     await handleSubmit(makeRequest(validBody), env)
     const stored = await getStats(env, 'abc12345')
     expect(stored?.origin).toBe('web')
+  })
+
+  // ---------------------------------------------------------------------------
+  // Back-compat — legacy `total_compagnons` key from old installed CLIs
+  // ---------------------------------------------------------------------------
+
+  it('accepts an OLD payload sending total_compagnons and stores it as total_companions', async () => {
+    // Mimic a not-yet-updated installed CLI : sends only the French key.
+    const legacyLifetime: Record<string, unknown> = {
+      total_tokens: 1000,
+      total_evolutions: 0,
+      total_shinies: 0,
+      max_level: 0,
+      total_compagnons: 7,
+      lineages_completed: [],
+      games_won: 0,
+      games_played: 0,
+    }
+    const legacyBody = {
+      ...validBody,
+      stats: { ...validBody.stats, lifetime: legacyLifetime },
+    }
+    const res = await handleSubmit(makeRequest(legacyBody), env)
+    expect(res.status).toBe(200)
+    const stored = await getStats(env, 'abc12345')
+    // Stored + served under the canonical key, legacy key dropped.
+    expect(stored?.stats.lifetime.total_companions).toBe(7)
+    expect(stored?.stats.lifetime.total_compagnons).toBeUndefined()
   })
 
   it("freezes 'linked' once set — subsequent submits can't downgrade", async () => {

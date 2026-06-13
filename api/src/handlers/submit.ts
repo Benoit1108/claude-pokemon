@@ -45,6 +45,14 @@ export async function handleSubmit(request: Request, env: Env): Promise<Response
     stats.pokedex_seen_ids = Array.from(new Set(stats.pokedex_seen_ids)).slice(0, POKEDEX_MAX_IDS)
   }
 
+  // Back-compat : old installed CLIs send the legacy `total_compagnons`.
+  // Normalize to the canonical `total_companions` and drop the old key so
+  // stored records are clean. New CLIs already send `total_companions`.
+  const lifetime = { ...stats.lifetime }
+  lifetime.total_companions = lifetime.total_companions ?? lifetime.total_compagnons ?? 0
+  delete lifetime.total_compagnons
+  stats.lifetime = lifetime
+
   // Sprint 4 — origin tracking. Defaults :
   //   - if the payload declares one (CLI submits 'cli', web submits 'web'),
   //     use it ;

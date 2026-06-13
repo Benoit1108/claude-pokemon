@@ -128,7 +128,6 @@ export function validateSubmit(body: unknown): string[] {
       'total_evolutions',
       'total_shinies',
       'max_level',
-      'total_compagnons',
       'games_won',
       'games_played',
     ] as const) {
@@ -136,6 +135,12 @@ export function validateSubmit(body: unknown): string[] {
       if (typeof v !== 'number' || v < 0 || v > 1e15) {
         errs.push(`stats.lifetime.${k} must be non-negative number`)
       }
+    }
+    // Back-compat : accept the canonical `total_companions` OR the legacy
+    // `total_compagnons` (old installed CLIs still send the French key).
+    const companions = lt.total_companions ?? lt.total_compagnons
+    if (typeof companions !== 'number' || companions < 0 || companions > 1e15) {
+      errs.push('stats.lifetime.total_companions must be non-negative number')
     }
     if (!Array.isArray(lt.lineages_completed)) {
       errs.push('stats.lifetime.lineages_completed must be array')

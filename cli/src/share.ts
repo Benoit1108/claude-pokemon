@@ -27,7 +27,7 @@ interface SubmitPayload {
       total_evolutions: number
       total_shinies: number
       max_level: number
-      total_compagnons: number
+      total_companions: number
       lineages_completed: string[]
       games_won: number
       games_played: number
@@ -89,7 +89,7 @@ export function buildSubmitPayload(
         total_evolutions: ls.total_evolutions ?? 0,
         total_shinies: ls.total_shinies ?? 0,
         max_level: ls.max_level ?? 0,
-        total_compagnons: ls.total_compagnons ?? 0,
+        total_companions: ls.total_companions ?? ls.total_compagnons ?? 0,
         lineages_completed: ls.lineages_completed ?? [],
         games_won: ls.games_won ?? 0,
         games_played: ls.games_played ?? 0,

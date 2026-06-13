@@ -94,7 +94,9 @@ export interface LifetimeStats {
   total_evolutions: number
   total_shinies: number
   max_level: number
-  total_compagnons: number
+  total_companions: number
+  /** @deprecated old key, read-only back-compat */
+  total_compagnons?: number
   lineages_completed: Lineage[]
   games_won: number
   games_played: number
