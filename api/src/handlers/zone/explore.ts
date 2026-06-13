@@ -154,7 +154,6 @@ export async function handleZoneExplore(
         reason: 'level_too_low',
         zone_level_min: zone.level_min,
         trainer_level: trainerLevel,
-        message: `Cette zone exige au moins le niveau ${zone.level_min - 10}. Tu es niveau ${trainerLevel}.`,
       },
       403,
     )
@@ -169,7 +168,6 @@ export async function handleZoneExplore(
         {
           error: 'rate_limited',
           cooldown_remaining_s: secsLeft,
-          message: `Tu as déjà exploré cette zone. Reviens dans ${secsLeft} s.`,
         },
         429,
       )
