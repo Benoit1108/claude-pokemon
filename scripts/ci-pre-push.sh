@@ -106,6 +106,17 @@ run "api : Prettier check"   npm run -s -w api format:check
 run "api : TypeScript check" npm run -s -w api typecheck
 run "api : Vitest"           npm run -s -w api test
 
+# The bats suite and the web workspace were missing here while CI ran them
+# (jobs `cli-tests` and `web-*`). A change touching the render fixtures, the
+# golden snapshots or a web lineage/badge map therefore passed the pre-push
+# hook and went red on GitHub — exactly what "local CI mirror" must prevent.
+run "cli : bats (fixtures + goldens)" npm test
+
+run "web : ESLint"           npm run -s -w web lint
+run "web : Prettier check"   npm run -s -w web format:check
+run "web : TypeScript check" npm run -s -w web typecheck
+run "web : Vitest"           npm run -s -w web test
+
 echo
 if [ "$fails" -gt 0 ]; then
   printf '\033[31m✗ %d gate(s) failed.\033[0m Push aborted.\n' "$fails"

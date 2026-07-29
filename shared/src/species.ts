@@ -1,6 +1,6 @@
 // Species & lineage → combat type resolution.
 //
-// The arena accepts ANY companion raised in the CLI — not just the 8 starter
+// The arena accepts ANY companion raised in the CLI — not just the 9 starter
 // lineages. A lineage string can be a starter key (`fire`, `water`, …,
 // `chikorita`), a traded species (`trade-psyduck`), or a bare species id
 // (`psyduck`, e.g. hand-edited state). All of them resolve here ; anything

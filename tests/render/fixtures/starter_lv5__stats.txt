@@ -6,6 +6,6 @@
   Shinies obtenus        :  0
   Niveau max atteint     :  Lv.5
   Compagnons élevés      :  0
-  Lignées complétées     :  0 / 8
+  Lignées complétées     :  0 / 9
   Premier shiny          :  —
 

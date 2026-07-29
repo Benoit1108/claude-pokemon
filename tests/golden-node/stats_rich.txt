@@ -6,7 +6,7 @@
   Shinies obtenus        :  4
   Niveau max atteint     :  Lv.40
   Compagnons élevés      :  2
-  Lignées complétées     :  2 / 8
+  Lignées complétées     :  2 / 9
   Premier shiny          :  2026-05-08
 
   MULTIPLICATEURS (dernier tick)

@@ -6,6 +6,7 @@
    ▢  Lignée Eevee          —
    ▢  Lignée Électrik       —
    ▢  Lignée Feu            —
+   ▢  Lignée Spectre        —
    ▢  Lignée Plante         —
    ▢  Lignée Eau (Johto)    —
    ▢  Lignée Eau            —

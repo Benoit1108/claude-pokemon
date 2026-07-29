@@ -156,9 +156,16 @@ export async function handleZoneFight(
     createdAt: new Date().toISOString(),
   })
 
-  // Consume the encounter regardless of outcome — both win and loss
-  // resolve the pending state. Fleeing has its own endpoint.
-  await deletePendingEncounter(env, anonId)
+  // Consume the encounter — both win and loss resolve the pending state.
+  // Fleeing has its own endpoint.
+  //
+  // Exception: a type-immunity standoff. Normal and Ghost are mutually immune
+  // in the canonical chart, so a Normal-typed companion in a Ghost zone (the
+  // Pokémon Tower) produces a 0-damage turn_limit draw it can never win.
+  // Burning the encounter there costs the trainer a roll for nothing, on every
+  // single try. Leave it pending so they can flee or switch companion.
+  const stalemate = battle.reason === 'turn_limit' && battle.turns.every(t => t.damage === 0)
+  if (!stalemate) await deletePendingEncounter(env, anonId)
 
   const won = battle.winner === 'challenger'
   let xpReward = { amount: 0, breakdown: { base: 0, effectiveness_modifier: 0, pool_modifier: 0 } }
@@ -237,6 +244,9 @@ export async function handleZoneFight(
     won,
     battle,
     encounter,
+    // True when the fight was an unwinnable type-immunity standoff: the
+    // encounter is still pending and the trainer may retry or flee.
+    stalemate,
     xp: xpReward,
     leveled_up: leveledUp,
     new_level: newLevel,

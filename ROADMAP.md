@@ -18,7 +18,7 @@ Shared stack : Cloudflare Workers + KV (API), Nuxt 4 on Pages (web), free tier p
 ## 📦 Current state — `v1.0.0-beta.6` (live on npm) + arena web live + Sprint 2.4 done
 
 - ✅ Pokédex Gen 1+2 (251 wild Pokémon)
-- ✅ 8 starter lineages (Gen 1 + Johto starters with Hisuian Typhlosion)
+- ✅ 9 starter lineages (Gen 1 + Johto starters with Hisuian Typhlosion, + the Gastly Ghost line)
 - ✅ Egg → Lv.100 progression with two-phase geometric XP curve (300K hatch ~1d, 5M Reptincel ~1 week, 300M champion ~1.5 year for normal devs)
 - ✅ Evolutions including friendship-gated (Eevee → Espeon/Umbreon canonical Gen 2)
 - ✅ Team management (6 max) + unlimited PC storage
@@ -147,7 +147,7 @@ Polish pack — multiple small wins bundled.
 - **CLI↔web QR sync** ✅ : `/pokemon arena pair` renders a scannable QR of the `/pair?code=` link in the terminal (via `qrencode`, optional with graceful fallback). Scanning on a phone opens `/pair` which pairs the browser to the `anon_id` (the redeem flow already existed). Sound theme 3-state cycle + Konami also done (web). 10× logo click + `?secret=` dropped.
 
 ### 2.14 — Wild & traded Pokémon en Arène + chart 18 types ✅
-Tout Pokémon élevé dans le CLI (sauvage capturé, échangé, starter, ou forcé à la main) peut entrer en arène — plus seulement les 8 lignées de starters. Sinon l'intérêt des sauvages s'effondre.
+Tout Pokémon élevé dans le CLI (sauvage capturé, échangé, starter, ou forcé à la main) peut entrer en arène — plus seulement les lignées de starters. Sinon l'intérêt des sauvages s'effondre.
 - Moteur de combat `shared` étendu des **5 types collapsés aux 18 types canoniques** (un Dragon reste Dragon) : matrice `TYPE_CHART` 18×18 Gen-6+ avec **vraies immunités 0×**. Backward-compat sur les matchups starters → replays historiques déterministes.
 - Résolution species→type **générée** depuis `lib/data/wild_pool` (source unique, 251 espèces, drift-check CI), consommée par le worker, le live PvP et le web. `lineageToCombatType()` gère starter / `psyduck` / `trade-psyduck` / inconnu→normal.
 - **Movesets réels par learnset** (level-up, comme le vrai jeu) : pipeline PokéAPI → snapshot commité (refresh manuel hors CI) → générateur offline déterministe → 302 moves + 251 learnsets level-gated. Starters gardent leurs movesets curatés.
