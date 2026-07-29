@@ -95,7 +95,7 @@ export const BADGE_META: Record<string, BadgeMeta> = {
   },
 }
 
-export const TOTAL_BADGES = Object.keys(BADGE_META).length // 16
+export const TOTAL_BADGES = Object.keys(BADGE_META).length // 20
 
 export function badgeMeta(id: string): BadgeMeta {
   return BADGE_META[id] ?? { emoji: '❓', label: id, description: 'Unknown badge' }

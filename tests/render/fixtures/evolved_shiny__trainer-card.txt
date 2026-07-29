@@ -12,7 +12,7 @@
   XP cumulés (active)    :  60 000 000
   Amitié (lifetime)      :  120
   Shinies trouvés        :  0
-  Lignées complétées     :  0 / 8
+  Lignées complétées     :  0 / 9
   Quizz gagnés           :  0 / 0
   Pokédex sauvages       :  0 / 251
 

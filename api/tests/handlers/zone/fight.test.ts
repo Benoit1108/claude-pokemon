@@ -149,6 +149,65 @@ describe('handleZoneFight — battle resolution + XP', () => {
     expect(pending).toBeNull()
   })
 
+  // Regression (gastly lineage): once a lineage mapped to 'ghost',
+  // syntheticLineageFor stopped falling back to the normal-typed 'eevee' and
+  // wild ghosts became genuinely Ghost-typed. Normal and Ghost are mutually
+  // immune, so a Normal-typed trainer in the Pokémon Tower gets an unwinnable
+  // 0-damage draw — and used to have the encounter consumed anyway, burning a
+  // roll for nothing on every single attempt.
+  it('keeps the encounter pending on a type-immunity stalemate', async () => {
+    const res = await handleArenaEnable(
+      new Request('https://x', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ...trainer, lineage: 'eevee', level: 65 }),
+      }),
+      env,
+    )
+    const secret = ((await res.json()) as { arena_secret: string }).arena_secret
+    await seedEncounter(env, 'aaaaaaaa', {
+      zone_id: 'tour-pokemon',
+      species_id: 'gastly',
+      level: 65,
+      combat_type: 'ghost',
+    })
+    const fight = await handleZoneFight(
+      reqBody(secret, 'aaaaaaaa'),
+      '/v1/zone/tour-pokemon/fight',
+      env,
+    )
+    const body = (await fight.json()) as {
+      won: boolean
+      stalemate: boolean
+      battle: { reason: string; turns: { damage: number }[] }
+    }
+    expect(body.won).toBe(false)
+    expect(body.stalemate).toBe(true)
+    expect(body.battle.reason).toBe('turn_limit')
+    expect(body.battle.turns.every(t => t.damage === 0)).toBe(true)
+    // The roll is NOT burned — the trainer can flee or come back equipped.
+    expect(await getPendingEncounter(env, 'aaaaaaaa')).not.toBeNull()
+  })
+
+  it('consumes the encounter on an ordinary loss (not a stalemate)', async () => {
+    const secret = await enable(env, 1)
+    await seedEncounter(env, 'aaaaaaaa', {
+      zone_id: 'tour-pokemon',
+      species_id: 'gengar',
+      level: 70,
+      combat_type: 'ghost',
+    })
+    const fight = await handleZoneFight(
+      reqBody(secret, 'aaaaaaaa'),
+      '/v1/zone/tour-pokemon/fight',
+      env,
+    )
+    const body = (await fight.json()) as { won: boolean; stalemate: boolean }
+    expect(body.won).toBe(false)
+    expect(body.stalemate).toBe(false)
+    expect(await getPendingEncounter(env, 'aaaaaaaa')).toBeNull()
+  })
+
   it('persists XP + zone_wins on the stats record after win', async () => {
     const secret = await enable(env, 50)
     await seedEncounter(env, 'aaaaaaaa', { species_id: 'caterpie', combat_type: 'grass' })

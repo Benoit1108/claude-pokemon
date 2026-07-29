@@ -62,9 +62,10 @@ export function xpMultiplier(usedPct: number | null | undefined): number {
  *   fire: <30 → 1.2 · water: >70 → 1.2 · grass: 40–60 → 1.2
  *   electric: 1.2 always · eevee: 1.1 always · gastly: ≥80 → 1.2 · other: 1.0
  *
- * The Gastly line haunts a saturated context: it is the only family rewarded
- * in the ≥80% band, which partly offsets the context multiplier's own penalty
- * up there (0.5× above 90%).
+ * The Gastly line haunts a saturated context — the trade-off being that it is
+ * the only family with no bonus anywhere in the normal working band. It shares
+ * the high end with water (>70), and the ≥80 window sits inside the range where
+ * the context multiplier is already penalising, so the two partly cancel.
  */
 export function typeMatchMultiplier(lineage: string, usedPct: number): number {
   const p = Math.round(usedPct)

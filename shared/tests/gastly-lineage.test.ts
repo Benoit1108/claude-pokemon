@@ -134,9 +134,9 @@ describe('gastly lineage — battle', () => {
     expect(r.winner).toBe('draw')
   })
 
-  it('beats a psychic-type and resists a dark-type', () => {
-    // ghost → psychic = 2 ; dark → ghost = 2. Confirms the chart is reached
-    // through the lineage key and not short-circuited to 'normal'.
+  it('hits psychic for 2× and takes 2× from dark', () => {
+    // ghost → psychic = 2. Confirms the chart is reached through the lineage
+    // key and not short-circuited to 'normal' (which would give 1×).
     const vsPsychic = resolveBattle({
       challenger: p('aaaaaaaa', 'gastly', 36),
       defender: p('bbbbbbbb', 'trade-alakazam', 36),
@@ -144,5 +144,14 @@ describe('gastly lineage — battle', () => {
       createdAt: created,
     })
     expect(vsPsychic.turns.some(t => t.actor === 'challenger' && t.effectiveness === 2)).toBe(true)
+
+    // dark → ghost = 2, so a Ghost is weak to Dark, not resistant to it.
+    const vsDark = resolveBattle({
+      challenger: p('aaaaaaaa', 'trade-umbreon', 36),
+      defender: p('bbbbbbbb', 'gastly', 36),
+      seed: 5150,
+      createdAt: created,
+    })
+    expect(vsDark.turns.some(t => t.actor === 'challenger' && t.effectiveness === 2)).toBe(true)
   })
 })

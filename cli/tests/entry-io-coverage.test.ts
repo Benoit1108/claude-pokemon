@@ -2,7 +2,7 @@
 // read at MODULE LOAD (const), so each test sets the env, resets the module
 // registry, and dynamic-imports a fresh copy.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -61,20 +61,38 @@ describe('writeJsonAtomic', () => {
   // Regression: the runtime has no flock, so a statusline tick and a /pokemon
   // command can write concurrently. A shared `<path>.tmp` let the second
   // writer's O_TRUNC blow away the first's buffer, publishing an empty save.
-  it('uses a per-process temp file so concurrent writers cannot truncate', async () => {
+  //
+  // The assertion has to be "the OTHER writer's buffer is untouched" — merely
+  // checking that `<path>.tmp` is absent afterwards passes on the buggy code
+  // too, since it renamed that very file away.
+  it("does not touch another writer's in-flight buffer at the shared tmp path", async () => {
     const io = await load()
     const p = join(dir, 'state.json')
+    const foreign = `${p}.tmp`
+    writeFileSync(foreign, 'PEER-BUFFER-MID-WRITE') // another process, mid-write
     io.writeJsonAtomic(p, { a: 1 })
-    expect(existsSync(`${p}.tmp`)).toBe(false)
-    expect(existsSync(`${p}.${process.pid}.tmp`)).toBe(false) // renamed away
+    // Buggy impl: truncated this, then renamed it onto state.json → gone.
+    expect(existsSync(foreign)).toBe(true)
+    expect(readFileSync(foreign, 'utf8')).toBe('PEER-BUFFER-MID-WRITE')
+    expect(JSON.parse(readFileSync(p, 'utf8'))).toEqual({ a: 1 })
   })
 
-  it('never leaves the destination empty when a stale shared tmp exists', async () => {
+  it('leaves no temp file behind on the success path', async () => {
     const io = await load()
     const p = join(dir, 'state.json')
-    writeFileSync(`${p}.tmp`, '') // a foreign writer mid-flight
     io.writeJsonAtomic(p, { a: 1 })
-    expect(JSON.parse(readFileSync(p, 'utf8'))).toEqual({ a: 1 })
+    expect(existsSync(`${p}.${process.pid}.tmp`)).toBe(false)
+  })
+
+  // The write must SUCCEED and the rename must FAIL, otherwise the assertion
+  // is vacuous (no temp was ever created). A directory at the destination does
+  // exactly that.
+  it('cleans up its temp file when the rename fails', async () => {
+    const io = await load()
+    const p = join(dir, 'state.json')
+    mkdirSync(p) // rename(file → existing dir) fails
+    expect(() => io.writeJsonAtomic(p, { a: 1 })).toThrow()
+    expect(existsSync(`${p}.${process.pid}.tmp`)).toBe(false)
   })
 })
 

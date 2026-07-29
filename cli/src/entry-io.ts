@@ -4,7 +4,7 @@
 // FATAL, never silently treated as `{}` — the old behavior re-initialized the
 // save as a fresh egg and overwrote the user's companion (data-loss). Missing
 // file ≠ corrupt file.
-import { readFileSync, writeFileSync, renameSync } from 'node:fs'
+import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 
@@ -38,12 +38,27 @@ export function readJsonFile(path: string): JsonReadResult {
  * Node port, so a statusline tick and a `/pokemon` command can write at the
  * same moment; with a shared `<path>.tmp` both open it with O_TRUNC and the
  * second truncates the first's buffer, then a rename publishes an empty or
- * half-written save. rename(2) itself is atomic, so a per-process temp makes
- * concurrent writers degrade to harmless last-writer-wins. */
+ * half-written save. rename(2) itself is atomic, so a per-process temp turns a
+ * corrupting overlap into last-writer-wins.
+ *
+ * This removes the *truncation*, not the race itself: two concurrent
+ * read-modify-write cycles still drop one side's tick. Serialising them would
+ * need a lock back — out of scope here, and far less costly than a wiped save. */
 export function writeJsonAtomic(path: string, obj: unknown): void {
   const tmp = `${path}.${process.pid}.tmp`
-  writeFileSync(tmp, JSON.stringify(obj) + '\n')
-  renameSync(tmp, path)
+  try {
+    writeFileSync(tmp, JSON.stringify(obj) + '\n')
+    renameSync(tmp, path)
+  } finally {
+    // A crash between write and rename would otherwise leak the temp forever
+    // (the old shared name at least got reused). No-op on the success path,
+    // where rename already moved it.
+    try {
+      unlinkSync(tmp)
+    } catch {
+      // already renamed away, or never created
+    }
+  }
 }
 
 /** Epoch seconds. POKEMON_NOW_EPOCH is a test seam (pins the clock for the
