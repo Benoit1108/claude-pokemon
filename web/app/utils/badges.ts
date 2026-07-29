@@ -76,6 +76,7 @@ export const BADGE_META: Record<string, BadgeMeta> = {
     description: 'Lv.100 on Electric Lineage',
   },
   master_eevee: { emoji: '🦊', label: 'Eevee Master', description: 'Lv.100 on Eevee Lineage' },
+  master_gastly: { emoji: '👻', label: 'Ghost Master', description: 'Lv.100 on Ghost Lineage' },
   // Master per Gen 2 (Johto) lineage
   master_chikorita: {
     emoji: '🍃',
@@ -94,7 +95,7 @@ export const BADGE_META: Record<string, BadgeMeta> = {
   },
 }
 
-export const TOTAL_BADGES = Object.keys(BADGE_META).length // 15
+export const TOTAL_BADGES = Object.keys(BADGE_META).length // 16
 
 export function badgeMeta(id: string): BadgeMeta {
   return BADGE_META[id] ?? { emoji: '❓', label: id, description: 'Unknown badge' }

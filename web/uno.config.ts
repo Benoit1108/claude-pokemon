@@ -36,6 +36,7 @@ export default defineConfig({
         grass: '#64b437',
         electric: '#ffda00',
         eevee: '#c2a88a',
+        gastly: '#9b5fbf',
         chikorita: '#7eb858',
         cyndaquil: '#e8a32a',
         totodile: '#3d8de8',

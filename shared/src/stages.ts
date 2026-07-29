@@ -63,6 +63,14 @@ export const LINEAGE_STAGES: Record<Lineage, LineageStage[]> = {
     { min_level: 30, showdown_id: 'espeon' },
     { min_level: 30, showdown_id: 'umbreon' },
   ],
+  gastly: [
+    { min_level: 0, showdown_id: 'egg' },
+    { min_level: 1, showdown_id: 'gastly' },
+    { min_level: 25, showdown_id: 'haunter' },
+    { min_level: 36, showdown_id: 'gengar' },
+    { min_level: 55, showdown_id: 'gengar-mega' },
+    { min_level: 100, showdown_id: 'gengar-gmax' },
+  ],
   chikorita: [
     { min_level: 0, showdown_id: 'egg' },
     { min_level: 1, showdown_id: 'chikorita' },

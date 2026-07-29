@@ -43,6 +43,24 @@ describe('trimSprite', () => {
     const content = ['', '   \x1b[31m▀▀\x1b[0m  ', '   \x1b[31m▄▄\x1b[0m', ''].join('\n')
     expect(trimSprite(content)).toEqual(['\x1b[31m▀▀\x1b[0m  ', '\x1b[31m▄▄\x1b[0m'])
   })
+
+  // Regression: chafa colours the transparent margin, so the blank columns sit
+  // *after* an escape sequence. A strip loop that stops at the first non-space
+  // byte bails on the ESC and leaves the sprite indented in the statusline.
+  it('strips leading columns that sit behind an ANSI colour run', () => {
+    const content = [
+      ' \x1b[38;2;0;0;0m  \x1b[31m▀▀\x1b[0m',
+      ' \x1b[38;2;0;0;0m  \x1b[31m▄▄\x1b[0m',
+    ].join('\n')
+    const out = trimSprite(content)
+    // 3 blank visual columns removed; every escape sequence preserved in order.
+    expect(out).toEqual(['\x1b[38;2;0;0;0m\x1b[31m▀▀\x1b[0m', '\x1b[38;2;0;0;0m\x1b[31m▄▄\x1b[0m'])
+  })
+
+  it('leaves the relative offset between lines intact', () => {
+    const content = ['\x1b[31m  ▀▀', '\x1b[31m    ▄▄'].join('\n')
+    expect(trimSprite(content)).toEqual(['\x1b[31m▀▀', '\x1b[31m  ▄▄'])
+  })
 })
 
 describe('renderInline', () => {

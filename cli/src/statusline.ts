@@ -128,14 +128,29 @@ export function trimSprite(content: string): string[] {
   if (first === -1) return []
   if (!minSet) minLead = 0
   const out: string[] = []
+  // `minLead` is a *visual* column count (measured on the ANSI-stripped line),
+  // so the strip has to skip over escape sequences instead of stopping at the
+  // first one. chafa emits a colour run for the transparent margin, which puts
+  // an ESC before the blank columns on most sprites — a naive `line[0] === ' '`
+  // loop bails out immediately there and leaves the sprite indented.
+  // Escape sequences are kept verbatim so the colour state stays intact.
+  const ANSI_AT_START = /^\x1b\[[?0-9;]*[a-zA-Z]/ // eslint-disable-line no-control-regex
   for (let i = first; i <= last; i++) {
-    let line = lines[i]!.replace(/\x1b\[[?]25[lh]/g, '') // eslint-disable-line no-control-regex -- i in [first,last] ⊂ array bounds
+    let rest = lines[i]!.replace(/\x1b\[[?]25[lh]/g, '') // eslint-disable-line no-control-regex -- i in [first,last] ⊂ array bounds
+    let kept = ''
     let strip = minLead
-    while (strip > 0 && line[0] === ' ') {
-      line = line.slice(1)
+    while (strip > 0 && rest.length > 0) {
+      const esc = ANSI_AT_START.exec(rest)
+      if (esc) {
+        kept += esc[0]
+        rest = rest.slice(esc[0].length)
+        continue
+      }
+      if (rest[0] !== ' ') break
+      rest = rest.slice(1)
       strip--
     }
-    out.push(line)
+    out.push(kept + rest)
   }
   return out
 }

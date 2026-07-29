@@ -2,7 +2,7 @@
 // read at MODULE LOAD (const), so each test sets the env, resets the module
 // registry, and dynamic-imports a fresh copy.
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -56,6 +56,25 @@ describe('writeJsonAtomic', () => {
     const p = join(dir, 'out.json')
     io.writeJsonAtomic(p, { hi: 'there' })
     expect(readFileSync(p, 'utf8')).toBe('{"hi":"there"}\n')
+  })
+
+  // Regression: the runtime has no flock, so a statusline tick and a /pokemon
+  // command can write concurrently. A shared `<path>.tmp` let the second
+  // writer's O_TRUNC blow away the first's buffer, publishing an empty save.
+  it('uses a per-process temp file so concurrent writers cannot truncate', async () => {
+    const io = await load()
+    const p = join(dir, 'state.json')
+    io.writeJsonAtomic(p, { a: 1 })
+    expect(existsSync(`${p}.tmp`)).toBe(false)
+    expect(existsSync(`${p}.${process.pid}.tmp`)).toBe(false) // renamed away
+  })
+
+  it('never leaves the destination empty when a stale shared tmp exists', async () => {
+    const io = await load()
+    const p = join(dir, 'state.json')
+    writeFileSync(`${p}.tmp`, '') // a foreign writer mid-flight
+    io.writeJsonAtomic(p, { a: 1 })
+    expect(JSON.parse(readFileSync(p, 'utf8'))).toEqual({ a: 1 })
   })
 })
 

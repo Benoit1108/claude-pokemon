@@ -16,6 +16,7 @@ export const LINEAGE_EMOJI: Record<string, string> = {
   grass: '🌿',
   electric: '⚡',
   eevee: '🦊',
+  gastly: '👻',
   chikorita: '🌱',
   cyndaquil: '🦔',
   totodile: '🐊',
@@ -27,6 +28,7 @@ export const LINEAGE_LABELS: Record<string, string> = {
   grass: 'Grass',
   electric: 'Electric',
   eevee: 'Eevee',
+  gastly: 'Ghost',
   chikorita: 'Grass (Johto)',
   cyndaquil: 'Fire (Johto)',
   totodile: 'Water (Johto)',
@@ -40,6 +42,7 @@ export const LINEAGE_ACCENT: Record<string, string> = {
   grass: '#64b437',
   electric: '#ffda00',
   eevee: '#c2a88a',
+  gastly: '#9b5fbf',
   chikorita: '#7eb858',
   cyndaquil: '#e8a32a',
   totodile: '#3d8de8',
@@ -159,6 +162,8 @@ export const LINEAGE_GRADIENT: Record<string, string> = {
     'linear-gradient(135deg, rgba(255,218,0,0.14) 0%, rgba(255,200,40,0.06) 60%, transparent 100%)',
   eevee:
     'linear-gradient(135deg, rgba(194,168,138,0.14) 0%, rgba(220,190,160,0.06) 60%, transparent 100%)',
+  gastly:
+    'linear-gradient(135deg, rgba(155,95,191,0.14) 0%, rgba(185,130,215,0.06) 60%, transparent 100%)',
   chikorita:
     'linear-gradient(135deg, rgba(126,184,88,0.14) 0%, rgba(160,210,110,0.06) 60%, transparent 100%)',
   cyndaquil:
