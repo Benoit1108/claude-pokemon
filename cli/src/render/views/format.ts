@@ -83,6 +83,7 @@ const LINEAGE_EMOJI: Record<string, string> = {
   water: '💧',
   grass: '🌿',
   electric: '⚡',
+  ghost: '👻',
   eevee: '🦊',
   chikorita: '🌱',
   cyndaquil: '🦔',
