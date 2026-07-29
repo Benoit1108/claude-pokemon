@@ -15,6 +15,7 @@ import type {
   ZoneDetail,
   ZoneFightResult,
   ZoneSummary,
+  Lineage,
 } from '~/types/api'
 
 export interface ApiClientConfig {
@@ -128,15 +129,7 @@ export class ApiClient {
   arenaEnable(args: {
     anon_id: string
     display_name?: string | null
-    lineage:
-      | 'fire'
-      | 'water'
-      | 'grass'
-      | 'electric'
-      | 'eevee'
-      | 'chikorita'
-      | 'cyndaquil'
-      | 'totodile'
+    lineage: Lineage
     level: number
     is_shiny: boolean
     origin: 'cli' | 'web'

@@ -79,6 +79,19 @@ export const MOVES: Record<string, Move> = {
   'Reflet Magik': { name: 'Reflet Magik', type: 'normal', power: 0.9 },
   'Cru-Aile': { name: 'Cru-Aile', type: 'normal', power: 1.15 },
   Dracosouffle: { name: 'Dracosouffle', type: 'normal', power: 1.35 },
+
+  // Ghost / Poison (Gastly line). Note: "Ball'Ombre" above stays `normal` on
+  // purpose — it predates this section and is part of the umbreon /
+  // typhlosion-hisui movesets, so retyping it would silently rebalance two
+  // existing lineages. The Gastly line uses its own properly-typed set.
+  Léchouille: { name: 'Léchouille', type: 'ghost', power: 1.0 },
+  Hypnose: { name: 'Hypnose', type: 'ghost', power: 0.85 },
+  'Ombre Portée': { name: 'Ombre Portée', type: 'ghost', power: 1.2 },
+  Dévorêve: { name: 'Dévorêve', type: 'ghost', power: 1.25 },
+  Cauchemar: { name: 'Cauchemar', type: 'ghost', power: 1.35 },
+  'G-Max Terror': { name: 'G-Max Terror', type: 'ghost', power: 1.5 },
+  'Bomb-Beurk': { name: 'Bomb-Beurk', type: 'poison', power: 1.3 },
+  Vibrobscur: { name: 'Vibrobscur', type: 'dark', power: 1.2 },
 }
 
 /** 4 moves per evolution stage. Picked to give type variety + a balance of
@@ -112,6 +125,11 @@ export const STAGE_MOVES: Record<string, string[]> = {
   flareon: ['Lance-Flammes', 'Crocs Feu', 'Roue de Feu', 'Morsure'],
   espeon: ['Psyko', 'Vœu Soin', 'Vive-Attaque', 'Mimi-Queue'],
   umbreon: ["Ball'Ombre", 'Reflet Magik', 'Morsure', 'Vive-Attaque'],
+  gastly: ['Léchouille', 'Hypnose', 'Charge', 'Mimi-Queue'],
+  haunter: ['Ombre Portée', 'Léchouille', 'Dévorêve', 'Morsure'],
+  gengar: ['Ombre Portée', 'Bomb-Beurk', 'Dévorêve', 'Morsure'],
+  'gengar-mega': ['Cauchemar', 'Ombre Portée', 'Vibrobscur', 'Bomb-Beurk'],
+  'gengar-gmax': ['G-Max Terror', 'Cauchemar', 'Ombre Portée', 'Bomb-Beurk'],
   chikorita: ['Charge', 'Rugissement', "Tranch'Herbe", 'Mimi-Queue'],
   bayleef: ["Tranch'Herbe", 'Synthèse', 'Vampigraine', 'Bélier'],
   meganium: ['Lance-Soleil', 'Bélier', 'Synthèse', "Tranch'Herbe"],

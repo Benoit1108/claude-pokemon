@@ -32,10 +32,18 @@ export function readJsonFile(path: string): JsonReadResult {
   }
 }
 
-/** Atomic write (tmp + rename) — a crash mid-write never truncates the save. */
+/** Atomic write (tmp + rename) — a crash mid-write never truncates the save.
+ *
+ * The temp name MUST be unique per process. The runtime dropped flock in the
+ * Node port, so a statusline tick and a `/pokemon` command can write at the
+ * same moment; with a shared `<path>.tmp` both open it with O_TRUNC and the
+ * second truncates the first's buffer, then a rename publishes an empty or
+ * half-written save. rename(2) itself is atomic, so a per-process temp makes
+ * concurrent writers degrade to harmless last-writer-wins. */
 export function writeJsonAtomic(path: string, obj: unknown): void {
-  writeFileSync(path + '.tmp', JSON.stringify(obj) + '\n')
-  renameSync(path + '.tmp', path)
+  const tmp = `${path}.${process.pid}.tmp`
+  writeFileSync(tmp, JSON.stringify(obj) + '\n')
+  renameSync(tmp, path)
 }
 
 /** Epoch seconds. POKEMON_NOW_EPOCH is a test seam (pins the clock for the

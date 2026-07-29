@@ -60,7 +60,11 @@ export function xpMultiplier(usedPct: number | null | undefined): number {
  * Lineage-specific context bonus (pokemon_type_match_mult). Each starter family
  * has a context sweet-spot; everything else is neutral.
  *   fire: <30 → 1.2 · water: >70 → 1.2 · grass: 40–60 → 1.2
- *   electric: 1.2 always · eevee: 1.1 always · other: 1.0
+ *   electric: 1.2 always · eevee: 1.1 always · gastly: ≥80 → 1.2 · other: 1.0
+ *
+ * The Gastly line haunts a saturated context: it is the only family rewarded
+ * in the ≥80% band, which partly offsets the context multiplier's own penalty
+ * up there (0.5× above 90%).
  */
 export function typeMatchMultiplier(lineage: string, usedPct: number): number {
   const p = Math.round(usedPct)
@@ -75,6 +79,8 @@ export function typeMatchMultiplier(lineage: string, usedPct: number): number {
       return 1.2
     case 'eevee':
       return 1.1
+    case 'gastly':
+      return p >= 80 ? 1.2 : 1.0
     default:
       return 1.0
   }

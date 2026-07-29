@@ -23,6 +23,7 @@ const BADGE_ORDER = [
   'master_grass',
   'master_electric',
   'master_eevee',
+  'master_gastly',
   'master_chikorita',
   'master_cyndaquil',
   'master_totodile',

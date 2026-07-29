@@ -16,6 +16,7 @@
 // If already paired → redirect to /profile (no duplicate accounts).
 
 import { useArenaSession } from '~/composables/useArenaSession'
+import type { Lineage } from '~/types/api'
 import { LINEAGE_LABELS } from '~/utils/lineage'
 
 const router = useRouter()
@@ -30,15 +31,7 @@ onMounted(() => {
 })
 
 type Starter = {
-  lineage:
-    | 'fire'
-    | 'water'
-    | 'grass'
-    | 'electric'
-    | 'eevee'
-    | 'chikorita'
-    | 'cyndaquil'
-    | 'totodile'
+  lineage: Lineage
   label: string
   emoji: string
   description: string

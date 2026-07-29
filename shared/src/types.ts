@@ -8,6 +8,7 @@ export type Lineage =
   | 'grass'
   | 'electric'
   | 'eevee'
+  | 'gastly'
   | 'chikorita'
   | 'cyndaquil'
   | 'totodile'
@@ -52,6 +53,7 @@ export const ALLOWED_LINEAGES: ReadonlySet<string> = new Set<string>([
   'grass',
   'electric',
   'eevee',
+  'gastly',
   'chikorita',
   'cyndaquil',
   'totodile',
@@ -69,6 +71,7 @@ export const LINEAGE_TO_TYPE: Record<Lineage, CombatType> = {
   chikorita: 'grass',
   electric: 'electric',
   eevee: 'normal',
+  gastly: 'ghost',
 }
 
 /** Hard cap on the number of turn ticks before a battle is declared a

@@ -381,7 +381,7 @@
         }
       ]
     },
-    "ghost": {
+    "gastly": {
       "label": "Lignée Spectre",
       "stages": [
         {
@@ -416,7 +416,7 @@
           "color": "magenta",
           "min_level": 25,
           "moves": [
-            "Ball'Ombre",
+            "Ombre Portée",
             "Dévorêve"
           ],
           "types": [
@@ -433,7 +433,7 @@
           "color": "magenta",
           "min_level": 36,
           "moves": [
-            "Ball'Ombre",
+            "Ombre Portée",
             "Bomb-Beurk"
           ],
           "types": [

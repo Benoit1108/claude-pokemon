@@ -571,7 +571,7 @@
         }
       ]
     },
-    "ghost": {
+    "gastly": {
       "label": "Lignée Spectre",
       "stages": [
         {
@@ -604,7 +604,7 @@
           "emoji": "👁️",
           "min_level": 25,
           "moves": [
-            "Ball'Ombre",
+            "Ombre Portée",
             "Dévorêve"
           ],
           "name": "Spectrum",
@@ -621,7 +621,7 @@
           "emoji": "😈",
           "min_level": 36,
           "moves": [
-            "Ball'Ombre",
+            "Ombre Portée",
             "Bomb-Beurk"
           ],
           "name": "Ectoplasma",

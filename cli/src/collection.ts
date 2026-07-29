@@ -197,6 +197,7 @@ export function checkBadges(state: PokemonState, now: string, data: PokemonData)
     'grass',
     'electric',
     'eevee',
+    'gastly',
     'chikorita',
     'cyndaquil',
     'totodile',
