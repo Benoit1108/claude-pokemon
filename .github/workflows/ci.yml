@@ -230,7 +230,7 @@ jobs:
           test -f lib/sprites/normal/charmander.txt
           test -f lib/sprites-mini/normal/charmander.txt
           n=$(find lib/sprites lib/sprites-mini -name '*.txt' | wc -l)
-          test "$n" -eq 148 || { echo "expected 148 sprite .txt, found $n"; exit 1; }
+          test "$n" -eq 168 || { echo "expected 168 sprite .txt, found $n"; exit 1; }
           echo "✓ All required files present (incl. $n pre-rendered sprites)"
 
   api-tests:

@@ -381,6 +381,104 @@
         }
       ]
     },
+    "ghost": {
+      "label": "Lignée Spectre",
+      "stages": [
+        {
+          "name": "Œuf",
+          "showdown_id": "egg",
+          "emoji": "🥚",
+          "color": "dim",
+          "min_level": 0,
+          "moves": []
+        },
+        {
+          "name": "Fantominus",
+          "showdown_id": "gastly",
+          "emoji": "👻",
+          "color": "magenta",
+          "min_level": 1,
+          "moves": [
+            "Léchouille",
+            "Hypnose"
+          ],
+          "types": [
+            "Spectre",
+            "Poison"
+          ],
+          "pokedex_fr": "Composé à 95% de gaz. Un souffle de vent suffit à le disperser.",
+          "pokedex_en": "Ninety-five percent gas. A gust of wind scatters it."
+        },
+        {
+          "name": "Spectrum",
+          "showdown_id": "haunter",
+          "emoji": "👁️",
+          "color": "magenta",
+          "min_level": 25,
+          "moves": [
+            "Ball'Ombre",
+            "Dévorêve"
+          ],
+          "types": [
+            "Spectre",
+            "Poison"
+          ],
+          "pokedex_fr": "Sa langue spectrale traverse les murs pour voler la vie.",
+          "pokedex_en": "Its spectral tongue passes through walls to steal life."
+        },
+        {
+          "name": "Ectoplasma",
+          "showdown_id": "gengar",
+          "emoji": "😈",
+          "color": "magenta",
+          "min_level": 36,
+          "moves": [
+            "Ball'Ombre",
+            "Bomb-Beurk"
+          ],
+          "types": [
+            "Spectre",
+            "Poison"
+          ],
+          "pokedex_fr": "Se cache dans votre ombre et guette le moment de frapper.",
+          "pokedex_en": "Hides in your shadow, waiting for the moment to strike."
+        },
+        {
+          "name": "Méga-Ectoplasma",
+          "showdown_id": "gengar-mega",
+          "emoji": "🟣",
+          "color": "magenta",
+          "min_level": 55,
+          "moves": [
+            "Ombre Portée",
+            "Vibrobscur"
+          ],
+          "types": [
+            "Spectre",
+            "Poison"
+          ],
+          "pokedex_fr": "Forme Méga : ancre sa cible dans l'ombre, aucune fuite possible.",
+          "pokedex_en": "Mega form: anchors its target in shadow, no escape possible."
+        },
+        {
+          "name": "Ectoplasma Gigamax",
+          "showdown_id": "gengar-gmax",
+          "emoji": "🌌",
+          "color": "rainbow",
+          "min_level": 100,
+          "moves": [
+            "G-Max Terror",
+            "Cauchemar"
+          ],
+          "types": [
+            "Spectre",
+            "Poison"
+          ],
+          "pokedex_fr": "Gigamax : une bouche béante vers l'autre monde.",
+          "pokedex_en": "Gigamax: a gaping mouth into the other world."
+        }
+      ]
+    },
     "eevee": {
       "label": "Lignée Eevee",
       "stages": [
